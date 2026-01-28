@@ -62,6 +62,7 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
 
 /**
  * Fetches approved providers from Firestore, optionally filtering by category slug.
+ * Featured providers are always listed first.
  */
 export async function getProviders(categorySlug?: string): Promise<Provider[]> {
   try {
@@ -75,7 +76,7 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
       providersQuery = providersQuery.where("serviceId", "==", category.id);
     }
     
-    const snapshot = await providersQuery.orderBy('createdAt', 'desc').get();
+    const snapshot = await providersQuery.orderBy('isFeatured', 'desc').orderBy('createdAt', 'desc').get();
     const categories = await getCategories();
     
     return snapshot.docs.map(doc => {
@@ -91,6 +92,7 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
         location: data.location,
         status: data.status,
         verified: data.verified,
+        isFeatured: data.isFeatured || false,
         rating: data.rating,
         reviewCount: data.reviewCount,
         imageId: data.imageId,
@@ -110,7 +112,7 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
         if (!category) return [];
         providers = providers.filter(p => p.serviceId === category.id);
     }
-    return providers;
+    return providers.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
   }
 }
 
@@ -146,6 +148,7 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
         location: data.location,
         status: data.status,
         verified: data.verified,
+        isFeatured: data.isFeatured || false,
         rating: data.rating,
         reviewCount: data.reviewCount,
         imageId: data.imageId,
@@ -226,6 +229,7 @@ export async function addProvider(
       imageId: data.imageId,
       status: "pending",
       verified: false,
+      isFeatured: false,
       rating: 0,
       reviewCount: 0,
       createdAt: FieldValue.serverTimestamp()

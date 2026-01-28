@@ -7,7 +7,7 @@ import { approveProvider, rejectProvider } from '@/app/admin/actions';
 import { useFormState, useFormStatus } from 'react-dom';
 import { useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Check, X, Loader2, MoreHorizontal } from 'lucide-react';
+import { Check, X, Loader2, MoreHorizontal, Star } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -93,9 +93,12 @@ export function ProvidersTable({ providers }: { providers: Provider[] }) {
                     {providers.map(provider => (
                         <TableRow key={provider.id}>
                             <TableCell className="font-medium">
-                                <div className='flex flex-col'>
-                                    <span>{provider.name}</span>
-                                    <span className="text-xs text-muted-foreground">{provider.phone}</span>
+                                <div className='flex items-center gap-2'>
+                                    {provider.isFeatured && <Star className="h-4 w-4 text-accent" fill="currentColor" />}
+                                    <div className='flex flex-col'>
+                                        <span>{provider.name}</span>
+                                        <span className="text-xs text-muted-foreground">{provider.phone}</span>
+                                    </div>
                                 </div>
                             </TableCell>
                             <TableCell>{provider.category}</TableCell>

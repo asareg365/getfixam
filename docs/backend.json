@@ -95,6 +95,10 @@
                 "type": "boolean",
                 "description": "Whether the provider has been verified by an admin."
             },
+            "isFeatured": {
+                "type": "boolean",
+                "description": "Whether the provider is a featured listing."
+            },
             "rating": {
                 "type": "number",
                 "description": "The average rating from user reviews."

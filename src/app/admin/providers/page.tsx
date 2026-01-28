@@ -46,6 +46,7 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
       location: data.location,
       status: data.status,
       verified: data.verified,
+      isFeatured: data.isFeatured || false,
       rating: data.rating,
       reviewCount: data.reviewCount,
       imageId: data.imageId,

@@ -29,6 +29,7 @@ export type Provider = {
   };
   status: 'pending' | 'approved' | 'rejected' | 'suspended';
   verified: boolean;
+  isFeatured: boolean;
   rating: number;
   reviewCount: number;
   createdAt: string; // ISO 8601 date string

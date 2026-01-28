@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, MessageCircle, CheckCircle, MapPin } from 'lucide-react';
+import { Phone, MessageCircle, CheckCircle, MapPin, Star } from 'lucide-react';
 import type { Provider } from '@/lib/types';
 import StarRating from './StarRating';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -27,6 +27,11 @@ export default function ProviderCard({ provider }: ProviderCardProps) {
               className="object-cover"
               data-ai-hint={providerImage?.imageHint}
             />
+            {provider.isFeatured && (
+                <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground border-accent-foreground/20">
+                    <Star className="mr-1 h-3 w-3" /> Featured
+                </Badge>
+            )}
             {provider.verified && (
               <Badge variant="default" className="absolute top-3 right-3 bg-green-600 hover:bg-green-700 text-white">
                 <CheckCircle className="mr-1 h-3 w-3" />
