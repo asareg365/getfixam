@@ -1,5 +1,5 @@
-import { collection, getDocs, query, where, doc, getDoc, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
-import { db } from "./firebase";
+import { adminDb } from './firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import type { Category, Provider, Review } from './types';
 import { Wrench, Zap, Smartphone, Car, Hammer, Scissors, Sparkles, Shirt, Tv2, type LucideIcon } from 'lucide-react';
 
@@ -22,19 +22,27 @@ const getIcon = (name: string): LucideIcon => iconMap[name] || Wrench;
  * Fetches all active categories from Firestore.
  */
 export async function getCategories(): Promise<Category[]> {
-  const servicesRef = collection(db, "services");
-  const q = query(servicesRef, where("active", "==", true));
-  const snapshot = await getDocs(q);
-  
-  return snapshot.docs.map(doc => {
-    const data = doc.data();
-    return {
-      id: doc.id,
-      name: data.name,
-      slug: data.slug,
-      icon: getIcon(data.icon),
-    } as Category;
-  });
+  try {
+    const servicesRef = adminDb.collection("services");
+    const q = servicesRef.where("active", "==", true);
+    const snapshot = await q.get();
+    
+    if (snapshot.empty) return [];
+
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        name: data.name,
+        slug: data.slug,
+        icon: getIcon(data.icon),
+      } as Category;
+    });
+  } catch (error) {
+    console.warn("Could not fetch categories from Firestore. Falling back to mock data. Error:", error);
+    const { CATEGORIES } = await import('./data');
+    return CATEGORIES;
+  }
 }
 
 /**
@@ -44,109 +52,145 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
   if (slug === 'all') {
     return { id: 'all', name: 'All Artisans', slug: 'all', icon: () => null };
   }
-
-  const servicesRef = collection(db, "services");
-  const q = query(servicesRef, where("slug", "==", slug));
-  const snapshot = await getDocs(q);
-  
-  if (snapshot.empty) {
-    return undefined;
+  try {
+    const servicesRef = adminDb.collection("services");
+    const q = servicesRef.where("slug", "==", slug).limit(1);
+    const snapshot = await q.get();
+    
+    if (snapshot.empty) {
+      return undefined;
+    }
+    
+    const docData = snapshot.docs[0];
+    const data = docData.data();
+    return { 
+        id: docData.id, 
+        name: data.name,
+        slug: data.slug,
+        icon: getIcon(data.icon),
+    } as Category;
+  } catch (error) {
+    console.warn(`Could not fetch category with slug "${slug}" from Firestore. Falling back to mock data. Error:`, error);
+    const { CATEGORIES } = await import('./data');
+    return CATEGORIES.find(c => c.slug === slug);
   }
-  
-  const docData = snapshot.docs[0];
-  const data = docData.data();
-  return { 
-      id: docData.id, 
-      name: data.name,
-      slug: data.slug,
-      icon: getIcon(data.icon),
-  } as Category;
 }
 
 /**
  * Fetches approved providers from Firestore, optionally filtering by category slug.
  */
 export async function getProviders(categorySlug?: string): Promise<Provider[]> {
-  const providersRef = collection(db, "providers");
-  
-  const constraints = [
-      where("status", "==", "approved"), 
-      where("location.city", "==", "Berekum")
-  ];
+  try {
+    let providersQuery = adminDb.collection("providers")
+        .where("status", "==", "approved")
+        .where("location.city", "==", "Berekum");
 
-  if (categorySlug && categorySlug !== 'all') {
-    const category = await getCategoryBySlug(categorySlug);
-    if (!category) return [];
-    constraints.push(where("serviceId", "==", category.id));
+    if (categorySlug && categorySlug !== 'all') {
+      const category = await getCategoryBySlug(categorySlug);
+      if (!category) return [];
+      providersQuery = providersQuery.where("serviceId", "==", category.id);
+    }
+    
+    const snapshot = await providersQuery.orderBy('createdAt', 'desc').get();
+    const categories = await getCategories();
+    
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      const category = categories.find(c => c.id === data.serviceId);
+      const providerData = {
+        id: doc.id,
+        ...data,
+        category: category?.name || 'N/A',
+        createdAt: data.createdAt.toDate().toISOString(),
+      } as Provider;
+      if (data.approvedAt) {
+        providerData.approvedAt = data.approvedAt.toDate().toISOString();
+      }
+      return providerData;
+    });
+  } catch (error) {
+    console.warn(`Could not fetch providers from Firestore. Falling back to mock data. Error:`, error);
+    const { PROVIDERS, CATEGORIES } = await import('./data');
+    let providers = PROVIDERS.filter(p => p.status === 'approved' && p.location.city === 'Berekum');
+    if (categorySlug && categorySlug !== 'all') {
+        const category = CATEGORIES.find(c => c.slug === categorySlug);
+        if (!category) return [];
+        providers = providers.filter(p => p.serviceId === category.id);
+    }
+    return providers;
   }
-  
-  const q = query(providersRef, ...constraints);
-  const snapshot = await getDocs(q);
-  const categories = await getCategories();
-  
-  return snapshot.docs.map(doc => {
-    const data = doc.data();
-    const category = categories.find(c => c.id === data.serviceId);
-    return {
-      id: doc.id,
-      ...data,
-      category: category?.name || 'N/A',
-      createdAt: data.createdAt.toDate().toISOString(),
-      approvedAt: data.approvedAt?.toDate().toISOString(),
-    } as Provider;
-  });
 }
 
 /**
  * Fetches a single approved provider by its ID from Firestore.
  */
 export async function getProviderById(id: string): Promise<Provider | undefined> {
-  const docRef = doc(db, "providers", id);
-  const docSnap = await getDoc(docRef);
+  try {
+    const docRef = adminDb.collection("providers").doc(id);
+    const docSnap = await docRef.get();
 
-  if (docSnap.exists()) {
-    const data = docSnap.data();
-    if (data.status !== 'approved') {
-        return undefined;
+    if (docSnap.exists) {
+      const data = docSnap.data();
+      if (!data || data.status !== 'approved') {
+          return undefined;
+      }
+      
+      let categoryName = 'N/A';
+      if (data.serviceId) {
+          const serviceDocRef = adminDb.collection("services").doc(data.serviceId);
+          const serviceDocSnap = await serviceDocRef.get();
+          if (serviceDocSnap.exists) {
+              categoryName = serviceDocSnap.data()?.name;
+          }
+      }
+      const providerData = { 
+          id: docSnap.id, 
+          ...data,
+          category: categoryName,
+          createdAt: data.createdAt.toDate().toISOString(),
+      } as Provider;
+      if (data.approvedAt) {
+          providerData.approvedAt = data.approvedAt.toDate().toISOString();
+      }
+      return providerData;
     }
-    
-    let categoryName = 'N/A';
-    if (data.serviceId) {
-        const serviceDocRef = doc(db, "services", data.serviceId);
-        const serviceDocSnap = await getDoc(serviceDocRef);
-        if (serviceDocSnap.exists()) {
-            categoryName = serviceDocSnap.data().name;
-        }
+    return undefined;
+  } catch (error) {
+    console.warn(`Could not fetch provider with ID "${id}" from Firestore. Falling back to mock data. Error:`, error);
+    const { PROVIDERS } = await import('./data');
+    const provider = PROVIDERS.find(p => p.id === id);
+    if (provider && provider.status === 'approved') {
+        return provider;
     }
-
-    return { 
-        id: docSnap.id, 
-        ...data,
-        category: categoryName,
-        createdAt: data.createdAt.toDate().toISOString(),
-        approvedAt: data.approvedAt?.toDate().toISOString(),
-    } as Provider;
+    return undefined;
   }
-  return undefined;
 }
 
 /**
  * Fetches all approved reviews for a specific provider from Firestore.
  */
 export async function getReviewsByProviderId(providerId: string): Promise<Review[]> {
-  const reviewsRef = collection(db, "reviews");
-  const q = query(reviewsRef, 
-      where("providerId", "==", providerId), 
-      where("status", "==", "approved"),
-      orderBy("createdAt", "desc")
-  );
-  const snapshot = await getDocs(q);
-  
-  return snapshot.docs.map(doc => ({
-      id: doc.id, 
-      ...doc.data(),
-      createdAt: doc.data().createdAt.toDate().toISOString(),
-  } as Review));
+  try {
+    const reviewsRef = adminDb.collection("reviews");
+    const q = reviewsRef
+        .where("providerId", "==", providerId)
+        .where("status", "==", "approved")
+        .orderBy("createdAt", "desc");
+    const snapshot = await q.get();
+
+    if (snapshot.empty) return [];
+
+    return snapshot.docs.map(doc => ({
+        id: doc.id, 
+        ...doc.data(),
+        createdAt: doc.data().createdAt.toDate().toISOString(),
+    } as Review));
+  } catch (error) {
+    console.warn(`Could not fetch reviews for provider "${providerId}" from Firestore. Falling back to mock data. Error:`, error);
+    const { REVIEWS } = await import('./data');
+    // This is a simplified fallback. Mock reviews don't have status.
+    return REVIEWS.filter(r => r.providerId === providerId);
+  }
 }
 
 /**
@@ -155,16 +199,16 @@ export async function getReviewsByProviderId(providerId: string): Promise<Review
 export async function addProvider(
     data: { name: string; category: string; phone: string; whatsapp: string; location: object; imageId: string; }
 ) {
-    const servicesRef = collection(db, "services");
-    const q = query(servicesRef, where("name", "==", data.category));
-    const serviceSnapshot = await getDocs(q);
+    const servicesRef = adminDb.collection("services");
+    const q = servicesRef.where("name", "==", data.category);
+    const serviceSnapshot = await q.get();
 
     let serviceId = '';
     if (!serviceSnapshot.empty) {
         serviceId = serviceSnapshot.docs[0].id;
     }
 
-    await addDoc(collection(db, 'providers'), {
+    await adminDb.collection('providers').add({
       name: data.name,
       phone: data.phone,
       whatsapp: data.whatsapp,
@@ -175,7 +219,7 @@ export async function addProvider(
       verified: false,
       rating: 0,
       reviewCount: 0,
-      createdAt: serverTimestamp()
+      createdAt: FieldValue.serverTimestamp()
     });
     
     return { success: true };
@@ -185,10 +229,10 @@ export async function addProvider(
  * Adds a new review to Firestore with 'pending' status for moderation.
  */
 export async function addReview(data: Omit<Review, 'id' | 'createdAt' | 'status'>) {
-    await addDoc(collection(db, 'reviews'), {
+    await adminDb.collection('reviews').add({
       ...data,
       status: 'pending',
-      createdAt: serverTimestamp()
+      createdAt: FieldValue.serverTimestamp()
     });
     return { success: true };
 }
@@ -197,15 +241,18 @@ export async function addReview(data: Omit<Review, 'id' | 'createdAt' | 'status'
  * Fetches the list of zones for Berekum from Firestore.
  */
 export async function getBerekumZones(): Promise<string[]> {
-  const docRef = doc(db, "locations", "berekum");
-  const docSnap = await getDoc(docRef);
+  try {
+    const docRef = adminDb.collection("locations").doc("berekum");
+    const docSnap = await docRef.get();
 
-  if (docSnap.exists() && docSnap.data().zones) {
-    return docSnap.data().zones as string[];
+    if (docSnap.exists && docSnap.data()?.zones) {
+      return docSnap.data()?.zones as string[];
+    }
+  } catch (error) {
+     console.warn(`Could not fetch zones from Firestore. Falling back to mock data. Error:`, error);
   }
-  // Fallback if the document doesn't exist yet
-  return [
-    "Kato", "Jinijini Road", "Zongo", "Market Area",
-    "Presby", "Biadan", "Senase", "Kutre No.1", "Amasu", "Mpatasie",
-  ];
+  
+  // Fallback to mock data if Firestore fails or document doesn't exist
+  const { BEREKUM_ZONES } = await import('./data');
+  return BEREKUM_ZONES;
 }
