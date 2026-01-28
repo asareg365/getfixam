@@ -99,6 +99,11 @@
                 "type": "boolean",
                 "description": "Whether the provider is a featured listing."
             },
+            "featuredUntil": {
+                "type": "string",
+                "format": "date-time",
+                "description": "The timestamp when the featured status expires."
+            },
             "rating": {
                 "type": "number",
                 "description": "The average rating from user reviews."

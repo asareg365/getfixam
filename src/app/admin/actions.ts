@@ -63,3 +63,28 @@ export async function rejectProvider(prevState: any, formData: FormData) {
     return { success: false, error: 'Failed to reject provider.' };
   }
 }
+
+export async function updateFeatureStatus(prevState: any, formData: FormData) {
+  const providerId = formData.get('providerId') as string;
+  const isFeatured = formData.get('isFeatured') === 'on';
+  const featuredUntil = formData.get('featuredUntil') as string | null;
+
+  if (!providerId) {
+    return { success: false, error: 'Provider ID is missing.' };
+  }
+
+  try {
+    const dataToUpdate: { isFeatured: boolean; featuredUntil: Date | null } = {
+      isFeatured,
+      featuredUntil: isFeatured && featuredUntil ? new Date(featuredUntil) : null,
+    };
+    
+    await adminDb.collection('providers').doc(providerId).update(dataToUpdate);
+    revalidatePath('/admin/providers');
+    revalidatePath('/');
+    return { success: true, message: 'Provider feature status updated successfully.' };
+  } catch (error) {
+    console.error('Error updating feature status:', error);
+    return { success: false, error: 'Failed to update provider status.' };
+  }
+}

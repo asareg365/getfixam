@@ -101,6 +101,9 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
       if (data.approvedAt) {
           providerData.approvedAt = data.approvedAt.toDate().toISOString();
       }
+      if (data.featuredUntil) {
+        providerData.featuredUntil = data.featuredUntil.toDate().toISOString();
+      }
       return providerData;
     });
   } catch (error) {
@@ -156,6 +159,9 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
       };
       if (data.approvedAt) {
           providerData.approvedAt = data.approvedAt.toDate().toISOString();
+      }
+      if (data.featuredUntil) {
+        providerData.featuredUntil = data.featuredUntil.toDate().toISOString();
       }
       return providerData;
     }

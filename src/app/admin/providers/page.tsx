@@ -57,6 +57,9 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
      if (data.approvedAt) {
       providerData.approvedAt = data.approvedAt.toDate().toISOString();
     }
+    if (data.featuredUntil) {
+      providerData.featuredUntil = data.featuredUntil.toDate().toISOString();
+    }
     return providerData;
   });
 }

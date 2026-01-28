@@ -34,6 +34,7 @@ export type Provider = {
   reviewCount: number;
   createdAt: string; // ISO 8601 date string
   approvedAt?: string;
+  featuredUntil?: string; // ISO 8601 date string
   imageId: string;
 };
 

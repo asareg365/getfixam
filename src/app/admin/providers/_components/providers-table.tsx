@@ -13,9 +13,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { ManageFeatureDialog } from './manage-feature-dialog';
 
 function ActionButton({ action, children, variant = 'ghost' }: { action: any; children: React.ReactNode, variant?: "ghost" | "link" | "default" | "destructive" | "outline" | "secondary" | null | undefined }) {
     const { pending } = useFormStatus();
@@ -63,6 +65,12 @@ function ProviderActions({ provider }: { provider: Provider }) {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+                <ManageFeatureDialog provider={provider}>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <Star className="mr-2 h-4 w-4" /> Manage Feature
+                    </DropdownMenuItem>
+                </ManageFeatureDialog>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem>Edit</DropdownMenuItem>
                 <DropdownMenuItem>Suspend</DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
