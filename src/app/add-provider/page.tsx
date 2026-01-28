@@ -4,8 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 export default async function AddProviderPage() {
   // Fetch dynamic data for the form from Firestore
-  const categories = await getCategories();
+  const categoriesData = await getCategories();
   const zones = await getBerekumZones();
+
+  // Prepare data for the client component, ensuring it's a plain object
+  const categories = categoriesData.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+  }));
 
   return (
     <div className="container mx-auto px-4 md:px-6 py-12 md:py-20">

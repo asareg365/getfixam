@@ -11,8 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import type { Category } from '@/lib/types';
-
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -25,7 +23,7 @@ function SubmitButton() {
 }
 
 type AddProviderFormProps = {
-    categories: Category[];
+    categories: { id: string; name: string }[];
     zones: string[];
 }
 
