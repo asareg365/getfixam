@@ -34,7 +34,7 @@ export async function getCategories(): Promise<Category[]> {
  */
 export async function getCategoryBySlug(slug: string): Promise<Category | undefined> {
   if (slug === 'all') {
-    return { id: 'all', name: 'All Artisans', slug: 'all', icon: '' };
+    return { id: 'all', name: 'All Artisans', slug: 'all', icon: 'Wrench' };
   }
   try {
     const servicesRef = adminDb.collection("services");
