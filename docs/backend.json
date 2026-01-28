@@ -1,0 +1,129 @@
+{
+  "entities": {
+    "Admin": {
+      "title": "Admin",
+      "description": "An administrator user with special privileges.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The admin's email address."
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the admin.",
+          "enum": ["super_admin", "admin"]
+        },
+        "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The timestamp when the admin was created."
+        }
+      },
+      "required": ["email", "role", "createdAt"]
+    },
+    "Service": {
+        "title": "Service",
+        "description": "A service category offered by providers.",
+        "type": "object",
+        "properties": {
+            "name": {
+                "type": "string",
+                "description": "The name of the service (e.g., Plumber)."
+            },
+            "slug": {
+                "type": "string",
+                "description": "A URL-friendly version of the service name."
+            },
+            "icon": {
+                "type": "string",
+                "description": "The name of the lucide-react icon for the service."
+            },
+            "active": {
+                "type": "boolean",
+                "description": "Whether the service is currently active and shown to users."
+            }
+        },
+        "required": ["name", "slug", "active"]
+    },
+    "Provider": {
+        "title": "Provider",
+        "description": "A service provider or artisan.",
+        "type": "object",
+        "properties": {
+            "name": {
+                "type": "string",
+                "description": "The full name of the provider or business."
+            },
+            "phone": {
+                "type": "string",
+                "description": "The contact phone number."
+            },
+            "whatsapp": {
+                "type": "string",
+                "description": "The contact WhatsApp number."
+            },
+            "serviceId": {
+                "type": "string",
+                "description": "The ID of the service they provide, linking to the 'services' collection."
+            },
+            "location": {
+                "type": "object",
+                "properties": {
+                    "city": {
+                        "type": "string",
+                        "description": "The city where the provider is located."
+                    },
+                    "area": {
+                        "type": "string",
+                        "description": "The specific area or neighborhood within the city."
+                    }
+                },
+                "required": ["city", "area"]
+            },
+            "verified": {
+                "type": "boolean",
+                "description": "Whether the provider has been verified by an admin."
+            },
+            "rating": {
+                "type": "number",
+                "description": "The average rating from user reviews."
+            },
+            "reviewCount": {
+                "type": "number",
+                "description": "The total number of reviews."
+            },
+            "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "The timestamp when the provider was added."
+            }
+        },
+        "required": ["name", "phone", "serviceId", "location", "verified", "createdAt"]
+    }
+  },
+  "auth": {
+    "providers": ["email"]
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": {
+        "$ref": "#/entities/Admin"
+      },
+      "description": "Stores admin user information and roles."
+    },
+    "/services/{serviceId}": {
+        "schema": {
+            "$ref": "#/entities/Service"
+        },
+        "description": "Stores the categories of services offered."
+    },
+    "/providers/{providerId}": {
+        "schema": {
+            "$ref": "#/entities/Provider"
+        },
+        "description": "Stores the profiles of service providers."
+    }
+  }
+}

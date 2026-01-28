@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      // Check if the user's UID exists in the 'admins' collection.
+      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /providers/{providerId} {
+      allow read: if true;
+      // Only admins can create, update, or delete providers.
+      allow write: if isAdmin();
+    }
+
+    match /services/{serviceId} {
+      allow read: if true;
+      // Only admins can create, update, or delete services.
+      allow write: if isAdmin();
+    }
+    
+    match /admins/{adminId} {
+        // Admins can read the admins collection to check roles.
+        allow read: if isAdmin();
+        // Writes are disallowed by default, to be handled by secure backend functions.
+        allow write: if false;
+    }
+
+    match /reviews/{reviewId} {
+        allow read: if true;
+        // Any authenticated user can create a review.
+        allow create: if request.auth != null;
+        // For now, we don't allow editing or deleting reviews for simplicity.
+        allow update, delete: if false;
+    }
+  }
+}
