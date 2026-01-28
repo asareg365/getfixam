@@ -38,7 +38,7 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
   return providerSnapshot.docs.map((doc) => {
     const data = doc.data();
     const service = services.find(s => s.id === data.serviceId);
-    return {
+    const providerData: Provider = {
       id: doc.id,
       name: data.name,
       phone: data.phone,
@@ -52,8 +52,11 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
       serviceId: data.serviceId,
       category: service?.name || data.serviceId || 'N/A',
       createdAt: data.createdAt.toDate().toISOString(),
-      approvedAt: data.approvedAt?.toDate().toISOString(),
     };
+     if (data.approvedAt) {
+      providerData.approvedAt = data.approvedAt.toDate().toISOString();
+    }
+    return providerData;
   });
 }
 

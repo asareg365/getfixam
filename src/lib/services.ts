@@ -81,14 +81,23 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
     return snapshot.docs.map(doc => {
       const data = doc.data();
       const category = categories.find(c => c.id === data.serviceId);
-      const providerData = {
+      const providerData: Provider = {
         id: doc.id,
-        ...data,
+        name: data.name,
         category: category?.name || 'N/A',
+        serviceId: data.serviceId,
+        phone: data.phone,
+        whatsapp: data.whatsapp,
+        location: data.location,
+        status: data.status,
+        verified: data.verified,
+        rating: data.rating,
+        reviewCount: data.reviewCount,
+        imageId: data.imageId,
         createdAt: data.createdAt.toDate().toISOString(),
-      } as Provider;
+      };
       if (data.approvedAt) {
-        providerData.approvedAt = data.approvedAt.toDate().toISOString();
+          providerData.approvedAt = data.approvedAt.toDate().toISOString();
       }
       return providerData;
     });
@@ -127,12 +136,21 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
               categoryName = serviceDocSnap.data()?.name;
           }
       }
-      const providerData = { 
-          id: docSnap.id, 
-          ...data,
-          category: categoryName,
-          createdAt: data.createdAt.toDate().toISOString(),
-      } as Provider;
+      const providerData: Provider = {
+        id: docSnap.id,
+        name: data.name,
+        category: categoryName,
+        serviceId: data.serviceId,
+        phone: data.phone,
+        whatsapp: data.whatsapp,
+        location: data.location,
+        status: data.status,
+        verified: data.verified,
+        rating: data.rating,
+        reviewCount: data.reviewCount,
+        imageId: data.imageId,
+        createdAt: data.createdAt.toDate().toISOString(),
+      };
       if (data.approvedAt) {
           providerData.approvedAt = data.approvedAt.toDate().toISOString();
       }
@@ -164,11 +182,19 @@ export async function getReviewsByProviderId(providerId: string): Promise<Review
 
     if (snapshot.empty) return [];
 
-    return snapshot.docs.map(doc => ({
-        id: doc.id, 
-        ...doc.data(),
-        createdAt: doc.data().createdAt.toDate().toISOString(),
-    } as Review));
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        providerId: data.providerId,
+        userName: data.userName,
+        rating: data.rating,
+        comment: data.comment,
+        userImageId: data.userImageId,
+        status: data.status,
+        createdAt: data.createdAt.toDate().toISOString(),
+      } as Review;
+    });
   } catch (error) {
     console.warn(`Could not fetch reviews for provider "${providerId}" from Firestore. Falling back to mock data. Error:`, error);
     const { REVIEWS } = await import('./data');
