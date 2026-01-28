@@ -9,7 +9,13 @@ export default function Footer() {
           <p className="text-sm text-foreground/60 mb-4 md:mb-0">
             &copy; {currentYear} FixAm Ghana. All rights reserved.
           </p>
-          <div className="flex space-x-6 text-sm">
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
+            <Link href="/provider/login" className="text-foreground/60 hover:text-primary transition-colors">
+              Provider Login
+            </Link>
+            <Link href="/admin/login" className="text-foreground/60 hover:text-primary transition-colors">
+              Admin Login
+            </Link>
             <Link href="/terms" className="text-foreground/60 hover:text-primary transition-colors">
               Terms of Service
             </Link>
