@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState, useState, useEffect } from 'react';
+import { useFormStatus } from 'react-dom';
 import { updateFeatureStatus } from '@/app/admin/actions';
 import type { Provider } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -42,7 +42,7 @@ export function ManageFeatureDialog({ provider, children }: ManageFeatureDialogP
   );
 
   const initialState = { success: false, error: undefined, message: undefined };
-  const [state, formAction] = useFormState(updateFeatureStatus, initialState);
+  const [state, formAction] = useActionState(updateFeatureStatus, initialState);
 
   useEffect(() => {
     if (state.success && state.message) {

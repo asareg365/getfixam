@@ -1,7 +1,7 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
-import { useEffect, useRef } from 'react';
+import { useFormStatus } from 'react-dom';
+import { useActionState, useEffect, useRef } from 'react';
 import { addProviderAction } from '@/app/actions';
 
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,7 @@ type AddProviderFormProps = {
 }
 
 export default function AddProviderForm({ categories, zones }: AddProviderFormProps) {
-  const [state, formAction] = useFormState(addProviderAction, {
+  const [state, formAction] = useActionState(addProviderAction, {
     errors: {},
     success: false,
     message: '',

@@ -4,8 +4,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { approveProvider, rejectProvider } from '@/app/admin/actions';
-import { useFormState, useFormStatus } from 'react-dom';
-import { useEffect } from 'react';
+import { useFormStatus } from 'react-dom';
+import { useActionState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Check, X, Loader2, MoreHorizontal, Star } from 'lucide-react';
 import {
@@ -27,8 +27,8 @@ function ActionButton({ action, children, variant = 'ghost' }: { action: any; ch
 function ProviderActions({ provider }: { provider: Provider }) {
     const { toast } = useToast();
     
-    const [approveState, approveAction] = useFormState(approveProvider, { success: false, error: undefined, message: undefined });
-    const [rejectState, rejectAction] = useFormState(rejectProvider, { success: false, error: undefined, message: undefined });
+    const [approveState, approveAction] = useActionState(approveProvider, { success: false, error: undefined, message: undefined });
+    const [rejectState, rejectAction] = useActionState(rejectProvider, { success: false, error: undefined, message: undefined });
 
     useEffect(() => {
         if (approveState.error) toast({ title: 'Error', description: approveState.error, variant: 'destructive' });

@@ -1,7 +1,7 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
-import { useEffect, useRef, useState } from 'react';
+import { useFormStatus } from 'react-dom';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 import { addReviewAction } from '@/app/actions';
@@ -54,7 +54,7 @@ function StarRatingInput({ value, onChange }: { value: number; onChange: (value:
 export default function AddReviewForm({ provider }: { provider: Provider }) {
   const [rating, setRating] = useState(0);
 
-  const [state, formAction] = useFormState(addReviewAction, {
+  const [state, formAction] = useActionState(addReviewAction, {
     errors: {},
     success: false,
     message: '',
