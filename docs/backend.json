@@ -249,6 +249,42 @@
         "timestamp": { "type": "string", "format": "date-time" }
       },
       "required": ["phone", "message", "status", "timestamp"]
+    },
+    "Prediction": {
+        "title": "Demand Prediction",
+        "description": "Daily demand prediction based on historical data.",
+        "type": "object",
+        "properties": {
+            "topService": {
+                "type": "array",
+                "items": [
+                    { "type": "string" },
+                    { "type": "number" }
+                ],
+                "description": "The predicted top service and its count."
+            },
+            "topArea": {
+                "type": "array",
+                "items": [
+                    { "type": "string" },
+                    { "type": "number" }
+                ],
+                "description": "The predicted top area and its count."
+            },
+            "confidence": {
+                "type": "string",
+                "description": "The confidence level of the prediction."
+            },
+            "basedOnDays": {
+                "type": "number",
+                "description": "Number of days the prediction is based on."
+            },
+            "generatedAt": {
+                "type": "string",
+                "format": "date-time"
+            }
+        },
+        "required": ["topService", "topArea", "basedOnDays", "generatedAt"]
     }
   },
   "auth": {
@@ -298,6 +334,12 @@
     "/bot_logs/{logId}": {
       "schema": { "$ref": "#/entities/BotLog" },
       "description": "Stores logs of messages from the WhatsApp bot for analytics."
+    },
+    "/predictions/{predictionId}": {
+      "schema": {
+        "$ref": "#/entities/Prediction"
+      },
+      "description": "Stores generated demand predictions. Document ID is usually 'tomorrow'."
     }
   }
 }

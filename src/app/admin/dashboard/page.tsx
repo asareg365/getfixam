@@ -3,6 +3,7 @@ import { Users, List, CheckCircle, Package, MessageSquare, AlertCircle } from 'l
 import { getDashboardData } from '@/lib/services';
 import { DashboardCharts } from './_components/dashboard-charts';
 import { HeatmapList } from './_components/heatmap-list';
+import { PredictionCard } from './_components/prediction-card';
 
 type StatCardProps = {
     title: string;
@@ -73,14 +74,15 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
             <DashboardCharts 
                 serviceData={data.serviceChartData}
                 locationData={data.locationChartData}
             />
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-1 space-y-6">
+             <PredictionCard prediction={data.prediction} />
              <HeatmapList data={data.locationChartData} />
         </div>
       </div>

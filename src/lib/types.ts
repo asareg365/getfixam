@@ -58,3 +58,11 @@ export type Request = {
   status: 'pending' | 'assigned' | 'completed' | 'cancelled';
   createdAt: string; // ISO 8601 date string
 };
+
+export type Prediction = {
+  topService: [string, number];
+  topArea: [string, number];
+  confidence: string;
+  basedOnDays: number;
+  generatedAt: string;
+};

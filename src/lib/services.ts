@@ -1,6 +1,6 @@
 import { adminDb } from './firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { Category, Provider, Review, Request } from './types';
+import type { Category, Provider, Review, Request, Prediction } from './types';
 
 /**
  * Fetches all active categories from Firestore.
@@ -299,6 +299,7 @@ export async function getDashboardData() {
         let failedMessages = 0;
         let serviceChartData: { name: string; total: number }[] = [];
         let locationChartData: { name: string; total: number }[] = [];
+        let prediction: Prediction | null = null;
 
         // Attempt to fetch pre-computed daily stats
         const today = new Date().toISOString().split('T')[0];
@@ -348,6 +349,18 @@ export async function getDashboardData() {
             failedMessages = logsSnap.docs.filter(doc => doc.data().status === 'failed').length;
         }
 
+        // Fetch prediction
+        const predictionRef = adminDb.collection("predictions").doc("tomorrow");
+        const predictionSnap = await predictionRef.get();
+        if (predictionSnap.exists()) {
+            const predictionData = predictionSnap.data() as any;
+            prediction = {
+                ...predictionData,
+                generatedAt: predictionData.generatedAt.toDate().toISOString(),
+            };
+        }
+
+
         return {
             totalProviders,
             pendingProviders,
@@ -357,6 +370,7 @@ export async function getDashboardData() {
             failedMessages,
             serviceChartData,
             locationChartData,
+            prediction,
         };
 
     } catch (error) {
@@ -383,6 +397,7 @@ export async function getDashboardData() {
             failedMessages: 0, // No mock data for this
             serviceChartData: Object.entries(serviceCounts).map(([name, total]) => ({ name, total })),
             locationChartData: Object.entries(locationCounts).map(([name, total]) => ({ name, total })),
+            prediction: null,
         };
     }
 }
