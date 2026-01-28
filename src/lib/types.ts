@@ -17,6 +17,7 @@ export type Service = {
 
 export type Provider = {
   id: string;
+  authUid?: string;
   name: string;
   category: string;
   serviceId: string;

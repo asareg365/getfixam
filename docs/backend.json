@@ -52,6 +52,10 @@
         "description": "A service provider or artisan.",
         "type": "object",
         "properties": {
+            "authUid": {
+              "type": "string",
+              "description": "The Firebase Authentication UID of the provider."
+            },
             "name": {
                 "type": "string",
                 "description": "The full name of the provider or business."
@@ -184,7 +188,7 @@
     }
   },
   "auth": {
-    "providers": ["email"]
+    "providers": ["email", "phone"]
   },
   "firestore": {
     "/admins/{adminId}": {

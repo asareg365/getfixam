@@ -9,8 +9,9 @@ service cloud.firestore {
 
     match /providers/{providerId} {
       allow read: if true;
-      // Only admins can create, update, or delete providers.
-      allow write: if isAdmin();
+      allow create, delete: if isAdmin();
+      // Allow provider to update their own record, or any admin to update it.
+      allow update: if isAdmin() || (request.auth != null && request.auth.uid == resource.data.authUid);
     }
 
     match /services/{serviceId} {
