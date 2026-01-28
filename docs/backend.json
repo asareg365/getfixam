@@ -43,9 +43,26 @@
             "active": {
                 "type": "boolean",
                 "description": "Whether the service is currently active and shown to users."
+            },
+            "basePrice": {
+                "type": "number",
+                "description": "The base price for the service in GHS."
+            },
+            "currency": {
+                "type": "string",
+                "description": "The currency for the price.",
+                "enum": ["GHS"]
+            },
+            "maxSurge": {
+                "type": "number",
+                "description": "The maximum surge multiplier for this service (e.g., 1.5)."
+            },
+            "minSurge": {
+                "type": "number",
+                "description": "The minimum surge multiplier for this service (e.g., 1.0)."
             }
         },
-        "required": ["name", "slug", "active"]
+        "required": ["name", "slug", "active", "basePrice", "currency"]
     },
     "Provider": {
         "title": "Provider",
@@ -317,7 +334,9 @@
           "description": "List of artisan IDs who have been assigned this job."
         },
         "createdAt": { "type": "string", "format": "date-time" },
-        "expiresAt": { "type": "string", "format": "date-time", "description": "Timestamp for when the current assignment expires." }
+        "expiresAt": { "type": "string", "format": "date-time", "description": "Timestamp for when the current assignment expires." },
+        "price": { "type": "number", "description": "The final calculated price for the job." },
+        "surgeMultiplier": { "type": "number", "description": "The surge multiplier applied to this job." }
       },
       "required": ["serviceType", "area", "status", "createdAt"]
     },
@@ -407,5 +426,3 @@
     }
   }
 }
-
-    

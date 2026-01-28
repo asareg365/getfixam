@@ -13,6 +13,10 @@ export type Service = {
   slug: string;
   icon: string;
   active: boolean;
+  basePrice: number;
+  currency: string;
+  maxSurge?: number;
+  minSurge?: number;
 };
 
 export type Provider = {
@@ -83,6 +87,8 @@ export type Job = {
   attemptedArtisans: string[]; // array of artisanIds
   createdAt: string;
   expiresAt: string;
+  price?: number;
+  surgeMultiplier?: number;
 };
 
 export type ReassignmentLog = {
@@ -93,5 +99,3 @@ export type ReassignmentLog = {
   reason: 'timeout' | 'rejected';
   timestamp: string;
 };
-
-    
