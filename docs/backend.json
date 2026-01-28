@@ -134,6 +134,44 @@
         }
       },
       "required": ["city", "zones"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "A user review for a service provider.",
+      "type": "object",
+      "properties": {
+        "providerId": {
+          "type": "string",
+          "description": "The ID of the provider being reviewed."
+        },
+        "userName": {
+          "type": "string",
+          "description": "The name of the user leaving the review."
+        },
+        "rating": {
+          "type": "number",
+          "description": "The star rating from 1 to 5."
+        },
+        "comment": {
+          "type": "string",
+          "description": "The text content of the review."
+        },
+        "userImageId": {
+          "type": "string",
+          "description": "An ID for a placeholder user image."
+        },
+        "status": {
+          "type": "string",
+          "description": "The moderation status of the review.",
+          "enum": ["pending", "approved", "rejected"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the review was submitted."
+        }
+      },
+      "required": ["providerId", "userName", "rating", "comment", "status", "createdAt"]
     }
   },
   "auth": {
@@ -163,6 +201,12 @@
         "$ref": "#/entities/Location"
       },
       "description": "Stores location data, like zones for a city. The document ID would typically be the city name, e.g., 'berekum'."
+    },
+    "/reviews/{reviewId}": {
+      "schema": {
+        "$ref": "#/entities/Review"
+      },
+      "description": "Stores user-submitted reviews for providers."
     }
   }
 }

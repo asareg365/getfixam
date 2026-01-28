@@ -44,4 +44,5 @@ export type Review = {
   comment: string;
   createdAt: string; // ISO 8601 date string
   userImageId: string;
+  status: 'pending' | 'approved' | 'rejected';
 };

@@ -28,10 +28,19 @@ service cloud.firestore {
 
     match /reviews/{reviewId} {
         allow read: if true;
-        // Any authenticated user can create a review.
-        allow create: if request.auth != null;
-        // For now, we don't allow editing or deleting reviews for simplicity.
-        allow update, delete: if false;
+
+        // Allow anyone to create a review, but enforce the data shape.
+        // New reviews MUST have a 'pending' status.
+        allow create: if request.resource.data.status == 'pending'
+                      && request.resource.data.rating > 0 && request.resource.data.rating <= 5
+                      && request.resource.data.comment is string && request.resource.data.comment.size() > 0
+                      && request.resource.data.userName is string && request.resource.data.userName.size() > 0;
+        
+        // Only admins can approve or reject reviews.
+        allow update: if isAdmin();
+        
+        // Disallow deletion for now to keep a record.
+        allow delete: if false;
     }
   }
 }

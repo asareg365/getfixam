@@ -1,167 +1,211 @@
-// IMPORTANT: This file uses mock data for demonstration.
-// To use Firebase, you'll need to replace the logic in each function
-// with actual Firebase queries, as shown in the comments.
-
-import { collection, getDocs, query, where, doc, getDoc, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, getDoc, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
 import { db } from "./firebase";
-import { CATEGORIES, PROVIDERS, REVIEWS } from './data';
 import type { Category, Provider, Review } from './types';
+import { Wrench, Zap, Smartphone, Car, Hammer, Scissors, Sparkles, Shirt, Tv2, type LucideIcon } from 'lucide-react';
 
-// Simulate network delay
-const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+// Helper to map icon string from DB to Lucide component
+const iconMap: { [key: string]: LucideIcon } = {
+  'Wrench': Wrench,
+  'Zap': Zap,
+  'Smartphone': Smartphone,
+  'Car': Car,
+  'Hammer': Hammer,
+  'Scissors': Scissors,
+  'Sparkles': Sparkles,
+  'Shirt': Shirt,
+  'Tv2': Tv2,
+};
+const getIcon = (name: string): LucideIcon => iconMap[name] || Wrench;
+
 
 /**
- * Fetches all categories.
+ * Fetches all active categories from Firestore.
  */
 export async function getCategories(): Promise<Category[]> {
-  await delay(100);
-  return CATEGORIES;
-  /*
-  // FIREBASE IMPLEMENTATION:
-  const q = query(collection(db, "categories"));
+  const servicesRef = collection(db, "services");
+  const q = query(servicesRef, where("active", "==", true));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
-  */
+  
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      name: data.name,
+      slug: data.slug,
+      icon: getIcon(data.icon),
+    } as Category;
+  });
 }
 
 /**
- * Fetches a category by its slug.
+ * Fetches a category by its slug from Firestore.
  */
 export async function getCategoryBySlug(slug: string): Promise<Category | undefined> {
-  await delay(100);
   if (slug === 'all') {
     return { id: 'all', name: 'All Artisans', slug: 'all', icon: () => null };
   }
-  return CATEGORIES.find(c => c.slug === slug);
-  /*
-  // FIREBASE IMPLEMENTATION:
-  const q = query(collection(db, "categories"), where("slug", "==", slug));
+
+  const servicesRef = collection(db, "services");
+  const q = query(servicesRef, where("slug", "==", slug));
   const snapshot = await getDocs(q);
+  
   if (snapshot.empty) {
     return undefined;
   }
+  
   const docData = snapshot.docs[0];
-  return { id: docData.id, ...docData.data() } as Category;
-  */
+  const data = docData.data();
+  return { 
+      id: docData.id, 
+      name: data.name,
+      slug: data.slug,
+      icon: getIcon(data.icon),
+  } as Category;
 }
 
-
 /**
- * Fetches all providers, optionally filtering by category.
+ * Fetches approved providers from Firestore, optionally filtering by category slug.
  */
 export async function getProviders(categorySlug?: string): Promise<Provider[]> {
-  await delay(200);
-  // Only show approved providers on the public site
-  const approvedProviders = PROVIDERS.filter(p => p.status === 'approved');
-
-  if (!categorySlug || categorySlug === 'all') {
-    return approvedProviders;
-  }
-  const category = await getCategoryBySlug(categorySlug);
-  if (!category) return [];
-
-  // This logic is based on the proposal: always filter for Berekum.
-  return approvedProviders.filter(p => p.category === category.name && p.location.city === 'Berekum');
-  /*
-  // FIREBASE IMPLEMENTATION:
-  let q;
   const providersRef = collection(db, "providers");
-  const constraints = [where("status", "==", "approved"), where("location.city", "==", "Berekum")];
+  
+  const constraints = [
+      where("status", "==", "approved"), 
+      where("location.city", "==", "Berekum")
+  ];
 
   if (categorySlug && categorySlug !== 'all') {
     const category = await getCategoryBySlug(categorySlug);
     if (!category) return [];
-    constraints.push(where("category", "==", category.name));
+    constraints.push(where("serviceId", "==", category.id));
   }
   
-  q = query(providersRef, ...constraints);
+  const q = query(providersRef, ...constraints);
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Provider));
-  */
+  const categories = await getCategories();
+  
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    const category = categories.find(c => c.id === data.serviceId);
+    return {
+      id: doc.id,
+      ...data,
+      category: category?.name || 'N/A',
+      createdAt: data.createdAt.toDate().toISOString(),
+      approvedAt: data.approvedAt?.toDate().toISOString(),
+    } as Provider;
+  });
 }
 
-
 /**
- * Fetches a single provider by its ID.
+ * Fetches a single approved provider by its ID from Firestore.
  */
 export async function getProviderById(id: string): Promise<Provider | undefined> {
-  await delay(150);
-  // Only return provider if they are approved for public viewing
-  const provider = PROVIDERS.find(p => p.id === id);
-  return provider?.status === 'approved' ? provider : undefined;
-  /*
-  // FIREBASE IMPLEMENTATION:
   const docRef = doc(db, "providers", id);
   const docSnap = await getDoc(docRef);
+
   if (docSnap.exists()) {
-    const provider = { id: docSnap.id, ...docSnap.data() } as Provider;
-    // Only return provider if they are approved
-    return provider.status === 'approved' ? provider : undefined;
+    const data = docSnap.data();
+    if (data.status !== 'approved') {
+        return undefined;
+    }
+    
+    let categoryName = 'N/A';
+    if (data.serviceId) {
+        const serviceDocRef = doc(db, "services", data.serviceId);
+        const serviceDocSnap = await getDoc(serviceDocRef);
+        if (serviceDocSnap.exists()) {
+            categoryName = serviceDocSnap.data().name;
+        }
+    }
+
+    return { 
+        id: docSnap.id, 
+        ...data,
+        category: categoryName,
+        createdAt: data.createdAt.toDate().toISOString(),
+        approvedAt: data.approvedAt?.toDate().toISOString(),
+    } as Provider;
   }
   return undefined;
-  */
 }
 
 /**
- * Fetches all reviews for a specific provider.
+ * Fetches all approved reviews for a specific provider from Firestore.
  */
 export async function getReviewsByProviderId(providerId: string): Promise<Review[]> {
-  await delay(250);
-  return REVIEWS.filter(r => r.providerId === providerId).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  /*
-  // FIREBASE IMPLEMENTATION:
-  const q = query(collection(db, "reviews"), where("providerId", "==", providerId));
+  const reviewsRef = collection(db, "reviews");
+  const q = query(reviewsRef, 
+      where("providerId", "==", providerId), 
+      where("status", "==", "approved"),
+      orderBy("createdAt", "desc")
+  );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review)).sort((a,b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-  */
+  
+  return snapshot.docs.map(doc => ({
+      id: doc.id, 
+      ...doc.data(),
+      createdAt: doc.data().createdAt.toDate().toISOString(),
+  } as Review));
 }
 
 /**
- * Adds a new provider to the database.
- * NOTE: In a real app, this would be a protected admin-only function.
+ * Adds a new provider to Firestore with 'pending' status.
  */
-export async function addProvider(data: Omit<Provider, 'id' | 'rating' | 'reviewCount' | 'createdAt' | 'serviceId'>) {
-    console.log("Adding provider:", data);
-    const category = CATEGORIES.find(c => c.name === data.category);
+export async function addProvider(
+    data: { name: string; category: string; phone: string; whatsapp: string; location: object; imageId: string; }
+) {
+    const servicesRef = collection(db, "services");
+    const q = query(servicesRef, where("name", "==", data.category));
+    const serviceSnapshot = await getDocs(q);
 
-    const newProvider: Provider = {
-        id: (PROVIDERS.length + 1).toString(),
-        ...data,
-        serviceId: category?.id || '',
-        rating: 0,
-        reviewCount: 0,
-        createdAt: new Date().toISOString(),
-    };
+    let serviceId = '';
+    if (!serviceSnapshot.empty) {
+        serviceId = serviceSnapshot.docs[0].id;
+    }
 
-    PROVIDERS.unshift(newProvider); // Add to the beginning of the array for visibility
-    /*
-    // FIREBASE IMPLEMENTATION:
-     const category = CATEGORIES.find(c => c.name === data.category);
-     await addDoc(collection(db, 'providers'), {
-      ...data,
-      serviceId: category?.id || '',
+    await addDoc(collection(db, 'providers'), {
+      name: data.name,
+      phone: data.phone,
+      whatsapp: data.whatsapp,
+      location: data.location,
+      serviceId: serviceId,
+      imageId: data.imageId,
+      status: "pending",
+      verified: false,
       rating: 0,
       reviewCount: 0,
       createdAt: serverTimestamp()
     });
-    */
-    return { success: true, message: "Provider added successfully!" };
+    
+    return { success: true };
 }
 
 /**
- * Adds a new review for a provider.
- * NOTE: In a real app, you might want to update the provider's average rating here too.
+ * Adds a new review to Firestore with 'pending' status for moderation.
  */
-export async function addReview(data: Omit<Review, 'id' | 'createdAt'>) {
-    console.log("Adding review:", data);
-    // This is where you would add the document to Firestore
-    /*
-    // FIREBASE IMPLEMENTATION:
+export async function addReview(data: Omit<Review, 'id' | 'createdAt' | 'status'>) {
     await addDoc(collection(db, 'reviews'), {
       ...data,
+      status: 'pending',
       createdAt: serverTimestamp()
     });
-    // You would also need a transaction or a cloud function to update the provider's rating and reviewCount.
-    */
-    return { success: true, message: "Thank you for your review!" };
+    return { success: true };
+}
+
+/**
+ * Fetches the list of zones for Berekum from Firestore.
+ */
+export async function getBerekumZones(): Promise<string[]> {
+  const docRef = doc(db, "locations", "berekum");
+  const docSnap = await getDoc(docRef);
+
+  if (docSnap.exists() && docSnap.data().zones) {
+    return docSnap.data().zones as string[];
+  }
+  // Fallback if the document doesn't exist yet
+  return [
+    "Kato", "Jinijini Road", "Zongo", "Market Area",
+    "Presby", "Biadan", "Senase", "Kutre No.1", "Amasu", "Mpatasie",
+  ];
 }
