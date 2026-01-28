@@ -1,22 +1,6 @@
 import { adminDb } from './firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { Category, Provider, Review } from './types';
-import { Wrench, Zap, Smartphone, Car, Hammer, Scissors, Sparkles, Shirt, Tv2, type LucideIcon } from 'lucide-react';
-
-// Helper to map icon string from DB to Lucide component
-const iconMap: { [key: string]: LucideIcon } = {
-  'Wrench': Wrench,
-  'Zap': Zap,
-  'Smartphone': Smartphone,
-  'Car': Car,
-  'Hammer': Hammer,
-  'Scissors': Scissors,
-  'Sparkles': Sparkles,
-  'Shirt': Shirt,
-  'Tv2': Tv2,
-};
-const getIcon = (name: string): LucideIcon => iconMap[name] || Wrench;
-
 
 /**
  * Fetches all active categories from Firestore.
@@ -35,7 +19,7 @@ export async function getCategories(): Promise<Category[]> {
         id: doc.id,
         name: data.name,
         slug: data.slug,
-        icon: getIcon(data.icon),
+        icon: data.icon,
       } as Category;
     });
   } catch (error) {
@@ -50,7 +34,7 @@ export async function getCategories(): Promise<Category[]> {
  */
 export async function getCategoryBySlug(slug: string): Promise<Category | undefined> {
   if (slug === 'all') {
-    return { id: 'all', name: 'All Artisans', slug: 'all', icon: () => null };
+    return { id: 'all', name: 'All Artisans', slug: 'all', icon: '' };
   }
   try {
     const servicesRef = adminDb.collection("services");
@@ -67,7 +51,7 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
         id: docData.id, 
         name: data.name,
         slug: data.slug,
-        icon: getIcon(data.icon),
+        icon: data.icon,
     } as Category;
   } catch (error) {
     console.warn(`Could not fetch category with slug "${slug}" from Firestore. Falling back to mock data. Error:`, error);
@@ -188,8 +172,7 @@ export async function getReviewsByProviderId(providerId: string): Promise<Review
   } catch (error) {
     console.warn(`Could not fetch reviews for provider "${providerId}" from Firestore. Falling back to mock data. Error:`, error);
     const { REVIEWS } = await import('./data');
-    // This is a simplified fallback. Mock reviews don't have status.
-    return REVIEWS.filter(r => r.providerId === providerId);
+    return REVIEWS.filter(r => r.providerId === providerId && r.status === 'approved');
   }
 }
 

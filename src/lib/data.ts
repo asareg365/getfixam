@@ -1,16 +1,15 @@
-import { Wrench, Zap, Smartphone, Car, Hammer, Scissors, Sparkles, Shirt, Tv2 } from 'lucide-react';
 import type { Category, Provider, Review } from './types';
 
 export const CATEGORIES: Category[] = [
-  { id: 'plumber', name: 'Plumber', slug: 'plumber', icon: Wrench },
-  { id: 'electrician', name: 'Electrician', slug: 'electrician', icon: Zap },
-  { id: 'phone-repair', name: 'Phone Repair', slug: 'phone-repair', icon: Smartphone },
-  { id: 'mechanic', name: 'Mechanic', slug: 'mechanic', icon: Car },
-  { id: 'carpenter', name: 'Carpenter', slug: 'carpenter', icon: Hammer },
-  { id: 'hairdresser', name: 'Hairdresser', slug: 'hairdresser', icon: Scissors },
-  { id: 'beautician', name: 'Beautician', slug: 'beautician', icon: Sparkles },
-  { id: 'fashion-designer', name: 'Fashion Designer', slug: 'fashion-designer', icon: Shirt },
-  { id: 'tv-repair', name: 'TV Repair', slug: 'tv-repair', icon: Tv2 },
+  { id: 'plumber', name: 'Plumber', slug: 'plumber', icon: 'Wrench' },
+  { id: 'electrician', name: 'Electrician', slug: 'electrician', icon: 'Zap' },
+  { id: 'phone-repair', name: 'Phone Repair', slug: 'phone-repair', icon: 'Smartphone' },
+  { id: 'mechanic', name: 'Mechanic', slug: 'mechanic', icon: 'Car' },
+  { id: 'carpenter', name: 'Carpenter', slug: 'carpenter', icon: 'Hammer' },
+  { id: 'hairdresser', name: 'Hairdresser', slug: 'hairdresser', icon: 'Scissors' },
+  { id: 'beautician', name: 'Beautician', slug: 'beautician', icon: 'Sparkles' },
+  { id: 'fashion-designer', name: 'Fashion Designer', slug: 'fashion-designer', icon: 'Shirt' },
+  { id: 'tv-repair', name: 'TV Repair', slug: 'tv-repair', icon: 'Tv2' },
 ];
 
 export const BEREKUM_ZONES = [
@@ -157,7 +156,8 @@ export const REVIEWS: Review[] = [
     rating: 5,
     comment: 'Very neat work, came on time and fixed my faulty socket. Highly recommended!',
     createdAt: '2023-10-05T10:00:00Z',
-    userImageId: 'user1'
+    userImageId: 'user1',
+    status: 'approved'
   },
   {
     id: '2',
@@ -166,7 +166,8 @@ export const REVIEWS: Review[] = [
     rating: 4,
     comment: 'Good service, but was a bit late. The work itself was professional.',
     createdAt: '2023-09-28T15:20:00Z',
-    userImageId: 'user2'
+    userImageId: 'user2',
+    status: 'approved'
   },
   {
     id: '3',
@@ -175,7 +176,8 @@ export const REVIEWS: Review[] = [
     rating: 5,
     comment: 'Adjoa is the best plumber in Berekum! Fixed my leaking pipe in no time.',
     createdAt: '2023-11-01T12:00:00Z',
-    userImageId: 'user3'
+    userImageId: 'user3',
+    status: 'approved'
   },
   {
     id: '4',
@@ -184,7 +186,8 @@ export const REVIEWS: Review[] = [
     rating: 5,
     comment: 'My phone screen was shattered. iFix made it look brand new. Fast and affordable.',
     createdAt: '2023-10-20T18:00:00Z',
-    userImageId: 'user4'
+    userImageId: 'user4',
+    status: 'approved'
   },
   {
     id: '5',
@@ -193,7 +196,8 @@ export const REVIEWS: Review[] = [
     rating: 5,
     comment: 'Best phone repair shop in town. Trustworthy and skilled.',
     createdAt: '2023-11-10T11:30:00Z',
-    userImageId: 'user5'
+    userImageId: 'user5',
+    status: 'approved'
   },
   {
     id: '6',
@@ -202,6 +206,7 @@ export const REVIEWS: Review[] = [
     rating: 5,
     comment: 'Honest and reliable mechanic. Kofi knows his stuff.',
     createdAt: '2023-08-15T14:45:00Z',
-    userImageId: 'user6'
+    userImageId: 'user6',
+    status: 'approved'
   }
 ];

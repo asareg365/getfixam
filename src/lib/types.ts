@@ -4,7 +4,7 @@ export type Category = {
   id: string;
   name: string;
   slug: string;
-  icon: LucideIcon | any; // Can be LucideIcon or a string for emoji
+  icon: string;
 };
 
 export type Service = {
