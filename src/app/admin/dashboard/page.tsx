@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, List, CheckCircle, Package, MessageSquare, AlertCircle } from 'lucide-react';
 import { getDashboardData } from '@/lib/services';
 import { DashboardCharts } from './_components/dashboard-charts';
+import { HeatmapList } from './_components/heatmap-list';
 
 type StatCardProps = {
     title: string;
@@ -72,10 +73,17 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <DashboardCharts 
-        serviceData={data.serviceChartData}
-        locationData={data.locationChartData}
-      />
+      <div className="grid gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+            <DashboardCharts 
+                serviceData={data.serviceChartData}
+                locationData={data.locationChartData}
+            />
+        </div>
+        <div className="lg:col-span-2">
+             <HeatmapList data={data.locationChartData} />
+        </div>
+      </div>
     </div>
   );
 }

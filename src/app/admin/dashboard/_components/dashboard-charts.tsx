@@ -38,17 +38,17 @@ export function DashboardCharts({ serviceData, locationData }: DashboardChartsPr
   );
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div className="grid gap-6 md:grid-cols-1">
       <Card>
         <CardHeader>
           <CardTitle>Requests by Service</CardTitle>
           <CardDescription>A breakdown of user requests per service category.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={serviceChartConfig} className="min-h-[200px] w-full">
+          <ChartContainer config={serviceChartConfig} className="min-h-[300px] w-full">
             <BarChart accessibilityLayer data={serviceData}>
                 <CartesianGrid vertical={false} />
-                <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
+                <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(value) => value.slice(0, 10)} />
                 <ChartTooltip
                     cursor={false}
                     content={<ChartTooltipContent indicator="line" />}
@@ -67,7 +67,7 @@ export function DashboardCharts({ serviceData, locationData }: DashboardChartsPr
         <CardContent className="flex-1 pb-0">
           <ChartContainer
             config={locationChartConfig}
-            className="mx-auto aspect-square max-h-[250px]"
+            className="mx-auto aspect-square max-h-[300px]"
           >
             <PieChart>
               <ChartTooltip
