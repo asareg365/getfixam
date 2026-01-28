@@ -278,51 +278,91 @@ export async function getBerekumZones(): Promise<string[]> {
 
 /**
  * Fetches all data needed for the admin dashboard.
+ * It prioritizes fetching pre-computed daily stats for efficiency.
+ * If daily stats are not available, it falls back to direct queries.
  */
 export async function getDashboardData() {
     try {
-        const [providersSnap, servicesSnap, requestsSnap] = await Promise.all([
+        // Fetch provider and service stats directly as they are not part of daily stats
+        const [providersSnap, servicesSnap] = await Promise.all([
             adminDb.collection('providers').get(),
             adminDb.collection('services').where('active', '==', true).get(),
-            adminDb.collection('requests').get()
         ]);
 
-        // Aggregate provider data
         const totalProviders = providersSnap.size;
         const pendingProviders = providersSnap.docs.filter(doc => doc.data().status === 'pending').length;
-
-        // Aggregate service data
         const activeServices = servicesSnap.size;
 
-        // Aggregate request data
-        const totalRequests = requestsSnap.size;
-        const requests = requestsSnap.docs.map(doc => doc.data() as Omit<Request, 'id' | 'createdAt'>);
+        // Variables for stats
+        let totalRequests = 0;
+        let whatsappMessages = 0;
+        let failedMessages = 0;
+        let serviceChartData: { name: string; total: number }[] = [];
+        let locationChartData: { name: string; total: number }[] = [];
 
-        const serviceCounts = requests.reduce((acc, req) => {
-            acc[req.serviceType] = (acc[req.serviceType] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-
-        const locationCounts = requests.reduce((acc, req) => {
-            acc[req.location] = (acc[req.location] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
+        // Attempt to fetch pre-computed daily stats
+        const today = new Date().toISOString().split('T')[0];
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
         
-        const serviceChartData = Object.entries(serviceCounts).map(([name, total]) => ({ name, total }));
-        const locationChartData = Object.entries(locationCounts).map(([name, total]) => ({ name, total }));
+        const todayStatsRef = adminDb.collection("daily_stats").doc(today);
+        let statsSnap = await todayStatsRef.get();
+
+        if (!statsSnap.exists()) {
+            const yesterdayStatsRef = adminDb.collection("daily_stats").doc(yesterday);
+            statsSnap = await yesterdayStatsRef.get();
+        }
+
+        if (statsSnap.exists()) {
+            const data = statsSnap.data()!;
+            totalRequests = data.totalRequests || 0;
+            whatsappMessages = data.whatsappMessages || 0;
+            failedMessages = data.failedMessages || 0;
+            
+            serviceChartData = Object.entries(data.services || {}).map(([name, total]) => ({ name, total: total as number }));
+            locationChartData = Object.entries(data.locations || {}).map(([name, total]) => ({ name, total: total as number }));
+
+        } else {
+            // Fallback to direct queries if no daily stats are found
+            console.warn(`Daily stats for ${today} or ${yesterday} not found. Falling back to direct queries.`);
+            
+            const [requestsSnap, logsSnap] = await Promise.all([
+                adminDb.collection('requests').get(),
+                adminDb.collection('bot_logs').get(), // Assuming bot_logs collection exists
+            ]);
+
+            totalRequests = requestsSnap.size;
+            const requests = requestsSnap.docs.map(doc => doc.data() as Omit<Request, 'id' | 'createdAt'>);
+            const serviceCounts = requests.reduce((acc, req) => {
+                acc[req.serviceType] = (acc[req.serviceType] || 0) + 1;
+                return acc;
+            }, {} as Record<string, number>);
+            const locationCounts = requests.reduce((acc, req) => {
+                acc[req.location] = (acc[req.location] || 0) + 1;
+                return acc;
+            }, {} as Record<string, number>);
+            serviceChartData = Object.entries(serviceCounts).map(([name, total]) => ({ name, total }));
+            locationChartData = Object.entries(locationCounts).map(([name, total]) => ({ name, total }));
+
+            // Stats from bot_logs
+            whatsappMessages = logsSnap.size;
+            failedMessages = logsSnap.docs.filter(doc => doc.data().status === 'failed').length;
+        }
 
         return {
             totalProviders,
             pendingProviders,
             activeServices,
             totalRequests,
+            whatsappMessages,
+            failedMessages,
             serviceChartData,
             locationChartData,
         };
 
     } catch (error) {
-        console.warn('Could not fetch dashboard data from Firestore. Falling back to mock data.');
-        const { PROVIDERS, CATEGORIES, REQUESTS, BEREKUM_ZONES } = await import('./data');
+        console.warn('Could not fetch dashboard data from Firestore. Falling back to mock data.', error);
+        // Fallback to mock data from the original function
+        const { PROVIDERS, CATEGORIES, REQUESTS } = await import('./data');
         
         const serviceCounts = REQUESTS.reduce((acc, req) => {
             acc[req.serviceType] = (acc[req.serviceType] || 0) + 1;
@@ -339,6 +379,8 @@ export async function getDashboardData() {
             pendingProviders: PROVIDERS.filter(p => p.status === 'pending').length,
             activeServices: CATEGORIES.length,
             totalRequests: REQUESTS.length,
+            whatsappMessages: 0, // No mock data for this
+            failedMessages: 0, // No mock data for this
             serviceChartData: Object.entries(serviceCounts).map(([name, total]) => ({ name, total })),
             locationChartData: Object.entries(locationCounts).map(([name, total]) => ({ name, total })),
         };

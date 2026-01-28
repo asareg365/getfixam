@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, List, CheckCircle, Package } from 'lucide-react';
+import { Users, List, CheckCircle, Package, MessageSquare, AlertCircle } from 'lucide-react';
 import { getDashboardData } from '@/lib/services';
 import { DashboardCharts } from './_components/dashboard-charts';
 
@@ -33,7 +33,7 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold font-headline">Dashboard</h1>
       
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <StatCard 
             title="Total Providers" 
             value={data.totalProviders}
@@ -57,6 +57,18 @@ export default async function DashboardPage() {
             value={data.totalRequests}
             description="From WhatsApp and other channels"
             icon={Package}
+        />
+        <StatCard 
+            title="WhatsApp Messages" 
+            value={data.whatsappMessages}
+            description="Total messages from bot"
+            icon={MessageSquare}
+        />
+        <StatCard 
+            title="Failed Messages" 
+            value={data.failedMessages}
+            description="Unrecognized bot commands"
+            icon={AlertCircle}
         />
       </div>
 

@@ -48,5 +48,15 @@ service cloud.firestore {
       // Only admins can read and write requests.
       allow read, write: if isAdmin();
     }
+
+    match /daily_stats/{statId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only backend functions can write
+    }
+
+    match /bot_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only backend functions can write
+    }
   }
 }

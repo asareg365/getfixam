@@ -215,6 +215,40 @@
         }
       },
       "required": ["userPhone", "serviceType", "location", "status", "createdAt"]
+    },
+    "DailyStats": {
+      "title": "Daily Stats",
+      "description": "Aggregated daily statistics for the dashboard.",
+      "type": "object",
+      "properties": {
+        "totalRequests": { "type": "number" },
+        "whatsappMessages": { "type": "number" },
+        "failedMessages": { "type": "number" },
+        "services": {
+          "type": "object",
+          "description": "Key-value pairs of service name and request count."
+        },
+        "locations": {
+          "type": "object",
+          "description": "Key-value pairs of location name and request count."
+        },
+        "peakHour": { "type": "string" },
+        "generatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "BotLog": {
+      "title": "Bot Log",
+      "description": "A log of a message received by the WhatsApp bot.",
+      "type": "object",
+      "properties": {
+        "phone": { "type": "string" },
+        "message": { "type": "string" },
+        "intent": { "type": "string" },
+        "location": { "type": "string" },
+        "status": { "type": "string", "enum": ["success", "failed", "help"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["phone", "message", "status", "timestamp"]
     }
   },
   "auth": {
@@ -256,6 +290,14 @@
         "$ref": "#/entities/Request"
       },
       "description": "Stores user service requests, often initiated via the WhatsApp bot."
+    },
+    "/daily_stats/{date}": {
+      "schema": { "$ref": "#/entities/DailyStats" },
+      "description": "Stores pre-computed daily analytics. Document ID is the date in YYYY-MM-DD format."
+    },
+    "/bot_logs/{logId}": {
+      "schema": { "$ref": "#/entities/BotLog" },
+      "description": "Stores logs of messages from the WhatsApp bot for analytics."
     }
   }
 }
