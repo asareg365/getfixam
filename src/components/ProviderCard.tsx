@@ -28,7 +28,7 @@ export default function ProviderCard({ provider }: ProviderCardProps) {
               data-ai-hint={providerImage?.imageHint}
             />
             {provider.isFeatured && (
-                <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground border-accent-foreground/20">
+                <Badge className="absolute top-3 left-3 bg-yellow-500 text-white border-yellow-600">
                     <Star className="mr-1 h-3 w-3" /> Featured
                 </Badge>
             )}
