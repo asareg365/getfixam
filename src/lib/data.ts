@@ -1,4 +1,4 @@
-import { Wrench, Zap, Smartphone, Car, Hammer, Scissors } from 'lucide-react';
+import { Wrench, Zap, Smartphone, Car, Hammer, Scissors, Sparkles, Shirt, Tv2 } from 'lucide-react';
 import type { Category, Provider, Review } from './types';
 
 export const CATEGORIES: Category[] = [
@@ -8,6 +8,9 @@ export const CATEGORIES: Category[] = [
   { id: '4', name: 'Mechanic', slug: 'mechanic', icon: Car },
   { id: '5', name: 'Carpenter', slug: 'carpenter', icon: Hammer },
   { id: '6', name: 'Hairdresser', slug: 'hairdresser', icon: Scissors },
+  { id: '7', name: 'Beautician', slug: 'beautician', icon: Sparkles },
+  { id: '8', name: 'Fashion Designer', slug: 'fashion-designer', icon: Shirt },
+  { id: '9', name: 'TV Repair', slug: 'tv-repair', icon: Tv2 },
 ];
 
 export const PROVIDERS: Provider[] = [
