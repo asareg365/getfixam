@@ -1,6 +1,6 @@
 import { adminDb } from './firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { Category, Provider, Review, Request, Prediction } from './types';
+import type { Category, Provider, Review, Request, Prediction, StandbyPrediction } from './types';
 
 /**
  * Fetches all active categories from Firestore.
@@ -300,6 +300,7 @@ export async function getDashboardData() {
         let serviceChartData: { name: string; total: number }[] = [];
         let locationChartData: { name: string; total: number }[] = [];
         let prediction: Prediction | null = null;
+        let standby: StandbyPrediction | null = null;
 
         // Attempt to fetch pre-computed daily stats
         const today = new Date().toISOString().split('T')[0];
@@ -360,6 +361,26 @@ export async function getDashboardData() {
             };
         }
 
+        // Fetch standby artisans
+        const standbyRef = adminDb.collection("standby").doc("tomorrow");
+        const standbySnap = await standbyRef.get();
+        if (standbySnap.exists()) {
+            const standbyData = standbySnap.data() as any;
+            let standbyArtisans: Provider[] = [];
+
+            if (standbyData.artisans && standbyData.artisans.length > 0) {
+                const artisanDetailsSnap = await adminDb.collection('providers').where(FieldValue.documentId(), 'in', standbyData.artisans).get();
+                standbyArtisans = artisanDetailsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Provider));
+            }
+            
+            standby = {
+                serviceType: standbyData.serviceType,
+                area: standbyData.area,
+                artisans: standbyArtisans,
+                generatedAt: standbyData.generatedAt.toDate().toISOString(),
+            };
+        }
+
 
         return {
             totalProviders,
@@ -371,6 +392,7 @@ export async function getDashboardData() {
             serviceChartData,
             locationChartData,
             prediction,
+            standby,
         };
 
     } catch (error) {
@@ -398,6 +420,9 @@ export async function getDashboardData() {
             serviceChartData: Object.entries(serviceCounts).map(([name, total]) => ({ name, total })),
             locationChartData: Object.entries(locationCounts).map(([name, total]) => ({ name, total })),
             prediction: null,
+            standby: null,
         };
     }
 }
+
+    

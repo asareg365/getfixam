@@ -285,6 +285,22 @@
             }
         },
         "required": ["topService", "topArea", "basedOnDays", "generatedAt"]
+    },
+    "Standby": {
+        "title": "Standby Pool",
+        "description": "A pool of pre-assigned artisans for predicted high-demand services.",
+        "type": "object",
+        "properties": {
+            "serviceType": { "type": "string" },
+            "area": { "type": "string" },
+            "artisans": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "List of artisan IDs on standby."
+            },
+            "generatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["serviceType", "area", "artisans", "generatedAt"]
     }
   },
   "auth": {
@@ -340,6 +356,12 @@
         "$ref": "#/entities/Prediction"
       },
       "description": "Stores generated demand predictions. Document ID is usually 'tomorrow'."
+    },
+    "/standby/{standbyId}": {
+      "schema": { "$ref": "#/entities/Standby" },
+      "description": "Stores the daily standby pool of artisans. Document ID is usually 'tomorrow'."
     }
   }
 }
+
+    

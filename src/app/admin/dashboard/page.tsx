@@ -4,6 +4,7 @@ import { getDashboardData } from '@/lib/services';
 import { DashboardCharts } from './_components/dashboard-charts';
 import { HeatmapList } from './_components/heatmap-list';
 import { PredictionCard } from './_components/prediction-card';
+import { StandbyCard } from './_components/standby-card';
 
 type StatCardProps = {
     title: string;
@@ -75,17 +76,22 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
+            <div className="grid gap-6 md:grid-cols-2">
+                <PredictionCard prediction={data.prediction} />
+                <StandbyCard standby={data.standby} />
+            </div>
             <DashboardCharts 
                 serviceData={data.serviceChartData}
                 locationData={data.locationChartData}
             />
         </div>
-        <div className="lg:col-span-1 space-y-6">
-             <PredictionCard prediction={data.prediction} />
+        <div className="lg:col-span-1">
              <HeatmapList data={data.locationChartData} />
         </div>
       </div>
     </div>
   );
 }
+
+    

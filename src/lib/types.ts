@@ -66,3 +66,12 @@ export type Prediction = {
   basedOnDays: number;
   generatedAt: string;
 };
+
+export type StandbyPrediction = {
+  serviceType: string;
+  area: string;
+  artisans: Provider[];
+  generatedAt: string;
+};
+
+    
