@@ -42,7 +42,7 @@ export default function ProviderCard({ provider }: ProviderCardProps) {
           </CardTitle>
           <div className="flex items-center text-sm text-muted-foreground mb-2">
             <MapPin className="mr-1.5 h-4 w-4 shrink-0" />
-            <span>{provider.area}</span>
+            <span>{provider.location.zone}, {provider.location.city}</span>
           </div>
           <div className="flex items-center">
             <StarRating rating={provider.rating} size={18} />

@@ -51,31 +51,30 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
  */
 export async function getProviders(categorySlug?: string): Promise<Provider[]> {
   await delay(200);
+  // Only show approved providers on the public site
+  const approvedProviders = PROVIDERS.filter(p => p.status === 'approved');
+
   if (!categorySlug || categorySlug === 'all') {
-    return PROVIDERS;
+    return approvedProviders;
   }
   const category = await getCategoryBySlug(categorySlug);
   if (!category) return [];
 
   // This logic is based on the proposal: always filter for Berekum.
-  return PROVIDERS.filter(p => p.category === category.name && p.area.toLowerCase().includes('berekum'));
+  return approvedProviders.filter(p => p.category === category.name && p.location.city === 'Berekum');
   /*
   // FIREBASE IMPLEMENTATION:
   let q;
+  const providersRef = collection(db, "providers");
+  const constraints = [where("status", "==", "approved"), where("location.city", "==", "Berekum")];
+
   if (categorySlug && categorySlug !== 'all') {
     const category = await getCategoryBySlug(categorySlug);
     if (!category) return [];
-    q = query(
-      collection(db, "providers"),
-      where("category", "==", category.name),
-      where("area", "==", "Berekum") // As per proposal
-    );
-  } else {
-    q = query(
-        collection(db, "providers"),
-        where("area", "==", "Berekum")
-    );
+    constraints.push(where("category", "==", category.name));
   }
+  
+  q = query(providersRef, ...constraints);
   const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Provider));
   */
@@ -87,13 +86,17 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
  */
 export async function getProviderById(id: string): Promise<Provider | undefined> {
   await delay(150);
-  return PROVIDERS.find(p => p.id === id);
+  // Only return provider if they are approved for public viewing
+  const provider = PROVIDERS.find(p => p.id === id);
+  return provider?.status === 'approved' ? provider : undefined;
   /*
   // FIREBASE IMPLEMENTATION:
   const docRef = doc(db, "providers", id);
   const docSnap = await getDoc(docRef);
   if (docSnap.exists()) {
-    return { id: docSnap.id, ...docSnap.data() } as Provider;
+    const provider = { id: docSnap.id, ...docSnap.data() } as Provider;
+    // Only return provider if they are approved
+    return provider.status === 'approved' ? provider : undefined;
   }
   return undefined;
   */
@@ -117,13 +120,26 @@ export async function getReviewsByProviderId(providerId: string): Promise<Review
  * Adds a new provider to the database.
  * NOTE: In a real app, this would be a protected admin-only function.
  */
-export async function addProvider(data: Omit<Provider, 'id' | 'rating' | 'reviewCount' | 'createdAt'>) {
+export async function addProvider(data: Omit<Provider, 'id' | 'rating' | 'reviewCount' | 'createdAt' | 'serviceId'>) {
     console.log("Adding provider:", data);
-    // This is where you would add the document to Firestore
+    const category = CATEGORIES.find(c => c.name === data.category);
+
+    const newProvider: Provider = {
+        id: (PROVIDERS.length + 1).toString(),
+        ...data,
+        serviceId: category?.id || '',
+        rating: 0,
+        reviewCount: 0,
+        createdAt: new Date().toISOString(),
+    };
+
+    PROVIDERS.unshift(newProvider); // Add to the beginning of the array for visibility
     /*
     // FIREBASE IMPLEMENTATION:
+     const category = CATEGORIES.find(c => c.name === data.category);
      await addDoc(collection(db, 'providers'), {
       ...data,
+      serviceId: category?.id || '',
       rating: 0,
       reviewCount: 0,
       createdAt: serverTimestamp()

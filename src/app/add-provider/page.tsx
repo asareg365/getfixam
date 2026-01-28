@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { CATEGORIES } from '@/lib/data';
+import { CATEGORIES, BEREKUM_ZONES } from '@/lib/data';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -22,7 +22,7 @@ const providerSchema = z.object({
   category: z.string().min(1, 'Please select a category.'),
   phone: z.string().regex(/^0[0-9]{9}$/, 'Enter a valid 10-digit phone number (e.g., 0241234567).'),
   whatsapp: z.string().regex(/^0[0-9]{9}$/, 'Enter a valid 10-digit WhatsApp number (e.g., 0241234567).'),
-  area: z.string().min(3, 'Please enter your business location/area in Berekum.'),
+  zone: z.string().min(3, 'Please select your business location/zone in Berekum.'),
 });
 
 type ProviderFormData = z.infer<typeof providerSchema>;
@@ -53,7 +53,7 @@ export default function AddProviderPage() {
       category: '',
       phone: '',
       whatsapp: '',
-      area: '',
+      zone: '',
     },
   });
 
@@ -132,9 +132,18 @@ export default function AddProviderPage() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="area">Area / Location</Label>
-              <Input id="area" name="area" placeholder="e.g., Berekum Zongo" />
-              {state.errors?.area && <p className="text-sm text-destructive">{state.errors.area}</p>}
+              <Label htmlFor="zone">Area / Zone</Label>
+              <Select name="zone">
+                <SelectTrigger id="zone">
+                  <SelectValue placeholder="Select your location/zone in Berekum" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BEREKUM_ZONES.map((zone) => (
+                    <SelectItem key={zone} value={zone}>{zone}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {state.errors?.zone && <p className="text-sm text-destructive">{state.errors.zone}</p>}
             </div>
 
             <SubmitButton />

@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
   }
   return {
     title: `${provider.name} | FixAm Ghana`,
-    description: `Contact and review ${provider.name}, a ${provider.category.toLowerCase()} in ${provider.area}.`,
+    description: `Contact and review ${provider.name}, a ${provider.category.toLowerCase()} in ${provider.location.zone}.`,
   };
 }
 
@@ -69,7 +69,7 @@ export default async function ProviderDetailPage({ params }: { params: { id: str
                 <h1 className="text-2xl font-bold font-headline">{provider.name}</h1>
                 <div className="flex items-center text-muted-foreground text-sm mt-1">
                   <MapPin className="mr-1.5 h-4 w-4" />
-                  <span>{provider.area}</span>
+                  <span>{provider.location.zone}, {provider.location.city}</span>
                 </div>
                 {provider.verified && (
                   <div className="flex items-center text-green-600 text-sm font-semibold mt-2">

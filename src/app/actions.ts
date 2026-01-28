@@ -39,7 +39,7 @@ const providerSchema = z.object({
   category: z.string().min(1, 'Please select a category.'),
   phone: z.string().regex(/^0[0-9]{9}$/, 'Enter a valid 10-digit phone number.'),
   whatsapp: z.string().regex(/^0[0-9]{9}$/, 'Enter a valid 10-digit phone number.'),
-  area: z.string().min(3, 'Area is required.'),
+  zone: z.string().min(1, 'Please select a zone.'),
 });
 
 export async function addProviderAction(prevState: any, formData: FormData) {
@@ -55,11 +55,23 @@ export async function addProviderAction(prevState: any, formData: FormData) {
     const randomProviderImageId = `provider${Math.floor(Math.random() * 12) + 1}`;
 
     try {
+        const { name, category, phone, whatsapp, zone } = validatedFields.data;
+        
         await dbAddProvider({
-            ...validatedFields.data,
-            verified: false, // Admins should verify manually later
+            name,
+            category,
+            phone,
+            whatsapp,
+            location: {
+                region: 'Bono',
+                city: 'Berekum',
+                zone: zone,
+            },
+            verified: false,
+            status: 'pending',
             imageId: randomProviderImageId,
         });
+
         revalidatePath('/');
         revalidatePath(`/category/${validatedFields.data.category.toLowerCase()}`);
         return { success: true, message: 'Your business has been submitted for review!' };

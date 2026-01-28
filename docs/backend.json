@@ -71,16 +71,25 @@
             "location": {
                 "type": "object",
                 "properties": {
+                    "region": {
+                      "type": "string",
+                      "description": "The region where the provider is located."
+                    },
                     "city": {
                         "type": "string",
                         "description": "The city where the provider is located."
                     },
-                    "area": {
+                    "zone": {
                         "type": "string",
                         "description": "The specific area or neighborhood within the city."
                     }
                 },
-                "required": ["city", "area"]
+                "required": ["region", "city", "zone"]
+            },
+            "status": {
+              "type": "string",
+              "description": "The approval status of the provider.",
+              "enum": ["pending", "approved", "rejected", "suspended"]
             },
             "verified": {
                 "type": "boolean",
@@ -98,9 +107,33 @@
                 "type": "string",
                 "format": "date-time",
                 "description": "The timestamp when the provider was added."
+            },
+            "approvedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The timestamp when the provider was approved."
             }
         },
-        "required": ["name", "phone", "serviceId", "location", "verified", "createdAt"]
+        "required": ["name", "phone", "serviceId", "location", "status", "verified", "createdAt"]
+    },
+    "Location": {
+      "title": "Location",
+      "description": "Defines predefined zones for a city.",
+      "type": "object",
+      "properties": {
+        "city": {
+          "type": "string",
+          "description": "The name of the city."
+        },
+        "zones": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A list of zones or areas within the city."
+        }
+      },
+      "required": ["city", "zones"]
     }
   },
   "auth": {
@@ -124,6 +157,12 @@
             "$ref": "#/entities/Provider"
         },
         "description": "Stores the profiles of service providers."
+    },
+    "/locations/{locationId}": {
+      "schema": {
+        "$ref": "#/entities/Location"
+      },
+      "description": "Stores location data, like zones for a city. The document ID would typically be the city name, e.g., 'berekum'."
     }
   }
 }
