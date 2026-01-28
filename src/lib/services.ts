@@ -23,7 +23,7 @@ export async function getCategories(): Promise<Category[]> {
       } as Category;
     });
   } catch (error) {
-    console.warn("Could not fetch categories from Firestore. Falling back to mock data. Error:", error);
+    console.warn("Could not fetch categories from Firestore. Falling back to mock data.");
     const { CATEGORIES } = await import('./data');
     return CATEGORIES;
   }
@@ -54,7 +54,7 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
         icon: data.icon,
     } as Category;
   } catch (error) {
-    console.warn(`Could not fetch category with slug "${slug}" from Firestore. Falling back to mock data. Error:`, error);
+    console.warn(`Could not fetch category with slug "${slug}" from Firestore. Falling back to mock data.`);
     const { CATEGORIES } = await import('./data');
     return CATEGORIES.find(c => c.slug === slug);
   }
@@ -102,7 +102,7 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
       return providerData;
     });
   } catch (error) {
-    console.warn(`Could not fetch providers from Firestore. Falling back to mock data. Error:`, error);
+    console.warn(`Could not fetch providers from Firestore. Falling back to mock data.`);
     const { PROVIDERS, CATEGORIES } = await import('./data');
     let providers = PROVIDERS.filter(p => p.status === 'approved' && p.location.city === 'Berekum');
     if (categorySlug && categorySlug !== 'all') {
@@ -158,7 +158,7 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
     }
     return undefined;
   } catch (error) {
-    console.warn(`Could not fetch provider with ID "${id}" from Firestore. Falling back to mock data. Error:`, error);
+    console.warn(`Could not fetch provider with ID "${id}" from Firestore. Falling back to mock data.`);
     const { PROVIDERS } = await import('./data');
     const provider = PROVIDERS.find(p => p.id === id);
     if (provider && provider.status === 'approved') {
@@ -196,7 +196,7 @@ export async function getReviewsByProviderId(providerId: string): Promise<Review
       } as Review;
     });
   } catch (error) {
-    console.warn(`Could not fetch reviews for provider "${providerId}" from Firestore. Falling back to mock data. Error:`, error);
+    console.warn(`Could not fetch reviews for provider "${providerId}" from Firestore. Falling back to mock data.`);
     const { REVIEWS } = await import('./data');
     return REVIEWS.filter(r => r.providerId === providerId && r.status === 'approved');
   }
@@ -258,7 +258,7 @@ export async function getBerekumZones(): Promise<string[]> {
       return docSnap.data()?.zones as string[];
     }
   } catch (error) {
-     console.warn(`Could not fetch zones from Firestore. Falling back to mock data. Error:`, error);
+     console.warn(`Could not fetch zones from Firestore. Falling back to mock data.`);
   }
   
   // Fallback to mock data if Firestore fails or document doesn't exist
