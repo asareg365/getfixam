@@ -43,5 +43,10 @@ service cloud.firestore {
         // Disallow deletion for now to keep a record.
         allow delete: if false;
     }
+
+    match /requests/{requestId} {
+      // Only admins can read and write requests.
+      allow read, write: if isAdmin();
+    }
   }
 }

@@ -1,6 +1,6 @@
 import { adminDb } from './firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { Category, Provider, Review } from './types';
+import type { Category, Provider, Review, Request } from './types';
 
 /**
  * Fetches all active categories from Firestore.
@@ -274,4 +274,73 @@ export async function getBerekumZones(): Promise<string[]> {
   // Fallback to mock data if Firestore fails or document doesn't exist
   const { BEREKUM_ZONES } = await import('./data');
   return BEREKUM_ZONES;
+}
+
+/**
+ * Fetches all data needed for the admin dashboard.
+ */
+export async function getDashboardData() {
+    try {
+        const [providersSnap, servicesSnap, requestsSnap] = await Promise.all([
+            adminDb.collection('providers').get(),
+            adminDb.collection('services').where('active', '==', true).get(),
+            adminDb.collection('requests').get()
+        ]);
+
+        // Aggregate provider data
+        const totalProviders = providersSnap.size;
+        const pendingProviders = providersSnap.docs.filter(doc => doc.data().status === 'pending').length;
+
+        // Aggregate service data
+        const activeServices = servicesSnap.size;
+
+        // Aggregate request data
+        const totalRequests = requestsSnap.size;
+        const requests = requestsSnap.docs.map(doc => doc.data() as Omit<Request, 'id' | 'createdAt'>);
+
+        const serviceCounts = requests.reduce((acc, req) => {
+            acc[req.serviceType] = (acc[req.serviceType] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        const locationCounts = requests.reduce((acc, req) => {
+            acc[req.location] = (acc[req.location] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+        
+        const serviceChartData = Object.entries(serviceCounts).map(([name, total]) => ({ name, total }));
+        const locationChartData = Object.entries(locationCounts).map(([name, total]) => ({ name, total }));
+
+        return {
+            totalProviders,
+            pendingProviders,
+            activeServices,
+            totalRequests,
+            serviceChartData,
+            locationChartData,
+        };
+
+    } catch (error) {
+        console.warn('Could not fetch dashboard data from Firestore. Falling back to mock data.');
+        const { PROVIDERS, CATEGORIES, REQUESTS, BEREKUM_ZONES } = await import('./data');
+        
+        const serviceCounts = REQUESTS.reduce((acc, req) => {
+            acc[req.serviceType] = (acc[req.serviceType] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        const locationCounts = REQUESTS.reduce((acc, req) => {
+            acc[req.location] = (acc[req.location] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        return {
+            totalProviders: PROVIDERS.length,
+            pendingProviders: PROVIDERS.filter(p => p.status === 'pending').length,
+            activeServices: CATEGORIES.length,
+            totalRequests: REQUESTS.length,
+            serviceChartData: Object.entries(serviceCounts).map(([name, total]) => ({ name, total })),
+            locationChartData: Object.entries(locationCounts).map(([name, total]) => ({ name, total })),
+        };
+    }
 }

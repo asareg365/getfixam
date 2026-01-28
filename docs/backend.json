@@ -185,6 +185,36 @@
         }
       },
       "required": ["providerId", "userName", "rating", "comment", "status", "createdAt"]
+    },
+    "Request": {
+      "title": "Request",
+      "description": "A service request from a user, likely via the WhatsApp bot.",
+      "type": "object",
+      "properties": {
+        "userPhone": {
+          "type": "string",
+          "description": "The phone number of the user who made the request."
+        },
+        "serviceType": {
+          "type": "string",
+          "description": "The type of service requested (e.g., 'Plumber')."
+        },
+        "location": {
+          "type": "string",
+          "description": "The location for the service (e.g., 'Kato')."
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the service request.",
+          "enum": ["pending", "assigned", "completed", "cancelled"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the request was created."
+        }
+      },
+      "required": ["userPhone", "serviceType", "location", "status", "createdAt"]
     }
   },
   "auth": {
@@ -220,6 +250,12 @@
         "$ref": "#/entities/Review"
       },
       "description": "Stores user-submitted reviews for providers."
+    },
+    "/requests/{requestId}": {
+      "schema": {
+        "$ref": "#/entities/Request"
+      },
+      "description": "Stores user service requests, often initiated via the WhatsApp bot."
     }
   }
 }

@@ -49,3 +49,12 @@ export type Review = {
   userImageId: string;
   status: 'pending' | 'approved' | 'rejected';
 };
+
+export type Request = {
+  id: string;
+  userPhone: string;
+  serviceType: string;
+  location: string;
+  status: 'pending' | 'assigned' | 'completed' | 'cancelled';
+  createdAt: string; // ISO 8601 date string
+};

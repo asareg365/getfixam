@@ -1,4 +1,4 @@
-import type { Category, Provider, Review } from './types';
+import type { Category, Provider, Review, Request } from './types';
 
 export const CATEGORIES: Category[] = [
   { id: 'plumber', name: 'Plumber', slug: 'plumber', icon: 'Wrench' },
@@ -36,6 +36,8 @@ export const PROVIDERS: Provider[] = [
     location: { region: 'Bono', city: 'Berekum', zone: 'Zongo' },
     status: 'approved',
     verified: true,
+    isFeatured: true,
+    featuredUntil: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
     rating: 4.8,
     reviewCount: 28,
     createdAt: '2023-01-15T09:30:00Z',
@@ -51,6 +53,7 @@ export const PROVIDERS: Provider[] = [
     location: { region: 'Bono', city: 'Berekum', zone: 'Biadan' },
     status: 'approved',
     verified: true,
+    isFeatured: false,
     rating: 4.5,
     reviewCount: 12,
     createdAt: '2023-02-20T14:00:00Z',
@@ -66,6 +69,7 @@ export const PROVIDERS: Provider[] = [
     location: { region: 'Bono', city: 'Berekum', zone: 'Kato' },
     status: 'pending',
     verified: false,
+    isFeatured: false,
     rating: 4.2,
     reviewCount: 15,
     createdAt: '2023-03-10T11:45:00Z',
@@ -81,6 +85,8 @@ export const PROVIDERS: Provider[] = [
     location: { region: 'Bono', city: 'Berekum', zone: 'Senase' },
     status: 'approved',
     verified: true,
+    isFeatured: true,
+    featuredUntil: new Date(Date.now() + 1000 * 60 * 60 * 24 * 15).toISOString(),
     rating: 4.9,
     reviewCount: 45,
     createdAt: '2022-11-05T08:00:00Z',
@@ -96,6 +102,7 @@ export const PROVIDERS: Provider[] = [
     location: { region: 'Bono', city: 'Berekum', zone: 'Zongo' },
     status: 'approved',
     verified: true,
+    isFeatured: false,
     rating: 4.6,
     reviewCount: 32,
     createdAt: '2023-05-01T18:00:00Z',
@@ -111,6 +118,7 @@ export const PROVIDERS: Provider[] = [
     location: { region: 'Bono', city: 'Berekum', zone: 'Biadan' },
     status: 'rejected',
     verified: false,
+    isFeatured: false,
     rating: 4.0,
     reviewCount: 8,
     createdAt: '2023-04-12T13:20:00Z',
@@ -126,6 +134,7 @@ export const PROVIDERS: Provider[] = [
     location: { region: 'Bono', city: 'Berekum', zone: 'Kato' },
     status: 'approved',
     verified: true,
+    isFeatured: false,
     rating: 4.7,
     reviewCount: 19,
     createdAt: '2023-06-01T10:00:00Z',
@@ -141,6 +150,7 @@ export const PROVIDERS: Provider[] = [
     location: { region: 'Bono', city: 'Berekum', zone: 'Senase' },
     status: 'pending',
     verified: false,
+    isFeatured: false,
     rating: 3.9,
     reviewCount: 5,
     createdAt: '2023-08-11T16:00:00Z',
@@ -209,4 +219,15 @@ export const REVIEWS: Review[] = [
     userImageId: 'user6',
     status: 'approved'
   }
+];
+
+export const REQUESTS: Request[] = [
+    { id: '1', userPhone: '024xxxxxxx', serviceType: 'Electrician', location: 'Kato', status: 'completed', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString() },
+    { id: '2', userPhone: '055xxxxxxx', serviceType: 'Plumber', location: 'Zongo', status: 'pending', createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
+    { id: '3', userPhone: '020xxxxxxx', serviceType: 'Electrician', location: 'Biadan', status: 'assigned', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString() },
+    { id: '4', userPhone: '027xxxxxxx', serviceType: 'Mechanic', location: 'Senase', status: 'completed', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString() },
+    { id: '5', userPhone: '050xxxxxxx', serviceType: 'Phone Repair', location: 'Market Area', status: 'pending', createdAt: new Date(Date.now() - 1000 * 60 * 10).toISOString() },
+    { id: '6', userPhone: '026xxxxxxx', serviceType: 'Plumber', location: 'Kato', status: 'cancelled', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString() },
+    { id: '7', userPhone: '024xxxxxxx', serviceType: 'Electrician', location: 'Zongo', status: 'completed', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString() },
+    { id: '8', userPhone: '055xxxxxxx', serviceType: 'Carpenter', location: 'Presby', status: 'pending', createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
 ];
