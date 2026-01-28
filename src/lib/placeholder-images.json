@@ -1,3 +1,118 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero",
+      "description": "Artisans working in Ghana",
+      "imageUrl": "https://images.unsplash.com/photo-1640532927678-a44dcff6127d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxnaGFuYSUyMGFydGlzYW58ZW58MHx8fHwxNzY5NTYzMTE2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "ghana artisan"
+    },
+    {
+      "id": "provider1",
+      "description": "An electrician working on a circuit board.",
+      "imageUrl": "https://images.unsplash.com/photo-1653617748434-7dc143f8223e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxlbGVjdHJpY2lhbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc2OTU2MzExNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "electrician portrait"
+    },
+    {
+      "id": "provider2",
+      "description": "A plumber smiling with a wrench.",
+      "imageUrl": "https://images.unsplash.com/photo-1761828087513-164f68e2e2ce?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxwbHVtYmVyJTIwd29tYW58ZW58MHx8fHwxNzY5NTYzMTE3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "plumber woman"
+    },
+    {
+      "id": "provider3",
+      "description": "A person repairing a smartphone.",
+      "imageUrl": "https://images.unsplash.com/photo-1581092921461-eab62e97a780?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwaG9uZSUyMHJlcGFpcnxlbnwwfHx8fDE3Njk1MjMxNjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "phone repair"
+    },
+    {
+      "id": "provider4",
+      "description": "A mechanic working under a car.",
+      "imageUrl": "https://images.unsplash.com/photo-1596986952526-3be237187071?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxtZWNoYW5pYyUyMHNob3B8ZW58MHx8fHwxNzY5NTYzMTE2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "mechanic shop"
+    },
+    {
+      "id": "provider5",
+      "description": "A hairdresser styling a client's hair.",
+      "imageUrl": "https://images.unsplash.com/photo-1560066984-138dadb4c035?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxoYWlyZHJlc3NlciUyMHNhbG9ufGVufDB8fHx8MTc2OTU2MzExNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "hairdresser salon"
+    },
+    {
+      "id": "provider6",
+      "description": "A carpenter measuring a piece of wood.",
+      "imageUrl": "https://images.unsplash.com/photo-1611021061271-d13576f6bc34?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxjYXJwZW50ZXIlMjB3b3JraW5nfGVufDB8fHx8MTc2OTU2MzExNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "carpenter working"
+    },
+    {
+      "id": "provider7",
+      "description": "An electrician inspecting wiring.",
+      "imageUrl": "https://images.unsplash.com/photo-1754620906703-496ec2451744?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8ZWxlY3RyaWNpYW4lMjB3b3JrfGVufDB8fHx8MTc2OTU2MzExNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "electrician work"
+    },
+    {
+      "id": "provider8",
+      "description": "A plumber working on pipes under a sink.",
+      "imageUrl": "https://images.unsplash.com/photo-1691940732509-231a570734e6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxwbHVtYmVyJTIwc2lua3xlbnwwfHx8fDE3Njk0ODUwMjJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "plumber sink"
+    },
+    {
+      "id": "provider9",
+      "description": "Close up of hands repairing a phone.",
+      "imageUrl": "https://images.unsplash.com/photo-1677699554298-74f090641432?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxwaG9uZSUyMHNlcnZpY2V8ZW58MHx8fHwxNzY5NTYzMTE2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "phone service"
+    },
+    {
+      "id": "provider10",
+      "description": "A mechanic checking a car engine.",
+      "imageUrl": "https://images.unsplash.com/photo-1615906655593-ad0386982a0f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxhdXRvJTIwbWVjaGFuaWN8ZW58MHx8fHwxNzY5NTI1MjkyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "auto mechanic"
+    },
+    {
+      "id": "provider11",
+      "description": "A carpenter crafting furniture.",
+      "imageUrl": "https://images.unsplash.com/photo-1769430838012-8e1270d41f46?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxjYXJwZW50ZXIlMjBmdXJuaXR1cmV8ZW58MHx8fHwxNzY5NTYzMTE2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "carpenter furniture"
+    },
+    {
+      "id": "provider12",
+      "description": "A stylist cutting hair in a modern salon.",
+      "imageUrl": "https://images.unsplash.com/photo-1600948836101-f9ffda59d250?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxoYWlyJTIwc2Fsb258ZW58MHx8fHwxNzY5NTUwNjQ0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "hair salon"
+    },
+    {
+      "id": "user1",
+      "description": "A smiling woman.",
+      "imageUrl": "https://images.unsplash.com/photo-1557053910-d9eadeed1c58?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx3b21hbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc2OTUxMzQyMXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "user2",
+      "description": "A man with glasses.",
+      "imageUrl": "https://images.unsplash.com/photo-1607031542107-f6f46b5d54e9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxtYW4lMjBwb3J0cmFpdHxlbnwwfHx8fDE3Njk1MzA5ODJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "user3",
+      "description": "A man smiling.",
+      "imageUrl": "https://images.unsplash.com/photo-1623184663110-89ba5b565eb6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxtYW4lMjBzbWlsaW5nfGVufDB8fHx8MTc2OTUwMTUwNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man smiling"
+    },
+    {
+      "id": "user4",
+      "description": "A woman in a headscarf.",
+      "imageUrl": "https://images.unsplash.com/photo-1736342181249-9e81c11737b8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHx3b21hbiUyMGhlYWRzY2FyZnxlbnwwfHx8fDE3Njk1NjMxMTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman headscarf"
+    },
+    {
+      "id": "user5",
+      "description": "A young man looking at the camera.",
+      "imageUrl": "https://images.unsplash.com/photo-1536548665027-b96d34a005ae?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx5b3VuZyUyMG1hbnxlbnwwfHx8fDE3Njk1NjMxMTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "young man"
+    },
+    {
+      "id": "user6",
+      "description": "A smiling man with a beard.",
+      "imageUrl": "https://images.unsplash.com/photo-1653071163015-11cbda52d897?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxtYW4lMjBiZWFyZHxlbnwwfHx8fDE3Njk0OTg5ODZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man beard"
+    }
+  ]
 }
