@@ -301,6 +301,38 @@
             "generatedAt": { "type": "string", "format": "date-time" }
         },
         "required": ["serviceType", "area", "artisans", "generatedAt"]
+    },
+    "Job": {
+      "title": "Job",
+      "description": "A service job requested by a user, with its assignment lifecycle.",
+      "type": "object",
+      "properties": {
+        "serviceType": { "type": "string" },
+        "area": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected", "expired", "reassigned", "completed", "unassigned"] },
+        "assignedTo": { "type": "string", "description": "ID of the currently assigned artisan." },
+        "attemptedArtisans": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of artisan IDs who have been assigned this job."
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time", "description": "Timestamp for when the current assignment expires." }
+      },
+      "required": ["serviceType", "area", "status", "createdAt"]
+    },
+    "ReassignmentLog": {
+      "title": "Reassignment Log",
+      "description": "A log entry for when a job is reassigned from one artisan to another.",
+      "type": "object",
+      "properties": {
+        "jobId": { "type": "string" },
+        "fromArtisan": { "type": "string" },
+        "toArtisan": { "type": "string" },
+        "reason": { "type": "string", "enum": ["timeout", "rejected"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["jobId", "reason", "timestamp"]
     }
   },
   "auth": {
@@ -360,6 +392,18 @@
     "/standby/{standbyId}": {
       "schema": { "$ref": "#/entities/Standby" },
       "description": "Stores the daily standby pool of artisans. Document ID is usually 'tomorrow'."
+    },
+    "/jobs/{jobId}": {
+      "schema": {
+        "$ref": "#/entities/Job"
+      },
+      "description": "Stores live service jobs and their assignment status."
+    },
+    "/reassignments/{reassignmentId}": {
+      "schema": {
+        "$ref": "#/entities/ReassignmentLog"
+      },
+      "description": "Stores a log of all job reassignments."
     }
   }
 }

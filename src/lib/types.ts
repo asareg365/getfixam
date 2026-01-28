@@ -74,4 +74,24 @@ export type StandbyPrediction = {
   generatedAt: string;
 };
 
+export type Job = {
+  id: string;
+  serviceType: string;
+  area: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'expired' | 'reassigned' | 'completed' | 'unassigned';
+  assignedTo: string; // artisanId
+  attemptedArtisans: string[]; // array of artisanIds
+  createdAt: string;
+  expiresAt: string;
+};
+
+export type ReassignmentLog = {
+  id: string;
+  jobId: string;
+  fromArtisan: string;
+  toArtisan: string;
+  reason: 'timeout' | 'rejected';
+  timestamp: string;
+};
+
     

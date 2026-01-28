@@ -67,6 +67,15 @@ service cloud.firestore {
     match /standby/{standbyId} {
       allow read, write: if isAdmin();
     }
+    
+    match /jobs/{jobId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /reassignments/{reassignmentId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only backend functions can write
+    }
   }
 }
 
