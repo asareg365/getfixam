@@ -217,23 +217,14 @@ export async function getReviewsByProviderId(providerId: string): Promise<Review
  * Adds a new provider to Firestore with 'pending' status.
  */
 export async function addProvider(
-    data: { name: string; category: string; phone: string; whatsapp: string; location: object; imageId: string; }
+    data: { name: string; serviceId: string; phone: string; whatsapp: string; location: object; imageId: string; }
 ) {
-    const servicesRef = adminDb.collection("services");
-    const q = servicesRef.where("name", "==", data.category);
-    const serviceSnapshot = await q.get();
-
-    let serviceId = '';
-    if (!serviceSnapshot.empty) {
-        serviceId = serviceSnapshot.docs[0].id;
-    }
-
     await adminDb.collection('providers').add({
       name: data.name,
       phone: data.phone,
       whatsapp: data.whatsapp,
       location: data.location,
-      serviceId: serviceId,
+      serviceId: data.serviceId,
       imageId: data.imageId,
       status: "pending",
       verified: false,

@@ -73,17 +73,17 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
 
         <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
-            <Select name="category">
+            <Select name="serviceId">
             <SelectTrigger id="category">
                 <SelectValue placeholder="Select a service category" />
             </SelectTrigger>
             <SelectContent>
                 {categories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                 ))}
             </SelectContent>
             </Select>
-            {state.errors?.category && <p className="text-sm text-destructive">{state.errors.category}</p>}
+            {state.errors?.serviceId && <p className="text-sm text-destructive">{state.errors.serviceId}</p>}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

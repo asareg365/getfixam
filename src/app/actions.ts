@@ -36,7 +36,7 @@ export async function addReviewAction(prevState: any, formData: FormData) {
 
 const providerSchema = z.object({
   name: z.string().min(3, 'Business name is required.'),
-  category: z.string().min(1, 'Please select a category.'),
+  serviceId: z.string().min(1, 'Please select a category.'),
   phone: z.string().regex(/^0[0-9]{9}$/, 'Enter a valid 10-digit phone number.'),
   whatsapp: z.string().regex(/^0[0-9]{9}$/, 'Enter a valid 10-digit phone number.'),
   zone: z.string().min(1, 'Please select a zone.'),
@@ -55,11 +55,11 @@ export async function addProviderAction(prevState: any, formData: FormData) {
     const randomProviderImageId = `provider${Math.floor(Math.random() * 12) + 1}`;
 
     try {
-        const { name, category, phone, whatsapp, zone } = validatedFields.data;
+        const { name, serviceId, phone, whatsapp, zone } = validatedFields.data;
         
         await dbAddProvider({
             name,
-            category,
+            serviceId,
             phone,
             whatsapp,
             location: {
@@ -73,7 +73,6 @@ export async function addProviderAction(prevState: any, formData: FormData) {
         });
 
         revalidatePath('/');
-        revalidatePath(`/category/${validatedFields.data.category.toLowerCase()}`);
         return { success: true, message: 'Your business has been submitted for review!' };
     } catch (error) {
         console.error('Error adding provider:', error);
