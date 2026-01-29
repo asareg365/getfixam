@@ -3,12 +3,12 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig: FirebaseOptions = {
-  apiKey: "AIzaSyB-R_iB0_GfLzXN1XzV9RzJ3J9x_pGzV9o",
-  authDomain: "fixam-ghana.firebaseapp.com",
-  projectId: "fixam-ghana",
-  storageBucket: "fixam-ghana.appspot.com",
-  messagingSenderId: "394747584937",
-  appId: "1:394747584937:web:8c4b2b7b2b7b2b7b2b7b2b"
+  apiKey: "AIzaSyBhS1B5Mx_onOBf3Imup4MyOMuxk-qJj1o",
+  authDomain: "studio-1004537855-178e0.firebaseapp.com",
+  projectId: "studio-1004537855-178e0",
+  storageBucket: "studio-1004537855-178e0.appspot.com",
+  messagingSenderId: "38469851703",
+  appId: "1:38469851703:web:8a64c5092781668743bdb2"
 };
 
 // Initialize Firebase
