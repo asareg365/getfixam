@@ -1,32 +1,39 @@
 'use server';
+
+import { cookies } from 'next/headers';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import { createSession, deleteSession as deleteCookieSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 import { FieldValue } from 'firebase-admin/firestore';
 
 export async function createAdminSession(idToken: string) {
   try {
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
-    const uid = decodedToken.uid;
+    const decoded = await adminAuth.verifyIdToken(idToken);
 
-    const adminDoc = await adminDb.collection('admins').doc(uid).get();
-    if (!adminDoc.exists) {
-        return { success: false, error: 'Access denied. You are not an administrator.' };
+    // Optional: restrict to specific admin email
+    if (decoded.email !== 'asareg365@gmail.com') {
+      console.warn(`Unauthorized login attempt from: ${decoded.email}`);
+      return { success: false, error: 'Unauthorized' };
     }
 
-    await createSession(uid);
-    revalidatePath('/admin');
+    cookies().set('adminSession', idToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+      path: '/',
+    });
+
     return { success: true };
   } catch (error) {
     console.error('Session creation failed:', error);
-    return { success: false, error: 'Authentication failed. Please try again.' };
+    return { success: false, error: 'Session creation failed' };
   }
 }
 
-
 export async function logoutAction() {
-    deleteCookieSession();
+  cookies().delete('adminSession');
+  revalidatePath('/admin/login');
 }
+
 
 export async function approveProvider(prevState: any, formData: FormData) {
   const providerId = formData.get('providerId') as string;

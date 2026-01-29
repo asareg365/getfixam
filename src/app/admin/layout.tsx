@@ -1,4 +1,5 @@
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import {
   SidebarProvider,
   Sidebar,
@@ -16,19 +17,26 @@ import Link from 'next/link';
 import { logoutAction } from './actions';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const pathname = headers().get('next-url');
+  const pathname = headers().get('next-url') || '';
 
-  // Do not render the admin layout on the login page.
-  // This ensures the login screen is a standalone page.
+  // If on login page, render children directly without the layout.
+  // The middleware will handle redirecting logged-in users away from login.
   if (pathname === '/admin/login') {
     return <>{children}</>;
+  }
+  
+  const session = cookies().get('adminSession');
+  
+  // For all other admin pages, block access if not logged in.
+  if (!session) {
+    redirect('/admin/login');
   }
   
   return (
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <Link href="/browse" className="flex items-center gap-2 p-2">
+          <Link href="/admin/dashboard" className="flex items-center gap-2 p-2">
             <Wrench className="w-6 h-6 text-primary" />
             <h1 className="font-bold font-headline text-lg">FixAm Admin</h1>
           </Link>
@@ -73,7 +81,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <form action={logoutAction}>
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton tooltip="Log Out">
+                    <SidebarMenuButton type="submit" tooltip="Log Out">
                         <LogOut />
                         <span>Log Out</span>
                     </SidebarMenuButton>
