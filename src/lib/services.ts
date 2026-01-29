@@ -282,6 +282,19 @@ export async function getBerekumZones(): Promise<string[]> {
  * If daily stats are not available, it falls back to direct queries.
  */
 export async function getDashboardData() {
+    const emptyDashboardData = {
+        totalProviders: 0,
+        pendingProviders: 0,
+        activeServices: 0,
+        totalRequests: 0,
+        whatsappMessages: 0,
+        failedMessages: 0,
+        serviceChartData: [],
+        locationChartData: [],
+        prediction: null,
+        standby: null,
+    };
+
     try {
         // Fetch provider and service stats directly as they are not part of daily stats
         const [providersSnap, servicesSnap] = await Promise.all([
@@ -396,33 +409,7 @@ export async function getDashboardData() {
         };
 
     } catch (error) {
-        console.warn('Could not fetch dashboard data from Firestore. Falling back to mock data.', error);
-        // Fallback to mock data from the original function
-        const { PROVIDERS, CATEGORIES, REQUESTS } = await import('./data');
-        
-        const serviceCounts = REQUESTS.reduce((acc, req) => {
-            acc[req.serviceType] = (acc[req.serviceType] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-
-        const locationCounts = REQUESTS.reduce((acc, req) => {
-            acc[req.location] = (acc[req.location] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-
-        return {
-            totalProviders: PROVIDERS.length,
-            pendingProviders: PROVIDERS.filter(p => p.status === 'pending').length,
-            activeServices: CATEGORIES.length,
-            totalRequests: REQUESTS.length,
-            whatsappMessages: 0, // No mock data for this
-            failedMessages: 0, // No mock data for this
-            serviceChartData: Object.entries(serviceCounts).map(([name, total]) => ({ name, total })),
-            locationChartData: Object.entries(locationCounts).map(([name, total]) => ({ name, total })),
-            prediction: null,
-            standby: null,
-        };
+        console.error('CRITICAL: Could not fetch dashboard data from Firestore.', error);
+        return emptyDashboardData;
     }
 }
-
-    
