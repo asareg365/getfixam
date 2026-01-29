@@ -6,79 +6,102 @@ import Link from 'next/link';
 import { Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PublicLayout from '@/components/layout/PublicLayout';
-import { isAdminUser } from '@/lib/admin-guard';
 
 export async function generateStaticParams() {
   const categories = await getCategories();
   const slugs = categories.map((category) => ({ slug: category.slug }));
-  slugs.push({ slug: 'all' });
+  slugs.push({ slug: 'all' }); // Include "all" as a special category
   return slugs;
 }
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const category = await getCategoryBySlug(params.slug);
-  if (!category) {
-    return { title: 'Category Not Found' };
+  if (params.slug === 'all') {
+    return {
+      title: `All Providers | FixAm Ghana`,
+      description: `Browse all trusted service providers in Berekum.`,
+    };
   }
+
+  const category = await getCategoryBySlug(params.slug);
+  if (!category) return { title: 'Category Not Found' };
+
   return {
     title: `${category.name} | FixAm Ghana`,
     description: `Find trusted ${category.name.toLowerCase()} in Berekum.`,
   };
 }
 
-
 export default async function CategoryPage({ params }: { params: { slug: string } }) {
-  const category = await getCategoryBySlug(params.slug);
-  
-  if (!category) {
-    notFound();
-  }
+  let categoryName = 'All Providers';
+  let providers: Provider[] = [];
 
-  const providers: Provider[] = await getProviders(params.slug);
-  const isAdmin = await isAdminUser();
+  try {
+    if (params.slug === 'all') {
+      providers = await getProviders(); // Fetch all providers
+    } else {
+      const category = await getCategoryBySlug(params.slug);
+      if (!category) notFound();
+      categoryName = category.name;
+      providers = await getProviders(params.slug);
+    }
+  } catch (err) {
+    console.error('Error fetching providers or category:', err);
+    providers = [];
+  }
 
   return (
     <PublicLayout>
-        <div className="bg-secondary/20 min-h-[calc(100vh-4rem)]">
+      <div className="bg-secondary/20 min-h-[calc(100vh-4rem)]">
         <div className="container mx-auto px-4 md:px-6 py-12 md:py-16">
-            <div className="mb-12">
-                <div className="flex items-center text-sm text-muted-foreground mb-4">
-                <Link href="/" className="hover:text-primary transition-colors flex items-center">
-                    <Home className="h-4 w-4 mr-2" />
-                    Home
-                </Link>
-                <span className="mx-2">/</span>
-                <span>{category.name}</span>
-                </div>
-            <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">{category.name}</h1>
+          {/* Breadcrumb */}
+          <div className="mb-12">
+            <div className="flex items-center text-sm text-muted-foreground mb-4">
+              <Link href="/" className="hover:text-primary transition-colors flex items-center">
+                <Home className="h-4 w-4 mr-2" />
+                Home
+              </Link>
+              <span className="mx-2">/</span>
+              <span>{categoryName}</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">{categoryName}</h1>
             <p className="mt-2 text-lg text-foreground/80">
-                {providers.length > 0
-                ? `Browse through ${providers.length} ${category.name.toLowerCase()} available in Berekum.`
-                : `No ${category.name.toLowerCase()} found in this category yet. Check back soon!`}
+              {providers.length > 0
+                ? `Browse through ${providers.length} ${categoryName.toLowerCase()} available in Berekum.`
+                : `No ${categoryName.toLowerCase()} found in this category yet. Check back soon!`}
             </p>
-            </div>
+          </div>
 
-            {providers.length > 0 ? (
+          {/* Providers Grid */}
+          {providers.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-                {providers.map((provider) => (
-                <ProviderCard key={provider.id} provider={provider} />
-                ))}
+              {providers.map((provider) => (
+                <ProviderCard
+                  key={provider.id}
+                  provider={{
+                    ...provider,
+                    name: provider.name ?? 'Unknown',
+                    phone: provider.phone ?? '-',
+                    category: provider.category ?? 'N/A',
+                    rating: provider.rating ?? 0,
+                    reviewCount: provider.reviewCount ?? 0,
+                    imageId: provider.imageId ?? '',
+                  }}
+                />
+              ))}
             </div>
-            ) : (
+          ) : (
             <div className="text-center py-20 border-2 border-dashed rounded-lg">
-                <p className="text-xl font-semibold">Nothing to see here... yet!</p>
-                <p className="text-muted-foreground mt-2">
+              <p className="text-xl font-semibold">Nothing to see here... yet!</p>
+              <p className="text-muted-foreground mt-2">
                 Be the first to list your business in this category.
-                </p>
-                {!isAdmin && (
-                    <Button asChild className="mt-6">
-                        <Link href="/add-provider">List Your Business</Link>
-                    </Button>
-                )}
+              </p>
+              <Button asChild className="mt-6">
+                <Link href="/add-provider">List Your Business</Link>
+              </Button>
             </div>
-            )}
+          )}
         </div>
-        </div>
+      </div>
     </PublicLayout>
   );
 }
