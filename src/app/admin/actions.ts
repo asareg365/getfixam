@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { FieldValue } from 'firebase-admin/firestore';
 
 export async function createAdminSession(idToken: string) {
+  console.log('GCLOUD PROJECT:', process.env.GCLOUD_PROJECT);
   try {
     const decoded = await adminAuth.verifyIdToken(idToken);
 
