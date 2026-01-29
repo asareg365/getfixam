@@ -1,8 +1,7 @@
 'use server';
 
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { requireAdmin } from '@/lib/admin-guard';
+import { adminDb } from '@/lib/firebase-admin';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal } from "lucide-react";
@@ -10,19 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import type { Service } from '@/lib/types';
-
-async function checkAdminSession() {
-  const token = cookies().get('adminSession')?.value;
-  if (!token) redirect('/admin/login');
-
-  try {
-    const decoded = await adminAuth.verifyIdToken(token);
-    if (decoded.email?.toLowerCase() !== 'asareg365@gmail.com') redirect('/admin/login');
-  } catch (err) {
-    console.error('Admin verification failed', err);
-    redirect('/admin/login');
-  }
-}
 
 async function getServices(): Promise<Service[]> {
   const snapshot = await adminDb.collection('services').orderBy('name').get();
@@ -45,7 +31,7 @@ async function getServices(): Promise<Service[]> {
 }
 
 export default async function ServicesPage() {
-    await checkAdminSession();
+    await requireAdmin();
     const services = await getServices();
 
     return (

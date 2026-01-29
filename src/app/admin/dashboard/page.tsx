@@ -1,8 +1,6 @@
 'use server';
 
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { adminAuth } from '@/lib/firebase-admin';
+import { requireAdmin } from '@/lib/admin-guard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, List, CheckCircle, Package, MessageSquare, AlertCircle } from 'lucide-react';
 import { getDashboardData } from '@/lib/services';
@@ -10,24 +8,6 @@ import { DashboardCharts } from './_components/dashboard-charts';
 import { HeatmapList } from './_components/heatmap-list';
 import { PredictionCard } from './_components/prediction-card';
 import { StandbyCard } from './_components/standby-card';
-
-/** ----- Server-side Admin Session Check ----- */
-async function checkAdminSession() {
-  const cookieStore = cookies();
-  const token = cookieStore.get('adminSession')?.value;
-
-  if (!token) redirect('/admin/login');
-
-  try {
-    const decoded = await adminAuth.verifyIdToken(token);
-    if (decoded.email?.toLowerCase() !== 'asareg365@gmail.com') {
-      redirect('/admin/login');
-    }
-  } catch (err) {
-    console.error('Admin verification failed', err);
-    redirect('/admin/login');
-  }
-}
 
 type StatCardProps = {
     title: string;
@@ -52,7 +32,7 @@ function StatCard({ title, value, description, icon: Icon }: StatCardProps) {
 }
 
 export default async function DashboardPage() {
-  await checkAdminSession();
+  await requireAdmin();
   const data = await getDashboardData();
 
   return (

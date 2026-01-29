@@ -1,8 +1,7 @@
 'use server';
 
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { adminDb, adminAuth } from '@/lib/firebase-admin';
+import { requireAdmin } from '@/lib/admin-guard';
+import { adminDb } from '@/lib/firebase-admin';
 import type { Provider, Service } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,20 +9,6 @@ import { PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { ProvidersTable } from './_components/providers-table';
 import { ProviderTabs } from './_components/provider-tabs';
-
-/** ----- Server-side Admin Session Check ----- */
-async function checkAdminSession() {
-  const token = cookies().get('adminSession')?.value;
-  if (!token) redirect('/admin/login');
-
-  try {
-    const decoded = await adminAuth.verifyIdToken(token);
-    if (decoded.email?.toLowerCase() !== 'asareg365@gmail.com') redirect('/admin/login');
-  } catch (err) {
-    console.error('Admin verification failed', err);
-    redirect('/admin/login');
-  }
-}
 
 /** ----- Fetch Providers with safe defaults ----- */
 async function getProvidersFromDB(status?: string): Promise<Provider[]> {
@@ -78,7 +63,7 @@ export default async function ProvidersPage({
 }: {
   searchParams?: { status?: 'pending' | 'approved' | 'rejected' | 'suspended' | 'all' };
 }) {
-  await checkAdminSession();
+  await requireAdmin();
 
   const status = searchParams?.status || 'pending';
   const providers = await getProvidersFromDB(status);

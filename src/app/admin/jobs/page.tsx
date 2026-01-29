@@ -1,28 +1,9 @@
 'use server';
 
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { requireAdmin } from '@/lib/admin-guard';
+import { adminDb } from '@/lib/firebase-admin';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { Job } from '@/lib/types';
-
-/** ----- Server-side Admin Session Check ----- */
-async function checkAdminSession() {
-  const cookieStore = cookies();
-  const token = cookieStore.get('adminSession')?.value;
-
-  if (!token) redirect('/admin/login');
-
-  try {
-    const decoded = await adminAuth.verifyIdToken(token);
-    if (decoded.email?.toLowerCase() !== 'asareg365@gmail.com') {
-      redirect('/admin/login');
-    }
-  } catch (err) {
-    console.error('Admin verification failed', err);
-    redirect('/admin/login');
-  }
-}
 
 async function getJobs(): Promise<Job[]> {
     const jobsSnap = await adminDb.collection('jobs').orderBy('createdAt', 'desc').get();
@@ -47,7 +28,7 @@ async function getJobs(): Promise<Job[]> {
 }
 
 export default async function JobsPage() {
-    await checkAdminSession();
+    await requireAdmin();
     const jobs = await getJobs();
 
     return (
