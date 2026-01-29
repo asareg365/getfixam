@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Toaster } from "@/components/ui/toaster";
 import './globals.css';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 export const metadata: Metadata = {
   title: 'FixAm Ghana - Berekum',
@@ -23,6 +24,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         {children}
         <Toaster />
+        <FirebaseErrorListener />
       </body>
     </html>
   );

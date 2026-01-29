@@ -1,17 +1,15 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getProviderById, getReviewsByProviderId } from '@/lib/services';
-import type { Review } from '@/lib/types';
+import { getProviderById } from '@/lib/services';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import StarRating from '@/components/StarRating';
-import ReviewCard from '@/components/ReviewCard';
+import ProviderReviews from '@/components/ProviderReviews';
 import { Phone, MessageCircle, CheckCircle, MapPin, Home, Plus } from 'lucide-react';
 import PublicLayout from '@/components/layout/PublicLayout';
 
@@ -32,7 +30,6 @@ export default async function ProviderDetailPage({ params }: { params: { id: str
     notFound();
   }
 
-  const reviews: Review[] = await getReviewsByProviderId(params.id);
   const providerImage = PlaceHolderImages.find(p => p.id === provider.imageId);
 
   return (
@@ -113,21 +110,7 @@ export default async function ProviderDetailPage({ params }: { params: { id: str
                         </Link>
                     </Button>
                 </div>
-
-                {reviews.length > 0 ? (
-                <div className="space-y-6">
-                    {reviews.map((review) => (
-                    <ReviewCard key={review.id} review={review} />
-                    ))}
-                </div>
-                ) : (
-                <div className="text-center py-16 border-2 border-dashed rounded-lg">
-                    <h3 className="text-xl font-semibold">No Reviews Yet</h3>
-                    <p className="text-muted-foreground mt-2">
-                    Be the first to share your experience with {provider.name}.
-                    </p>
-                </div>
-                )}
+                <ProviderReviews providerId={provider.id} providerName={provider.name} />
             </div>
             </div>
         </div>
