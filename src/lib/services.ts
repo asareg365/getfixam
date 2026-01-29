@@ -96,9 +96,15 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
         rating: data.rating,
         reviewCount: data.reviewCount,
         imageId: data.imageId,
-        createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date(0).toISOString(),
-        approvedAt: data.approvedAt?.toDate?.()?.toISOString(),
-        featuredUntil: data.featuredUntil?.toDate?.()?.toISOString(),
+        createdAt: data.createdAt
+          ? data.createdAt.toDate().toISOString()
+          : new Date(0).toISOString(),
+        approvedAt: data.approvedAt
+          ? data.approvedAt.toDate().toISOString()
+          : undefined,
+        featuredUntil: data.featuredUntil
+          ? data.featuredUntil.toDate().toISOString()
+          : undefined,
       };
     });
   } catch (error) {
@@ -150,9 +156,15 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
         rating: data.rating,
         reviewCount: data.reviewCount,
         imageId: data.imageId,
-        createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date(0).toISOString(),
-        approvedAt: data.approvedAt?.toDate?.()?.toISOString(),
-        featuredUntil: data.featuredUntil?.toDate?.()?.toISOString(),
+        createdAt: data.createdAt
+          ? data.createdAt.toDate().toISOString()
+          : new Date(0).toISOString(),
+        approvedAt: data.approvedAt
+          ? data.approvedAt.toDate().toISOString()
+          : undefined,
+        featuredUntil: data.featuredUntil
+          ? data.featuredUntil.toDate().toISOString()
+          : undefined,
       };
     }
     return undefined;
@@ -360,7 +372,9 @@ export async function getDashboardData() {
             const predictionData = predictionSnap.data() as any;
             prediction = {
                 ...predictionData,
-                generatedAt: predictionData.generatedAt.toDate().toISOString(),
+                generatedAt: predictionData.generatedAt
+                    ? predictionData.generatedAt.toDate().toISOString()
+                    : new Date(0).toISOString(),
             };
         }
 
@@ -380,7 +394,9 @@ export async function getDashboardData() {
                 serviceType: standbyData.serviceType,
                 area: standbyData.area,
                 artisans: standbyArtisans,
-                generatedAt: standbyData.generatedAt.toDate().toISOString(),
+                generatedAt: standbyData.generatedAt
+                    ? standbyData.generatedAt.toDate().toISOString()
+                    : new Date(0).toISOString(),
             };
         }
 

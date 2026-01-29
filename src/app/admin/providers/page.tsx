@@ -61,8 +61,12 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
       createdAt: data.createdAt
         ? data.createdAt.toDate().toISOString()
         : new Date(0).toISOString(),
-      approvedAt: data.approvedAt?.toDate?.()?.toISOString(),
-      featuredUntil: data.featuredUntil?.toDate?.()?.toISOString(),
+      approvedAt: data.approvedAt
+        ? data.approvedAt.toDate().toISOString()
+        : undefined,
+      featuredUntil: data.featuredUntil
+        ? data.featuredUntil.toDate().toISOString()
+        : undefined,
     };
   });
 }

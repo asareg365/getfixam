@@ -73,9 +73,15 @@ export default function ProviderDashboardPage() {
             id: providerDoc.id,
             ...providerData,
             category: categoryName,
-            createdAt: providerData.createdAt ? providerData.createdAt.toDate().toISOString() : new Date(0).toISOString(),
-            approvedAt: providerData.approvedAt?.toDate?.()?.toISOString(),
-            featuredUntil: providerData.featuredUntil?.toDate?.()?.toISOString(),
+            createdAt: providerData.createdAt
+              ? providerData.createdAt.toDate().toISOString()
+              : new Date(0).toISOString(),
+            approvedAt: providerData.approvedAt
+              ? providerData.approvedAt.toDate().toISOString()
+              : undefined,
+            featuredUntil: providerData.featuredUntil
+              ? providerData.featuredUntil.toDate().toISOString()
+              : undefined,
           } as Provider);
 
         } catch(e: any) {
