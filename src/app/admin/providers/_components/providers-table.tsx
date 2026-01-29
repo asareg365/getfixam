@@ -9,51 +9,55 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { Provider } from '@/lib/types';
-import { MoreHorizontal } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ManageFeatureDialog } from './manage-feature-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 interface ProvidersTableProps {
   providers: Provider[];
-  onAction?: (providerId: string, action: 'approve' | 'reject' | 'suspend') => Promise<{ success: boolean; error?: string }>;
 }
 
 export function ProvidersTable({
-  providers,
-  onAction,
+  providers
 }: ProvidersTableProps) {
-    const [loadingId, setLoadingId] = useState<string | null>(null);
+    const [loadingIds, setLoadingIds] = useState<string[]>([]);
+    const [localProviders, setLocalProviders] = useState(providers);
     const { toast } = useToast();
 
-    const handleAction = async (providerId: string, action: 'approve' | 'reject' | 'suspend') => {
-        if (!onAction) return;
-        setLoadingId(providerId);
-        const result = await onAction(providerId, action);
-        setLoadingId(null);
-        if (result.success) {
-            toast({
-                title: 'Action Successful',
-                description: `Provider has been updated.`,
+    const handleAction = async (providerId: string, action: 'approve' | 'reject') => {
+        try {
+            setLoadingIds(prev => [...prev, providerId]);
+
+            const formData = new FormData();
+            formData.set('providerId', providerId);
+
+            const res = await fetch(`/admin/providers/${action}`, {
+                method: 'POST',
+                body: formData,
             });
-        } else {
-            toast({
-                title: 'Action Failed',
-                description: result.error || 'An unexpected error occurred.',
-                variant: 'destructive',
-            });
+
+            const result = await res.json();
+
+            if (result.success) {
+                toast({ title: `Provider ${action}d successfully!`, variant: 'success' });
+
+                // Update local state to reflect new status
+                setLocalProviders(prev =>
+                    prev.map(p => p.id === providerId ? { ...p, status: action === 'approve' ? 'approved' : 'rejected', verified: action === 'approve' } : p)
+                );
+            } else {
+                toast({ title: `Failed to ${action} provider`, description: result.error, variant: 'destructive' });
+            }
+        } catch (error: any) {
+            toast({ title: 'Error', description: error.message || 'Unexpected error', variant: 'destructive' });
+        } finally {
+            setLoadingIds(prev => prev.filter(id => id !== providerId));
         }
     };
 
-  if (!providers || providers.length === 0) {
+
+  if (!localProviders || localProviders.length === 0) {
     return (
       <p className="text-center py-8 text-muted-foreground">
         No providers found for this status.
@@ -69,14 +73,13 @@ export function ProvidersTable({
             <TableHead>Name</TableHead>
             <TableHead>Service</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Featured</TableHead>
             <TableHead>Created</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
 
         <TableBody>
-          {providers.map((p) => {
+          {localProviders.map((p) => {
             const createdAt = p.createdAt
               ? new Date(p.createdAt).toLocaleDateString()
               : '—';
@@ -103,47 +106,30 @@ export function ProvidersTable({
                     {p.status ?? 'pending'}
                   </Badge>
                 </TableCell>
-                
-                <TableCell>
-                  {p.isFeatured ? 'Yes' : 'No'}
-                </TableCell>
 
                 <TableCell>{createdAt}</TableCell>
 
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" disabled={loadingId === p.id}>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {p.status === 'pending' && (
+                <TableCell className="text-right space-x-2">
+                    {p.status === 'pending' && (
                         <>
-                          <DropdownMenuItem onClick={() => handleAction(p.id, 'approve')}>
+                        <Button
+                            size="sm"
+                            variant="success"
+                            onClick={() => handleAction(p.id, 'approve')}
+                            disabled={loadingIds.includes(p.id)}
+                        >
                             Approve
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleAction(p.id, 'reject')} className="text-destructive">
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleAction(p.id, 'reject')}
+                            disabled={loadingIds.includes(p.id)}
+                        >
                             Reject
-                          </DropdownMenuItem>
+                        </Button>
                         </>
-                      )}
-
-                      {p.status === 'approved' && (
-                         <ManageFeatureDialog provider={p}>
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                Manage Feature
-                            </DropdownMenuItem>
-                        </ManageFeatureDialog>
-                      )}
-
-                      {(p.status === 'approved' || p.status === 'suspended') && (
-                        <DropdownMenuItem onClick={() => handleAction(p.id, 'suspend')}>
-                         {p.status === 'suspended' ? 'Re-Approve' : 'Suspend'}
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    )}
                 </TableCell>
               </TableRow>
             );

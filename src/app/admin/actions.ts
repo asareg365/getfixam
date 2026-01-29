@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
+import { logAuditEvent } from '@/lib/audit';
 
 /** ----- Helper: Get Admin Context ----- */
 async function getAdminContext() {
@@ -17,22 +18,6 @@ async function getAdminContext() {
     email: decoded.email ?? 'unknown',
     uid: decoded.uid,
   };
-}
-
-/** ----- Helper: Audit Logger ----- */
-async function logAudit(adminEmail: string, providerId: string, providerName: string, action: 'approved' | 'rejected') {
-  try {
-    await adminDb.collection('auditLogs').add({
-      adminEmail,
-      providerId,
-      providerName,
-      action,
-      timestamp: FieldValue.serverTimestamp(),
-    });
-  } catch (error) {
-    console.error('Failed to log audit action:', error);
-    // Non-blocking so we don't fail the main action
-  }
 }
 
 
@@ -63,129 +48,6 @@ export async function createAdminSession(idToken: string) {
 export async function logoutAction() {
   cookies().delete('adminSession');
   redirect('/admin/login');
-}
-
-
-/** ----- PROVIDER ACTIONS ----- */
-export async function approveProvider(prevState: any, formData: FormData) {
-  const providerId = formData.get('providerId') as string;
-  if (!providerId) return { success: false, error: 'Provider ID is missing.' };
-
-  try {
-    const admin = await getAdminContext();
-    const providerRef = adminDb.collection('providers').doc(providerId);
-    const snap = await providerRef.get();
-
-    if (!snap.exists) {
-      return { success: false, error: 'Provider not found.' };
-    }
-    const providerData = snap.data();
-    if (!providerData) {
-        return { success: false, error: 'Provider data is empty.' };
-    }
-
-    await providerRef.update({
-      status: 'approved',
-      verified: true,
-      approvedAt: FieldValue.serverTimestamp(),
-    });
-
-    await logAudit(admin.email, providerId, providerData.name, 'approved');
-
-    revalidatePath('/admin/providers');
-    revalidatePath('/');
-    return { success: true, message: 'Provider approved.' };
-  } catch (error: any) {
-    console.error('Error approving provider:', error);
-    return { success: false, error: error.message || 'Failed to approve provider.' };
-  }
-}
-
-export async function rejectProvider(prevState: any, formData: FormData) {
-  const providerId = formData.get('providerId') as string;
-  if (!providerId) return { success: false, error: 'Provider ID is missing.' };
-
-  try {
-    const admin = await getAdminContext();
-    const providerRef = adminDb.collection('providers').doc(providerId);
-    const snap = await providerRef.get();
-     if (!snap.exists) {
-      return { success: false, error: 'Provider not found.' };
-    }
-    const providerData = snap.data();
-    if (!providerData) {
-        return { success: false, error: 'Provider data is empty.' };
-    }
-
-    await providerRef.update({ status: 'rejected' });
-    
-    await logAudit(admin.email, providerId, providerData.name, 'rejected');
-
-    revalidatePath('/admin/providers');
-    return { success: true, message: 'Provider rejected.' };
-  } catch (error: any) {
-    console.error('Error rejecting provider:', error);
-    return { success: false, error: error.message ||'Failed to reject provider.' };
-  }
-}
-
-export async function suspendProvider(prevState: any, formData: FormData) {
-    const providerId = formData.get('providerId') as string;
-    if (!providerId) return { success: false, error: 'Provider ID is missing.' };
-
-    try {
-        const admin = await getAdminContext();
-        const providerRef = adminDb.collection('providers').doc(providerId);
-        const snap = await providerRef.get();
-        if (!snap.exists) {
-            return { success: false, error: 'Provider not found.' };
-        }
-
-        await providerRef.update({ status: 'suspended' });
-
-        revalidatePath('/admin/providers');
-        return { success: true, message: 'Provider suspended.' };
-    } catch (error: any) {
-        console.error('Error suspending provider:', error);
-        return { success: false, error: error.message || 'Failed to suspend provider.' };
-    }
-}
-
-
-export async function updateFeatureStatus(prevState: any, formData: FormData) {
-  const providerId = formData.get('providerId') as string;
-  const isFeatured = formData.get('isFeatured') === 'on';
-  const featuredUntil = formData.get('featuredUntil') as string | null;
-
-  if (!providerId) return { success: false, error: 'Provider ID is missing.' };
-
-  try {
-    const admin = await getAdminContext();
-    const providerRef = adminDb.collection('providers').doc(providerId);
-    const snap = await providerRef.get();
-    if (!snap.exists) {
-        return { success: false, error: 'Provider not found.' };
-    }
-
-    const update: { isFeatured: boolean; featuredUntil?: Date | FieldValue } = {
-      isFeatured,
-    };
-
-    if (isFeatured && featuredUntil) {
-      update.featuredUntil = new Date(featuredUntil);
-    } else {
-      update.featuredUntil = FieldValue.delete();
-    }
-    
-    await providerRef.update(update);
-
-    revalidatePath('/admin/providers');
-    revalidatePath('/');
-    return { success: true, message: 'Provider feature status updated.' };
-  } catch (error: any) {
-    console.error('Error updating feature status:', error);
-    return { success: false, error: error.message || 'Failed to update provider status.' };
-  }
 }
 
 /** ----- SERVICE ACTIONS ----- */
@@ -220,7 +82,15 @@ export async function addServiceAction(prevState: any, formData: FormData) {
             createdAt: FieldValue.serverTimestamp(),
         };
 
-        await adminDb.collection('services').add(serviceData);
+        const newServiceRef = await adminDb.collection('services').add(serviceData);
+        
+        await logAuditEvent({
+            adminEmail: admin.email,
+            action: 'create_service',
+            targetType: 'service',
+            targetId: newServiceRef.id,
+            after: serviceData,
+        });
         
         revalidatePath('/admin/services');
         return { success: true, message: 'Service added successfully.' };
