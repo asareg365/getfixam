@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 interface ProviderTabsProps {
@@ -16,15 +15,19 @@ const statuses: { label: string; value: ProviderTabsProps['currentStatus'] }[] =
 ];
 
 export function ProviderTabs({ currentStatus }: ProviderTabsProps) {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const [active, setActive] = useState(currentStatus);
+  const searchParams = useSearchParams();
 
   const handleTabClick = (status: ProviderTabsProps['currentStatus']) => {
-    setActive(status);
     const params = new URLSearchParams(searchParams.toString());
-    params.set('status', status);
-    router.replace(`/admin/providers?${params.toString()}`);
+
+    if (status === 'all') {
+      params.delete('status');
+    } else {
+      params.set('status', status);
+    }
+
+    router.push(`/admin/providers?${params.toString()}`);
   };
 
   return (
@@ -32,10 +35,13 @@ export function ProviderTabs({ currentStatus }: ProviderTabsProps) {
       {statuses.map((status) => (
         <button
           key={status.value}
-          className={`px-4 py-2 rounded-md font-medium ${
-            active === status.value ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
-          }`}
+          type="button"
           onClick={() => handleTabClick(status.value)}
+          className={`px-4 py-2 rounded-md font-medium transition ${
+            currentStatus === status.value
+              ? 'bg-primary text-white'
+              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+          }`}
         >
           {status.label}
         </button>
