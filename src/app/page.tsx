@@ -9,6 +9,7 @@ import ProviderCard from '@/components/ProviderCard';
 import type { Category, Provider } from '@/lib/types';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import PublicLayout from '@/components/layout/PublicLayout';
+import { searchAction } from './actions';
 
 
 export default async function BrowsePage() {
@@ -27,9 +28,10 @@ export default async function BrowsePage() {
             <p className="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-foreground/80">
                 "Wo nim plumber bi anaa?" Find trusted local artisans in Berekum, fast.
             </p>
-            <div className="mt-8 max-w-lg mx-auto flex gap-2">
+            <form action={searchAction} className="mt-8 max-w-lg mx-auto flex gap-2">
                 <Input
                 type="search"
+                name="query"
                 placeholder="Search for a service (e.g., electrician)"
                 className="flex-1 bg-background"
                 aria-label="Search for a service"
@@ -37,7 +39,7 @@ export default async function BrowsePage() {
                 <Button type="submit" size="icon" aria-label="Search">
                 <Search className="h-5 w-5" />
                 </Button>
-            </div>
+            </form>
             </div>
             {heroImage && (
                 <Image

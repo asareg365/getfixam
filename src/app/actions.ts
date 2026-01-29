@@ -2,8 +2,31 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { addProvider as dbAddProvider, addReview as dbAddReview } from '@/lib/services';
-import { PROVIDERS } from './lib/data';
+import { addProvider as dbAddProvider, addReview as dbAddReview, getCategories } from '@/lib/services';
+import { redirect } from 'next/navigation';
+
+export async function searchAction(formData: FormData) {
+  const query = formData.get('query') as string;
+  if (!query) {
+    redirect('/category/all');
+    return;
+  }
+  
+  const normalizedQuery = query.trim().toLowerCase();
+  const categories = await getCategories();
+
+  const foundCategory = categories.find(
+    (cat) =>
+      cat.name.toLowerCase().includes(normalizedQuery) ||
+      cat.slug === normalizedQuery.replace(/\s+/g, '-')
+  );
+
+  if (foundCategory) {
+    redirect(`/category/${foundCategory.slug}`);
+  } else {
+    redirect('/category/all');
+  }
+}
 
 const reviewSchema = z.object({
   providerId: z.string(),
