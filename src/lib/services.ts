@@ -1,69 +1,214 @@
 
+import { collection, getDocs, query, where, orderBy, limit, doc, getDoc } from 'firebase/firestore';
+import { db } from './firebase';
 import { adminDb } from './firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { Category, Provider, Review, Request, Prediction, StandbyPrediction } from './types';
 
 /**
- * Fetches all active categories from Firestore.
+ * Fetches all active categories from Firestore using the client SDK.
  */
 export async function getCategories(): Promise<Category[]> {
-  // Fallback to mock data to prevent server-side timeout issues.
-  const { CATEGORIES } = await import('./data');
-  return CATEGORIES;
+  try {
+    const servicesRef = collection(db, 'services');
+    const q = query(servicesRef, where('active', '==', true), orderBy('name'));
+    const servicesSnap = await getDocs(q);
+    if (servicesSnap.empty) {
+      return [];
+    }
+    return servicesSnap.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        name: data.name,
+        slug: data.slug,
+        icon: data.icon,
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching categories: ", error);
+    // Fallback to mock data in case of an error during public fetch
+    const { CATEGORIES } = await import('./data');
+    return CATEGORIES;
+  }
 }
 
 /**
- * Fetches a category by its slug from Firestore.
+ * Fetches a category by its slug from Firestore using the client SDK.
  */
 export async function getCategoryBySlug(slug: string): Promise<Category | undefined> {
   if (slug === 'all') {
     return { id: 'all', name: 'All Artisans', slug: 'all', icon: 'Wrench' };
   }
-  // Fallback to mock data to prevent server-side timeout issues.
-  const { CATEGORIES } = await import('./data');
-  return CATEGORIES.find(c => c.slug === slug);
+  try {
+    const servicesRef = collection(db, 'services');
+    const q = query(servicesRef, where('slug', '==', slug), limit(1));
+    const servicesSnap = await getDocs(q);
+    if (servicesSnap.empty) {
+      return undefined;
+    }
+    const doc = servicesSnap.docs[0];
+    const data = doc.data();
+    return {
+      id: doc.id,
+      name: data.name,
+      slug: data.slug,
+      icon: data.icon,
+    };
+  } catch (error) {
+     console.error(`Error fetching category by slug ${slug}: `, error);
+     return undefined;
+  }
 }
 
 /**
- * Fetches approved providers from Firestore, optionally filtering by category slug.
+ * Fetches approved providers from Firestore, optionally filtering by category slug, using the client SDK.
  * Featured providers are always listed first.
  */
 export async function getProviders(categorySlug?: string): Promise<Provider[]> {
-  // Fallback to mock data to prevent server-side timeout issues.
-    const { PROVIDERS, CATEGORIES } = await import('./data');
-    let providers = PROVIDERS.filter(p => p.status === 'approved' && p.location.city === 'Berekum');
-    if (categorySlug && categorySlug !== 'all') {
-        const category = CATEGORIES.find(c => c.slug === categorySlug);
-        if (!category) return [];
-        providers = providers.filter(p => p.serviceId === category.id);
+    try {
+        const servicesRef = collection(db, 'services');
+        const servicesSnap = await getDocs(servicesRef);
+        const servicesMap = new Map<string, { name: string, slug: string }>();
+        let serviceIdForSlug: string | null = null;
+        servicesSnap.forEach(doc => {
+            const data = doc.data();
+            servicesMap.set(doc.id, { name: data.name, slug: data.slug });
+            if (categorySlug && data.slug === categorySlug) {
+                serviceIdForSlug = doc.id;
+            }
+        });
+
+        if (categorySlug && categorySlug !== 'all' && !serviceIdForSlug) {
+            return [];
+        }
+        
+        const providersRef = collection(db, 'providers');
+        let q;
+        if (serviceIdForSlug) {
+            q = query(providersRef, where('status', '==', 'approved'), where('serviceId', '==', serviceIdForSlug));
+        } else {
+            q = query(providersRef, where('status', '==', 'approved'));
+        }
+        
+        const providersSnap = await getDocs(q);
+
+        let providers = providersSnap.docs.map(doc => {
+            const data = doc.data();
+            const service = servicesMap.get(data.serviceId);
+            return {
+                id: doc.id,
+                name: data.name ?? 'Unknown',
+                category: service?.name ?? 'N/A',
+                serviceId: data.serviceId,
+                phone: data.phone,
+                whatsapp: data.whatsapp,
+                location: data.location,
+                status: data.status,
+                verified: data.verified,
+                isFeatured: data.isFeatured ?? false,
+                rating: data.rating ?? 0,
+                reviewCount: data.reviewCount ?? 0,
+                createdAt: data.createdAt?.toDate().toISOString() || new Date(0).toISOString(),
+                approvedAt: data.approvedAt?.toDate().toISOString(),
+                featuredUntil: data.featuredUntil?.toDate().toISOString(),
+                imageId: data.imageId,
+            } as Provider;
+        }).filter(p => p.location?.city === 'Berekum');
+
+        return providers.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
+    } catch (error) {
+        console.error("Error fetching providers: ", error);
+        return [];
     }
-    return providers.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
 }
 
 /**
- * Fetches a single approved provider by its ID from Firestore.
+ * Fetches a single approved provider by its ID from Firestore using the client SDK.
  */
 export async function getProviderById(id: string): Promise<Provider | undefined> {
-  // Fallback to mock data to prevent server-side timeout issues.
-    const { PROVIDERS } = await import('./data');
-    const provider = PROVIDERS.find(p => p.id === id);
-    if (provider && provider.status === 'approved') {
-        return provider;
+    try {
+        const providerRef = doc(db, 'providers', id);
+        const providerDoc = await getDoc(providerRef);
+        if (!providerDoc.exists()) {
+            return undefined;
+        }
+        const data = providerDoc.data()!;
+
+        if (data.status !== 'approved') {
+            return undefined;
+        }
+
+        let categoryName = 'N/A';
+        if (data.serviceId) {
+            const serviceDoc = await getDoc(doc(db, 'services', data.serviceId));
+            if (serviceDoc.exists()) {
+                categoryName = serviceDoc.data()!.name;
+            }
+        }
+
+        return {
+            id: providerDoc.id,
+            name: data.name,
+            category: categoryName,
+            serviceId: data.serviceId,
+            phone: data.phone,
+            whatsapp: data.whatsapp,
+            location: data.location,
+            status: data.status,
+            verified: data.verified,
+            isFeatured: data.isFeatured ?? false,
+            rating: data.rating ?? 0,
+            reviewCount: data.reviewCount ?? 0,
+            createdAt: data.createdAt?.toDate().toISOString() || new Date(0).toISOString(),
+            approvedAt: data.approvedAt?.toDate().toISOString(),
+            featuredUntil: data.featuredUntil?.toDate().toISOString(),
+            imageId: data.imageId,
+        } as Provider;
+    } catch (error) {
+        console.error(`Error fetching provider by ID ${id}: `, error);
+        return undefined;
     }
-    return undefined;
 }
 
 /**
- * Fetches all approved reviews for a specific provider from Firestore.
+ * Fetches all approved reviews for a specific provider from Firestore using the client SDK.
  */
 export async function getReviewsByProviderId(providerId: string): Promise<Review[]> {
-  // Fallback to mock data to prevent server-side timeout issues.
-    const { REVIEWS } = await import('./data');
-    return REVIEWS.filter(r => r.providerId === providerId && r.status === 'approved');
+    try {
+        const reviewsRef = collection(db, 'reviews');
+        const q = query(reviewsRef,
+            where('providerId', '==', providerId),
+            where('status', '==', 'approved'),
+            orderBy('createdAt', 'desc')
+        );
+        const reviewsSnap = await getDocs(q);
+        
+        if (reviewsSnap.empty) {
+            return [];
+        }
+
+        return reviewsSnap.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                providerId: data.providerId,
+                userName: data.userName,
+                rating: data.rating,
+                comment: data.comment,
+                createdAt: data.createdAt?.toDate().toISOString() || new Date(0).toISOString(),
+                userImageId: data.userImageId,
+                status: data.status,
+            } as Review;
+        });
+    } catch (error) {
+        console.error(`Error fetching reviews for provider ${providerId}: `, error);
+        return [];
+    }
 }
 
 /**
- * Adds a new provider to Firestore with 'pending' status.
+ * Adds a new provider to Firestore with 'pending' status. Uses Admin SDK.
  */
 export async function addProvider(
     data: { name: string; serviceId: string; phone: string; whatsapp: string; location: object; imageId: string; }
@@ -87,7 +232,7 @@ export async function addProvider(
 }
 
 /**
- * Adds a new review to Firestore with 'pending' status for moderation.
+ * Adds a new review to Firestore with 'pending' status for moderation. Uses Admin SDK.
  */
 export async function addReview(data: Omit<Review, 'id' | 'createdAt' | 'status'>) {
     await adminDb.collection('reviews').add({
@@ -99,12 +244,20 @@ export async function addReview(data: Omit<Review, 'id' | 'createdAt' | 'status'
 }
 
 /**
- * Fetches the list of zones for Berekum from Firestore.
+ * Fetches the list of zones for Berekum from Firestore using the client SDK.
  */
 export async function getBerekumZones(): Promise<string[]> {
-  // Fallback to mock data to prevent server-side timeout issues.
-  const { BEREKUM_ZONES } = await import('./data');
-  return BEREKUM_ZONES;
+    try {
+        const locationDoc = await getDoc(doc(db, 'locations', 'berekum'));
+        if (locationDoc.exists()) {
+            return locationDoc.data()?.zones || [];
+        }
+    } catch (error) {
+        console.warn('Could not fetch zones from Firestore, falling back to mock data.', error);
+    }
+    
+    const { BEREKUM_ZONES } = await import('./data');
+    return BEREKUM_ZONES;
 }
 
 /**
@@ -179,3 +332,4 @@ export async function getDashboardData() {
         };
     }
 }
+    
