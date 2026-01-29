@@ -30,9 +30,6 @@ export default function AdminLoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const idToken = await userCredential.user.getIdToken();
       
-      console.log('ID TOKEN EXISTS:', !!idToken);
-      console.log('ID TOKEN LENGTH:', idToken?.length);
-      
       // Step 2: Verify admin permissions with the backend server action
       const sessionResult = await createAdminSession(idToken);
 
@@ -56,6 +53,12 @@ export default function AdminLoginPage() {
         errorMessage = 'Invalid email or password. Please check your credentials and try again. If you forgot your password, use the "Forgot Password?" link.';
       } else if (error.code === 'auth/operation-not-allowed') {
         errorMessage = 'Email/Password sign-in is not enabled. Please enable it in your Firebase Console.';
+      } else if (error.code === 'auth/user-disabled') {
+        errorMessage = 'This user account has been disabled.';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'Access to this account has been temporarily disabled due to many failed login attempts. You can reset your password or try again later.';
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = 'A network error occurred. Please check your internet connection and try again.';
       }
       
       toast({
