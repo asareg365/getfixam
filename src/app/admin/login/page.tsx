@@ -122,13 +122,6 @@ export default function AdminLoginPage() {
           </form>
         </CardContent>
       </Card>
-       <footer className="absolute bottom-0 p-4 w-full">
-            <div className="text-center text-sm">
-                <Link href="/provider/login" className="text-muted-foreground hover:text-primary transition-colors">
-                Provider Login
-                </Link>
-            </div>
-        </footer>
     </div>
   );
 }

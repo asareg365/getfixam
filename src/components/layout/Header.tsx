@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, PlusCircle } from 'lucide-react';
+import { Menu, PlusCircle, User } from 'lucide-react';
 
 export default function Header() {
   const navLinks = [
     { href: '/#categories', label: 'Categories' },
     { href: '/add-provider', label: 'List your Business' },
+    { href: '/provider/login', label: 'Provider Login' },
   ];
 
   return (
@@ -30,6 +31,12 @@ export default function Header() {
              <Link href="/add-provider">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 List your Business
+            </Link>
+          </Button>
+          <Button asChild className="hidden md:flex" variant="ghost">
+             <Link href="/provider/login">
+                <User className="mr-2 h-4 w-4" />
+                Provider Login
             </Link>
           </Button>
 
