@@ -39,14 +39,13 @@ export default function AdminLoginPage() {
         // This user is valid in Firebase, but not authorized as an admin in our system.
         toast({
           title: 'Permission Denied',
-          description: sessionResult.error || 'You do not have permission to access the admin panel.',
+          description: 'You do not have permission to access the admin panel.',
           variant: 'destructive',
           duration: 9000,
         });
       }
     } catch (error: any) {
       // This catch block primarily handles Firebase Authentication errors
-      console.error('Admin login error:', error);
       let errorMessage = 'An unexpected error occurred during login.';
 
       if (error.code === 'auth/invalid-credential') {
