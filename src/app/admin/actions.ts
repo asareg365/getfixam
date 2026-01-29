@@ -12,7 +12,7 @@ export async function createAdminSession(idToken: string) {
     // Make the check case-insensitive to avoid login issues due to capitalization.
     if (decoded.email?.toLowerCase() !== 'asareg365@gmail.com') {
       console.warn(`Unauthorized login attempt from: ${decoded.email}`);
-      return { success: false, error: 'Unauthorized' };
+      return { success: false, error: 'Unauthorized: This account is not the designated admin.' };
     }
 
     cookies().set('adminSession', idToken, {
@@ -25,7 +25,7 @@ export async function createAdminSession(idToken: string) {
     return { success: true };
   } catch (error) {
     console.error('Session creation failed:', error);
-    return { success: false, error: 'Session creation failed' };
+    return { success: false, error: 'Session creation failed. This can be caused by incorrect server environment configuration. Please ensure the backend service has the correct permissions.' };
   }
 }
 
