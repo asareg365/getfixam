@@ -39,15 +39,12 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
   const providerSnapshot = await providersQuery.orderBy('createdAt', 'desc').get();
   console.log('Providers fetched:', providerSnapshot.size);
 
-  if (providerSnapshot.empty) {
-    return [];
-  }
-
   // Map provider data and enrich it with the service name (category).
   return providerSnapshot.docs.map((doc) => {
     const data = doc.data();
     const service = servicesMap.get(data.serviceId);
-    const providerData: Provider = {
+
+    return {
       id: doc.id,
       name: data.name,
       phone: data.phone,
@@ -55,21 +52,18 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
       location: data.location,
       status: data.status,
       verified: data.verified,
-      isFeatured: data.isFeatured || false,
-      rating: data.rating,
-      reviewCount: data.reviewCount,
+      isFeatured: data.isFeatured ?? false,
+      rating: data.rating ?? 0,
+      reviewCount: data.reviewCount ?? 0,
       imageId: data.imageId,
       serviceId: data.serviceId,
-      category: service?.name || data.serviceId || 'N/A',
-      createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date(0).toISOString(),
+      category: service?.name ?? 'N/A',
+      createdAt: data.createdAt
+        ? data.createdAt.toDate().toISOString()
+        : new Date(0).toISOString(),
+      approvedAt: data.approvedAt?.toDate?.()?.toISOString(),
+      featuredUntil: data.featuredUntil?.toDate?.()?.toISOString(),
     };
-     if (data.approvedAt) {
-      providerData.approvedAt = data.approvedAt.toDate().toISOString();
-    }
-    if (data.featuredUntil) {
-      providerData.featuredUntil = data.featuredUntil.toDate().toISOString();
-    }
-    return providerData;
   });
 }
 
