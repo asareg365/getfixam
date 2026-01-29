@@ -1,88 +1,48 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isAdmin() {
-      // Check if the user's UID exists in the 'admins' collection.
-      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
-    }
-
+    /* ============================
+       PROVIDERS
+    ============================ */
     match /providers/{providerId} {
-      allow read: if true;
-      allow create, delete: if isAdmin();
-      // Allow provider to update their own record, or any admin to update it.
-      allow update: if isAdmin() || (request.auth != null && request.auth.uid == resource.data.authUid);
+      // Anyone can read approved providers
+      allow read: if resource.data.status == 'approved';
+
+      // No client-side writes allowed
+      allow write: if false;
     }
 
+    /* ============================
+       SERVICES (Public catalog)
+    ============================ */
     match /services/{serviceId} {
       allow read: if true;
-      // Only admins can create, update, or delete services.
-      allow write: if isAdmin();
-    }
-    
-    match /admins/{adminId} {
-        // Admins can read the admins collection to check roles.
-        allow read: if isAdmin();
-        // Writes are disallowed by default, to be handled by secure backend functions.
-        allow write: if false;
+      allow write: if false;
     }
 
-    match /reviews/{reviewId} {
-        allow read: if true;
-
-        // Allow anyone to create a review, but enforce the data shape.
-        // New reviews MUST have a 'pending' status.
-        allow create: if request.resource.data.status == 'pending'
-                      && request.resource.data.rating > 0 && request.resource.data.rating <= 5
-                      && request.resource.data.comment is string && request.resource.data.comment.size() > 0
-                      && request.resource.data.userName is string && request.resource.data.userName.size() > 0;
-        
-        // Only admins can approve or reject reviews.
-        allow update: if isAdmin();
-        
-        // Disallow deletion for now to keep a record.
-        allow delete: if false;
-    }
-
-    match /requests/{requestId} {
-      // Only admins can read and write requests.
-      allow read, write: if isAdmin();
-    }
-
-    match /daily_stats/{statId} {
-      allow read: if isAdmin();
-      allow write: if false; // Only backend functions can write
-    }
-
-    match /bot_logs/{logId} {
-      allow read: if isAdmin();
-      allow write: if false; // Only backend functions can write
-    }
-
-    match /predictions/{predictionId} {
-      allow read: if isAdmin();
-      allow write: if false; // Only backend functions can write
-    }
-
-    match /standby/{standbyId} {
-      allow read, write: if isAdmin();
-    }
-    
+    /* ============================
+       JOBS
+    ============================ */
     match /jobs/{jobId} {
-      allow read, write: if isAdmin();
-    }
-
-    match /reassignments/{reassignmentId} {
-      allow read: if isAdmin();
-      allow write: if false; // Only backend functions can write
-    }
-
-    match /audit_logs/{logId} {
+      // Only authenticated users can read their own jobs (if you later add ownerId)
       allow read: if request.auth != null;
-      allow write: if false; // server-only via Admin SDK
+      allow write: if false;
+    }
+
+    /* ============================
+       AUDIT LOGS (SERVER ONLY)
+    ============================ */
+    match /audit_logs/{logId} {
+      allow read, write: if false;
+    }
+
+    /* ============================
+       DEFAULT DENY
+    ============================ */
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
-
-    
-
