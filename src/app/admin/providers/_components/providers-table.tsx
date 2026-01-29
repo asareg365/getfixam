@@ -12,7 +12,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { Provider } from '@/lib/types';
-import { ManageFeatureDialog } from './manage-feature-dialog';
 import { MoreHorizontal } from 'lucide-react';
 import {
   DropdownMenu,
@@ -20,22 +19,40 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ManageFeatureDialog } from './manage-feature-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface ProvidersTableProps {
   providers: Provider[];
-  onApprove?: (providerId: string) => void;
-  onReject?: (providerId: string) => void;
-  onSuspend?: (providerId: string) => void;
-  loadingId?: string | null;
+  onAction?: (providerId: string, action: 'approve' | 'reject' | 'suspend') => Promise<{ success: boolean; error?: string }>;
 }
 
 export function ProvidersTable({
   providers,
-  onApprove,
-  onReject,
-  onSuspend,
-  loadingId,
+  onAction,
 }: ProvidersTableProps) {
+    const [loadingId, setLoadingId] = useState<string | null>(null);
+    const { toast } = useToast();
+
+    const handleAction = async (providerId: string, action: 'approve' | 'reject' | 'suspend') => {
+        if (!onAction) return;
+        setLoadingId(providerId);
+        const result = await onAction(providerId, action);
+        setLoadingId(null);
+        if (result.success) {
+            toast({
+                title: 'Action Successful',
+                description: `Provider has been updated.`,
+            });
+        } else {
+            toast({
+                title: 'Action Failed',
+                description: result.error || 'An unexpected error occurred.',
+                variant: 'destructive',
+            });
+        }
+    };
+
   if (!providers || providers.length === 0) {
     return (
       <p className="text-center py-8 text-muted-foreground">
@@ -103,10 +120,10 @@ export function ProvidersTable({
                     <DropdownMenuContent align="end">
                       {p.status === 'pending' && (
                         <>
-                          <DropdownMenuItem onClick={() => onApprove?.(p.id)}>
+                          <DropdownMenuItem onClick={() => handleAction(p.id, 'approve')}>
                             Approve
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onReject?.(p.id)} className="text-destructive">
+                          <DropdownMenuItem onClick={() => handleAction(p.id, 'reject')} className="text-destructive">
                             Reject
                           </DropdownMenuItem>
                         </>
@@ -121,7 +138,7 @@ export function ProvidersTable({
                       )}
 
                       {(p.status === 'approved' || p.status === 'suspended') && (
-                        <DropdownMenuItem onClick={() => onSuspend?.(p.id)}>
+                        <DropdownMenuItem onClick={() => handleAction(p.id, 'suspend')}>
                          {p.status === 'suspended' ? 'Re-Approve' : 'Suspend'}
                         </DropdownMenuItem>
                       )}

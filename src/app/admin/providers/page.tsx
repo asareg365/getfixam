@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { ProviderTabs } from './_components/provider-tabs';
-import ProviderList from './_components/provider-list';
+import { ProvidersTable } from './_components/providers-table';
+import { approveProvider, rejectProvider, suspendProvider } from '@/app/admin/actions';
 
 /** ----- Fetch Providers with safe defaults ----- */
 async function getProvidersFromDB(status?: string): Promise<Provider[]> {
@@ -68,6 +69,21 @@ export default async function ProvidersPage({
   const status = searchParams?.status || 'pending';
   const providers = await getProvidersFromDB(status);
 
+  async function handleAction(providerId: string, action: 'approve' | 'reject' | 'suspend'): Promise<{ success: boolean; error?: string; }> {
+    'use server';
+    const formData = new FormData();
+    formData.set('providerId', providerId);
+
+    switch(action) {
+        case 'approve':
+            return await approveProvider({}, formData);
+        case 'reject':
+            return await rejectProvider({}, formData);
+        case 'suspend':
+            return await suspendProvider({}, formData);
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -93,7 +109,7 @@ export default async function ProvidersPage({
 
         <CardContent>
           <ProviderTabs currentStatus={status} />
-          <ProviderList providers={providers} />
+          <ProvidersTable providers={providers} onAction={handleAction} />
         </CardContent>
       </Card>
     </div>
