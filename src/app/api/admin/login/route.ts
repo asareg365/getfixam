@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
     } else {
       return NextResponse.json({ success: false, error: result.error }, { status: 401 });
     }
-  } catch (error) {
-    return NextResponse.json({ success: false, error: 'Invalid request body.' }, { status: 400 });
+  } catch (error: any) {
+    console.error("Error in admin login API route:", error);
+    return NextResponse.json({ success: false, error: error.message || 'Server error during token verification.' }, { status: 500 });
   }
 }

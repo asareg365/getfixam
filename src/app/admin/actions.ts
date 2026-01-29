@@ -22,27 +22,22 @@ async function getAdminContext() {
 
 /** ----- AUTH ACTIONS ----- */
 export async function createAdminSession(idToken: string) {
-  try {
-    const decoded = await adminAuth.verifyIdToken(idToken);
+  const decoded = await adminAuth.verifyIdToken(idToken);
     
-    // This check now aligns with the security guard, using a hardcoded email.
-    // This bypasses the need for a pre-existing document in the 'admins' Firestore collection.
-    if (decoded.email?.toLowerCase() !== 'asareg365@gmail.com') {
-      return { success: false, error: 'You are not authorized to access the admin panel.' };
-    }
-
-    cookies().set('adminSession', idToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: '/',
-    });
-
-    return { success: true };
-  } catch (error) {
-    console.error('Error creating admin session:', error);
-    return { success: false, error: 'Failed to verify admin token.' };
+  // This check now aligns with the security guard, using a hardcoded email.
+  // This bypasses the need for a pre-existing document in the 'admins' Firestore collection.
+  if (decoded.email?.toLowerCase() !== 'asareg365@gmail.com') {
+    return { success: false, error: 'You are not authorized to access the admin panel.' };
   }
+
+  cookies().set('adminSession', idToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    path: '/',
+  });
+
+  return { success: true };
 }
 
 export async function logoutAction() {
