@@ -41,6 +41,11 @@ export type Provider = {
   approvedAt?: string;
   featuredUntil?: string; // ISO 8601 date string
   imageId: string;
+  approvedBy?: string;
+  rejectedAt?: string;
+  rejectedBy?: string;
+  suspendedAt?: string;
+  suspendedBy?: string;
 };
 
 export type Review = {
@@ -99,3 +104,5 @@ export type ReassignmentLog = {
   reason: 'timeout' | 'rejected';
   timestamp: string;
 };
+
+    

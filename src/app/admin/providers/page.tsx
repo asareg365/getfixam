@@ -53,6 +53,11 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
       category: service?.name ?? 'N/A',
       createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date(0).toISOString(),
       approvedAt: data.approvedAt ? data.approvedAt.toDate().toISOString() : undefined,
+      approvedBy: data.approvedBy ?? undefined,
+      rejectedAt: data.rejectedAt ? data.rejectedAt.toDate().toISOString() : undefined,
+      rejectedBy: data.rejectedBy ?? undefined,
+      suspendedAt: data.suspendedAt ? data.suspendedAt.toDate().toISOString() : undefined,
+      suspendedBy: data.suspendedBy ?? undefined,
       featuredUntil: data.featuredUntil ? data.featuredUntil.toDate().toISOString() : undefined,
     };
   });
@@ -99,3 +104,5 @@ export default async function ProvidersPage({
     </div>
   );
 }
+
+    

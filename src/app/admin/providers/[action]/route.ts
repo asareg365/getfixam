@@ -9,11 +9,12 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
   const providerId = body.get('providerId') as string;
   if (!providerId) return NextResponse.json({ success: false, error: 'Provider ID missing' });
 
-  const sessionToken = req.cookies.get('adminSession')?.value;
+  const sessionToken = req.cookies().get('adminSession')?.value;
   if (!sessionToken) return NextResponse.json({ success: false, error: 'Unauthorized' });
 
   try {
     const decoded = await adminAuth.verifyIdToken(sessionToken);
+    const adminEmail = decoded.email ?? 'Unknown Admin';
     const providerRef = adminDb.collection('providers').doc(providerId);
     const providerSnap = await providerRef.get();
     const providerData = providerSnap.data();
@@ -25,7 +26,13 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
       verified: params.action === 'approve',
     };
 
-    if (params.action === 'approve') updateData.approvedAt = FieldValue.serverTimestamp();
+    if (params.action === 'approve') {
+      updateData.approvedAt = FieldValue.serverTimestamp();
+      updateData.approvedBy = adminEmail;
+    } else { // 'reject'
+      updateData.rejectedAt = FieldValue.serverTimestamp();
+      updateData.rejectedBy = adminEmail;
+    }
 
     await providerRef.update(updateData);
 
@@ -44,3 +51,5 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
     return NextResponse.json({ success: false, error: error.message || 'Unexpected error' });
   }
 }
+
+    

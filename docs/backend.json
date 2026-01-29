@@ -142,6 +142,28 @@
               "type": "string",
               "format": "date-time",
               "description": "The timestamp when the provider was approved."
+            },
+            "approvedBy": {
+                "type": "string",
+                "description": "Email of the admin who approved the provider."
+            },
+            "rejectedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Timestamp when the provider was rejected."
+            },
+            "rejectedBy": {
+                "type": "string",
+                "description": "Email of the admin who rejected the provider."
+            },
+            "suspendedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Timestamp when the provider was suspended."
+            },
+            "suspendedBy": {
+                "type": "string",
+                "description": "Email of the admin who suspended the provider."
             }
         },
         "required": ["name", "phone", "serviceId", "location", "status", "verified", "createdAt"]
@@ -449,3 +471,5 @@
     }
   }
 }
+
+    

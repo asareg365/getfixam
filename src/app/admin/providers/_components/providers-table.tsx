@@ -74,6 +74,7 @@ export function ProvidersTable({
             <TableHead>Service</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Created</TableHead>
+            <TableHead>Audit Info</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -109,6 +110,20 @@ export function ProvidersTable({
 
                 <TableCell>{createdAt}</TableCell>
 
+                <TableCell>
+                  {p.status === 'approved' && p.approvedBy && p.approvedAt ? (
+                    <div className="text-xs text-muted-foreground">
+                      by {p.approvedBy}<br/>on {new Date(p.approvedAt).toLocaleDateString()}
+                    </div>
+                  ) : p.status === 'rejected' && p.rejectedBy && p.rejectedAt ? (
+                    <div className="text-xs text-muted-foreground">
+                      by {p.rejectedBy}<br/>on {new Date(p.rejectedAt).toLocaleDateString()}
+                    </div>
+                  ) : (
+                    '—'
+                  )}
+                </TableCell>
+
                 <TableCell className="text-right space-x-2">
                     {p.status === 'pending' && (
                         <>
@@ -139,3 +154,5 @@ export function ProvidersTable({
     </div>
   );
 }
+
+    
