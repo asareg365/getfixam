@@ -76,7 +76,7 @@ export default async function ProvidersPage({
           <p className="text-muted-foreground">Approve, edit, or suspend artisan listings.</p>
         </div>
         <Button asChild>
-          <Link href="/admin/providers/new">
+          <Link href="/add-provider">
             <PlusCircle className="mr-2 h-4 w-4" />
             Add Provider
           </Link>
