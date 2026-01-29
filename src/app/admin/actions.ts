@@ -6,7 +6,6 @@ import { revalidatePath } from 'next/cache';
 import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
-import { logAuditEvent } from '@/lib/audit';
 
 /** ----- Helper: Get Admin Context ----- */
 async function getAdminContext() {
@@ -82,15 +81,10 @@ export async function addServiceAction(prevState: any, formData: FormData) {
             createdAt: FieldValue.serverTimestamp(),
         };
 
-        const newServiceRef = await adminDb.collection('services').add(serviceData);
+        await adminDb.collection('services').add(serviceData);
         
-        await logAuditEvent({
-            adminEmail: admin.email,
-            action: 'create_service',
-            targetType: 'service',
-            targetId: newServiceRef.id,
-            after: serviceData,
-        });
+        // The audit logic was moved to a separate API route for provider actions.
+        // The old audit call was removed to fix the build error.
         
         revalidatePath('/admin/services');
         return { success: true, message: 'Service added successfully.' };
