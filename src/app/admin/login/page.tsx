@@ -16,8 +16,8 @@ import { Loader2 } from 'lucide-react';
 export default function AdminLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('asareg365@gmail.com');
+  const [password, setPassword] = useState('0248472474');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
