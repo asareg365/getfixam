@@ -1,96 +1,155 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Search, ArrowRight } from 'lucide-react';
-import { getCategories, getProviders } from '@/lib/services';
-import CategoryCard from '@/components/CategoryCard';
-import ProviderCard from '@/components/ProviderCard';
-import type { Category, Provider } from '@/lib/types';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+'use client';
 
-export default async function Home() {
-  const categories: Category[] = await getCategories();
-  const featuredProviders: Provider[] = (await getProviders()).slice(0, 4);
-  const heroImage = PlaceHolderImages.find(p => p.id === 'hero');
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+
+// Helper for formatting phone number
+const formatPhoneNumber = (phone: string) => {
+  if (phone.startsWith('+233')) return phone;
+  if (phone.startsWith('0')) return `+233${phone.substring(1)}`;
+  return `+233${phone}`;
+};
+
+export default function ProviderLoginPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otp, setOtp] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+
+  useEffect(() => {
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+      'size': 'invisible',
+    });
+  }, []);
+
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!phoneNumber) {
+        toast({ title: 'Error', description: 'Please enter a phone number.', variant: 'destructive'});
+        return;
+    }
+    setLoading(true);
+    try {
+      const formattedNumber = formatPhoneNumber(phoneNumber);
+      const confirmation = await signInWithPhoneNumber(auth, formattedNumber, window.recaptchaVerifier);
+      setConfirmationResult(confirmation);
+      setStep('otp');
+      toast({ title: 'OTP Sent!', description: `An SMS has been sent to ${formattedNumber}.` });
+    } catch (error: any) {
+      console.error('SMS send error', error);
+      toast({
+        title: 'Error sending OTP',
+        description: error.message || 'Please check the phone number and try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otp || !confirmationResult) return;
+    setLoading(true);
+    try {
+      await confirmationResult.confirm(otp);
+      toast({ title: 'Login Successful!', description: 'Redirecting to your dashboard...' });
+      router.push('/provider/dashboard');
+    } catch (error: any) {
+      console.error('OTP verification error', error);
+      toast({
+        title: 'Login Failed',
+        description: 'The OTP is incorrect. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="flex flex-col">
-      <section className="relative w-full bg-primary/10 py-20 md:py-32">
-        <div className="container mx-auto px-4 md:px-6 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold font-headline tracking-tight text-primary">
-            FixAm Ghana
-          </h1>
-          <p className="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-foreground/80">
-            "Wo nim plumber bi anaa?" Find trusted local artisans in Berekum, fast.
-          </p>
-          <div className="mt-8 max-w-lg mx-auto flex gap-2">
-            <Input
-              type="search"
-              placeholder="Search for a service (e.g., electrician)"
-              className="flex-1 bg-background"
-              aria-label="Search for a service"
-            />
-            <Button type="submit" size="icon" aria-label="Search">
-              <Search className="h-5 w-5" />
-            </Button>
+    <div className="flex min-h-screen items-center justify-center bg-secondary/30">
+      <div id="recaptcha-container"></div>
+      <Card className="w-full max-w-sm">
+        <CardHeader className="text-center space-y-4">
+          <div className="flex justify-center items-center space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-primary"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2.12l-.15.1a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1 0-2.12l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            <span className="text-2xl font-bold font-headline">FixAm Ghana</span>
           </div>
-        </div>
-        {heroImage && (
-             <Image
-                src={heroImage.imageUrl}
-                alt={heroImage.description}
-                fill
-                className="object-cover -z-10 opacity-5"
-                data-ai-hint={heroImage.imageHint}
-                priority
-             />
-        )}
-      </section>
-
-      <section id="categories" className="py-16 md:py-24 bg-background">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center">
-            <h2 className="text-3xl md:text-4xl font-bold font-headline">Browse by Category</h2>
-            <p className="mt-2 text-foreground/70">Find the right professional for your job.</p>
+          <div>
+            <CardTitle className="text-2xl font-headline">Provider Login</CardTitle>
+            <CardDescription>
+                {step === 'phone'
+                ? 'Enter your phone number to receive an OTP.'
+                : 'Enter the OTP sent to your phone.'}
+            </CardDescription>
           </div>
-          <div className="mt-12 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
-            {categories.map((category) => (
-              <CategoryCard key={category.id} category={category} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 md:py-24 bg-secondary/30">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="flex justify-between items-center mb-12">
-            <div className='max-w-xl'>
-              <h2 className="text-3xl md:text-4xl font-bold font-headline">Featured Artisans</h2>
-              <p className="mt-2 text-foreground/70">Top-rated and verified professionals in Berekum.</p>
+        </CardHeader>
+        <CardContent>
+          {step === 'phone' ? (
+            <form onSubmit={handleSendOtp} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="0241234567"
+                  required
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Send OTP
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOtp} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="otp">OTP Code</Label>
+                <Input
+                  id="otp"
+                  type="text"
+                  placeholder="123456"
+                  required
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Verify & Login
+              </Button>
+               <Button variant="link" size="sm" onClick={() => setStep('phone')} className="w-full">
+                Use a different phone number
+              </Button>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+        <footer className="absolute bottom-0 p-4 w-full">
+            <div className="text-center text-sm">
+                <Link href="/admin/login" className="text-muted-foreground hover:text-primary transition-colors">
+                Admin Login
+                </Link>
             </div>
-             <Button variant="outline" asChild className="hidden md:flex">
-                <Link href="/category/all">
-                    View All
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-             </Button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-            {featuredProviders.map((provider) => (
-              <ProviderCard key={provider.id} provider={provider} />
-            ))}
-          </div>
-           <div className="mt-8 text-center md:hidden">
-              <Button variant="outline" asChild>
-                <Link href="/category/all">
-                    View All
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-             </Button>
-           </div>
-        </div>
-      </section>
+        </footer>
     </div>
   );
 }

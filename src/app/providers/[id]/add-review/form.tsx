@@ -107,7 +107,7 @@ export default function AddReviewForm({ provider }: { provider: Provider }) {
                         <Link href={`/providers/${provider.id}`}>View Reviews</Link>
                     </Button>
                      <Button asChild variant="outline">
-                        <Link href="/">Back to Home</Link>
+                        <Link href="/browse">Back to Home</Link>
                     </Button>
                 </div>
              </div>

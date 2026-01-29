@@ -10,8 +10,8 @@ export default function Footer() {
             &copy; {currentYear} FixAm Ghana. All rights reserved.
           </p>
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
-            <Link href="/provider/login" className="text-foreground/60 hover:text-primary transition-colors">
-              Provider Login
+            <Link href="/browse" className="text-foreground/60 hover:text-primary transition-colors">
+              Browse Artisans
             </Link>
             <Link href="/admin/login" className="text-foreground/60 hover:text-primary transition-colors">
               Admin Login

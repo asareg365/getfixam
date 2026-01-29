@@ -19,7 +19,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <Link href="/" className="flex items-center gap-2 p-2">
+          <Link href="/browse" className="flex items-center gap-2 p-2">
             <Wrench className="w-6 h-6 text-primary" />
             <h1 className="font-bold font-headline text-lg">FixAm Admin</h1>
           </Link>
@@ -85,5 +85,3 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </SidebarProvider>
   );
 }
-
-    
