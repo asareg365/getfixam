@@ -4,58 +4,48 @@ import { db } from './firebase';
 import { adminDb } from './firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { Category, Provider, Review, Request, Prediction, StandbyPrediction } from './types';
+import { cache } from 'react';
 
 /**
  * Fetches all active categories from Firestore using the client SDK.
+ * This function is cached to ensure data consistency across server components.
  */
-export async function getCategories(): Promise<Category[]> {
+export const getCategories = cache(async (): Promise<Category[]> => {
+    // Querying all services and filtering client-side to avoid needing a composite index.
     const servicesRef = collection(db, 'services');
-    // Fetch active services and sort them in the application code to avoid requiring a composite index.
-    const q = query(servicesRef, where('active', '==', true));
-    const servicesSnap = await getDocs(q);
+    const servicesSnap = await getDocs(servicesRef);
 
     if (servicesSnap.empty) {
       return [];
     }
 
-    const categories = servicesSnap.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        name: data.name,
-        slug: data.slug,
-        icon: data.icon,
-      };
-    });
+    const categories = servicesSnap.docs
+        .filter(doc => doc.data().active === true) // Filter for active categories here
+        .map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                name: data.name,
+                slug: data.slug,
+                icon: data.icon,
+            };
+        });
     
     // Sort by name alphabetically
     return categories.sort((a, b) => a.name.localeCompare(b.name));
-}
+});
 
 /**
- * Fetches a category by its slug from Firestore using the client SDK.
+ * Fetches a category by its slug from the cached list of categories.
  */
 export async function getCategoryBySlug(slug: string): Promise<Category | undefined> {
   if (slug === 'all') {
     return { id: 'all', name: 'All Artisans', slug: 'all', icon: 'Wrench' };
   }
   
-  const servicesRef = collection(db, 'services');
-  const q = query(servicesRef, where('slug', '==', slug), limit(1));
-  const servicesSnap = await getDocs(q);
-  
-  if (servicesSnap.empty) {
-    return undefined;
-  }
-  
-  const doc = servicesSnap.docs[0];
-  const data = doc.data();
-  return {
-    id: doc.id,
-    name: data.name,
-    slug: data.slug,
-    icon: data.icon,
-  };
+  // Use the cached function to avoid redundant database calls
+  const categories = await getCategories();
+  return categories.find(category => category.slug === slug);
 }
 
 /**
@@ -63,95 +53,43 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
  * Featured providers are always listed first.
  */
 export async function getProviders(categorySlug?: string): Promise<Provider[]> {
-    try {
-        const servicesRef = collection(db, 'services');
-        const servicesSnap = await getDocs(servicesRef);
-        const servicesMap = new Map<string, { name: string, slug: string }>();
-        let serviceIdForSlug: string | null = null;
-        servicesSnap.forEach(doc => {
-            const data = doc.data();
-            servicesMap.set(doc.id, { name: data.name, slug: data.slug });
-            if (categorySlug && data.slug === categorySlug) {
-                serviceIdForSlug = doc.id;
-            }
-        });
-
-        if (categorySlug && categorySlug !== 'all' && !serviceIdForSlug) {
-            return [];
+    const servicesRef = collection(db, 'services');
+    const servicesSnap = await getDocs(servicesRef);
+    const servicesMap = new Map<string, { name: string, slug: string }>();
+    let serviceIdForSlug: string | null = null;
+    servicesSnap.forEach(doc => {
+        const data = doc.data();
+        servicesMap.set(doc.id, { name: data.name, slug: data.slug });
+        if (categorySlug && data.slug === categorySlug) {
+            serviceIdForSlug = doc.id;
         }
-        
-        const providersRef = collection(db, 'providers');
-        let q;
-        // If a category slug is provided, we query by serviceId. Otherwise, we fetch all providers.
-        // This avoids a composite query on ('status', 'serviceId') which requires a manual index.
-        if (serviceIdForSlug) {
-            q = query(providersRef, where('serviceId', '==', serviceIdForSlug));
-        } else {
-            q = query(providersRef);
-        }
-        
-        const providersSnap = await getDocs(q);
+    });
 
-        let providers = providersSnap.docs.map(doc => {
-            const data = doc.data();
-            const service = servicesMap.get(data.serviceId);
-            return {
-                id: doc.id,
-                name: data.name ?? 'Unknown',
-                category: service?.name ?? 'N/A',
-                serviceId: data.serviceId,
-                phone: data.phone,
-                whatsapp: data.whatsapp,
-                location: data.location,
-                status: data.status,
-                verified: data.verified,
-                isFeatured: data.isFeatured ?? false,
-                rating: data.rating ?? 0,
-                reviewCount: data.reviewCount ?? 0,
-                createdAt: data.createdAt?.toDate().toISOString() || new Date(0).toISOString(),
-                approvedAt: data.approvedAt?.toDate().toISOString(),
-                featuredUntil: data.featuredUntil?.toDate().toISOString(),
-                imageId: data.imageId,
-            } as Provider;
-        })
-        // We then filter by status and location in the application code.
-        .filter(p => p.status === 'approved' && p.location?.city === 'Berekum');
-
-        return providers.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
-    } catch (error) {
-        console.error("Error fetching providers: ", error);
+    if (categorySlug && categorySlug !== 'all' && !serviceIdForSlug) {
         return [];
     }
-}
+    
+    const providersRef = collection(db, 'providers');
+    
+    const queryConstraints = [
+        where('status', '==', 'approved')
+    ];
 
-/**
- * Fetches a single approved provider by its ID from Firestore using the client SDK.
- */
-export async function getProviderById(id: string): Promise<Provider | undefined> {
-    try {
-        const providerRef = doc(db, 'providers', id);
-        const providerDoc = await getDoc(providerRef);
-        if (!providerDoc.exists()) {
-            return undefined;
-        }
-        const data = providerDoc.data()!;
+    if (serviceIdForSlug) {
+        queryConstraints.push(where('serviceId', '==', serviceIdForSlug));
+    }
+    
+    const q = query(providersRef, ...queryConstraints);
+    
+    const providersSnap = await getDocs(q);
 
-        if (data.status !== 'approved') {
-            return undefined;
-        }
-
-        let categoryName = 'N/A';
-        if (data.serviceId) {
-            const serviceDoc = await getDoc(doc(db, 'services', data.serviceId));
-            if (serviceDoc.exists()) {
-                categoryName = serviceDoc.data()!.name;
-            }
-        }
-
+    let providers = providersSnap.docs.map(doc => {
+        const data = doc.data();
+        const service = servicesMap.get(data.serviceId);
         return {
-            id: providerDoc.id,
-            name: data.name,
-            category: categoryName,
+            id: doc.id,
+            name: data.name ?? 'Unknown',
+            category: service?.name ?? 'N/A',
             serviceId: data.serviceId,
             phone: data.phone,
             whatsapp: data.whatsapp,
@@ -166,46 +104,85 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
             featuredUntil: data.featuredUntil?.toDate().toISOString(),
             imageId: data.imageId,
         } as Provider;
-    } catch (error) {
-        console.error(`Error fetching provider by ID ${id}: `, error);
+    })
+    // We still filter for city client-side to avoid needing another composite index.
+    .filter(p => p.location?.city === 'Berekum');
+
+    return providers.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
+}
+
+/**
+ * Fetches a single approved provider by its ID from Firestore using the client SDK.
+ */
+export async function getProviderById(id: string): Promise<Provider | undefined> {
+    const providerRef = doc(db, 'providers', id);
+    const providerDoc = await getDoc(providerRef);
+    if (!providerDoc.exists()) {
         return undefined;
     }
+    const data = providerDoc.data()!;
+
+    if (data.status !== 'approved') {
+        return undefined;
+    }
+
+    let categoryName = 'N/A';
+    if (data.serviceId) {
+        const serviceDoc = await getDoc(doc(db, 'services', data.serviceId));
+        if (serviceDoc.exists()) {
+            categoryName = serviceDoc.data()!.name;
+        }
+    }
+
+    return {
+        id: providerDoc.id,
+        name: data.name,
+        category: categoryName,
+        serviceId: data.serviceId,
+        phone: data.phone,
+        whatsapp: data.whatsapp,
+        location: data.location,
+        status: data.status,
+        verified: data.verified,
+        isFeatured: data.isFeatured ?? false,
+        rating: data.rating ?? 0,
+        reviewCount: data.reviewCount ?? 0,
+        createdAt: data.createdAt?.toDate().toISOString() || new Date(0).toISOString(),
+        approvedAt: data.approvedAt?.toDate().toISOString(),
+        featuredUntil: data.featuredUntil?.toDate().toISOString(),
+        imageId: data.imageId,
+    } as Provider;
 }
 
 /**
  * Fetches all approved reviews for a specific provider from Firestore using the client SDK.
  */
 export async function getReviewsByProviderId(providerId: string): Promise<Review[]> {
-    try {
-        const reviewsRef = collection(db, 'reviews');
-        const q = query(reviewsRef,
-            where('providerId', '==', providerId),
-            where('status', '==', 'approved'),
-            orderBy('createdAt', 'desc')
-        );
-        const reviewsSnap = await getDocs(q);
-        
-        if (reviewsSnap.empty) {
-            return [];
-        }
-
-        return reviewsSnap.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                providerId: data.providerId,
-                userName: data.userName,
-                rating: data.rating,
-                comment: data.comment,
-                createdAt: data.createdAt?.toDate().toISOString() || new Date(0).toISOString(),
-                userImageId: data.userImageId,
-                status: data.status,
-            } as Review;
-        });
-    } catch (error) {
-        console.error(`Error fetching reviews for provider ${providerId}: `, error);
+    const reviewsRef = collection(db, 'reviews');
+    const q = query(reviewsRef,
+        where('providerId', '==', providerId),
+        where('status', '==', 'approved'),
+        orderBy('createdAt', 'desc')
+    );
+    const reviewsSnap = await getDocs(q);
+    
+    if (reviewsSnap.empty) {
         return [];
     }
+
+    return reviewsSnap.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            providerId: data.providerId,
+            userName: data.userName,
+            rating: data.rating,
+            comment: data.comment,
+            createdAt: data.createdAt?.toDate().toISOString() || new Date(0).toISOString(),
+            userImageId: data.userImageId,
+            status: data.status,
+        } as Review;
+    });
 }
 
 /**
@@ -248,17 +225,11 @@ export async function addReview(data: Omit<Review, 'id' | 'createdAt' | 'status'
  * Fetches the list of zones for Berekum from Firestore using the client SDK.
  */
 export async function getBerekumZones(): Promise<string[]> {
-    try {
-        const locationDoc = await getDoc(doc(db, 'locations', 'berekum'));
-        if (locationDoc.exists()) {
-            return locationDoc.data()?.zones || [];
-        }
-    } catch (error) {
-        console.warn('Could not fetch zones from Firestore, falling back to mock data.', error);
+    const locationDoc = await getDoc(doc(db, 'locations', 'berekum'));
+    if (locationDoc.exists()) {
+        return locationDoc.data()?.zones || [];
     }
-    
-    const { BEREKUM_ZONES } = await import('./data');
-    return BEREKUM_ZONES;
+    return [];
 }
 
 /**
