@@ -1,9 +1,7 @@
-'use server';
-
 import { NextRequest, NextResponse } from 'next/server';
 
 export const config = {
-  matcher: '/admin/:path*',
+  matcher: ['/admin/:path*'],
 };
 
 export function middleware(req: NextRequest) {
