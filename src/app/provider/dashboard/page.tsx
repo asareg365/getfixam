@@ -19,12 +19,11 @@ export default function ProviderDashboardPage() {
   const router = useRouter();
   const [provider, setProvider] = useState<Provider | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [accountError, setAccountError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        // User is signed in, let's find their provider document.
         try {
           // 1. First, try to find by UID
           let providerQuery = query(collection(db, 'providers'), where('authUid', '==', currentUser.uid));
@@ -32,9 +31,11 @@ export default function ProviderDashboardPage() {
           let providerDoc;
 
           if (providerSnap.empty) {
-            // 2. If not found, try to find by phone number (and ensure it's approved)
+            // 2. If not found, try to find by phone number (without status check)
             if (!currentUser.phoneNumber) {
-                throw new Error("Phone number not found on authenticated user. Cannot link account.");
+                setAccountError("Your account has no phone number associated. Please contact support.");
+                setLoading(false);
+                return;
             }
             // In Ghana, numbers start with 0, but Firebase stores them as +233...
             // We need to match the format in the DB, which is `0...`
@@ -42,7 +43,6 @@ export default function ProviderDashboardPage() {
             providerQuery = query(
               collection(db, 'providers'),
               where('phone', '==', `0${localPhoneNumber}`),
-              where('status', '==', 'approved')
             );
             providerSnap = await getDocs(providerQuery);
 
@@ -51,7 +51,10 @@ export default function ProviderDashboardPage() {
               providerDoc = providerSnap.docs[0];
               await updateDoc(doc(db, 'providers', providerDoc.id), { authUid: currentUser.uid });
             } else {
-                throw new Error("Your account is not registered or has not been approved by an admin yet. Please contact support if you believe this is an error.");
+                // 4. Not found by UID or Phone. They need to register.
+                setAccountError("No provider account found for this phone number. Please create a listing first.");
+                setLoading(false);
+                return;
             }
           } else {
             providerDoc = providerSnap.docs[0];
@@ -77,14 +80,12 @@ export default function ProviderDashboardPage() {
 
         } catch(e: any) {
             console.error("Error fetching provider data: ", e);
-            setError(e.message || 'An error occurred while fetching your data.');
-            // Sign out the user if they can't be linked to a provider profile
-            await auth.signOut();
+            setAccountError(e.message || 'An error occurred while fetching your data.');
         }
 
       } else {
         // User is signed out
-        router.push('/provider/login');
+        router.push('/');
       }
       setLoading(false);
     });
@@ -96,20 +97,59 @@ export default function ProviderDashboardPage() {
     return <Loading />;
   }
 
-  if (error) {
+  if (accountError) {
       return (
         <Alert variant="destructive" className="max-w-2xl mx-auto">
-            <AlertTitle>Access Denied</AlertTitle>
-            <AlertDescription>
-                {error} <br /><br />
-                 <Button onClick={() => router.push('/provider/login')}>Go to Login</Button>
+            <AlertTitle>Account Not Found</AlertTitle>
+            <AlertDescription className='space-y-4'>
+                <p>{accountError}</p>
+                 <Button onClick={() => router.push('/add-provider')}>Create a Business Listing</Button>
             </AlertDescription>
         </Alert>
       )
   }
 
   if (!provider) {
-    return <Loading />; // Or a "not found" state
+    return <Loading />; // Should be brief
+  }
+
+  if (provider.status === 'pending') {
+    return (
+        <Card className="max-w-2xl mx-auto">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Clock className="h-6 w-6 text-yellow-500" />Application Pending</CardTitle>
+                <CardDescription>Welcome, {provider.name}!</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Alert>
+                    <AlertTitle>Your submission is under review.</AlertTitle>
+                    <AlertDescription>
+                        Our admin team is currently reviewing your business listing. You will be notified once it is approved. Thank you for your patience.
+                    </AlertDescription>
+                </Alert>
+            </CardContent>
+        </Card>
+    );
+  }
+  
+   if (provider.status === 'rejected' || provider.status === 'suspended') {
+    return (
+        <Card className="max-w-2xl mx-auto">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Hand className="h-6 w-6 text-destructive" />Account {provider.status}</CardTitle>
+                <CardDescription>Hello, {provider.name}.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <Alert variant="destructive">
+                    <AlertTitle>There is an issue with your account.</AlertTitle>
+                    <AlertDescription>
+                        Your provider account has been {provider.status}. Please contact an administrator for more information and next steps.
+                    </AlertDescription>
+                </Alert>
+                 <Button><Contact className="mr-2 h-4 w-4"/> Contact Admin</Button>
+            </CardContent>
+        </Card>
+    );
   }
   
   const StatCard = ({ title, value, icon: Icon, description }: { title: string, value: string | number, icon: React.ElementType, description?: string }) => (
