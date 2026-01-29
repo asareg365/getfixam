@@ -30,6 +30,9 @@ export default function AdminLoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const idToken = await userCredential.user.getIdToken();
       
+      console.log('ID TOKEN EXISTS:', !!idToken);
+      console.log('ID TOKEN LENGTH:', idToken?.length);
+      
       // Step 2: Verify admin permissions with the backend server action
       const sessionResult = await createAdminSession(idToken);
 
