@@ -82,7 +82,7 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
     return snapshot.docs.map(doc => {
       const data = doc.data();
       const category = categories.find(c => c.id === data.serviceId);
-      const providerData: Provider = {
+      return {
         id: doc.id,
         name: data.name,
         category: category?.name || 'N/A',
@@ -97,14 +97,9 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
         reviewCount: data.reviewCount,
         imageId: data.imageId,
         createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date(0).toISOString(),
+        approvedAt: data.approvedAt?.toDate?.()?.toISOString(),
+        featuredUntil: data.featuredUntil?.toDate?.()?.toISOString(),
       };
-      if (data.approvedAt) {
-          providerData.approvedAt = data.approvedAt.toDate().toISOString();
-      }
-      if (data.featuredUntil) {
-        providerData.featuredUntil = data.featuredUntil.toDate().toISOString();
-      }
-      return providerData;
     });
   } catch (error) {
     console.warn(`Could not fetch providers from Firestore. Falling back to mock data.`);
@@ -141,7 +136,7 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
               categoryName = serviceDocSnap.data()?.name;
           }
       }
-      const providerData: Provider = {
+      return {
         id: docSnap.id,
         name: data.name,
         category: categoryName,
@@ -156,14 +151,9 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
         reviewCount: data.reviewCount,
         imageId: data.imageId,
         createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date(0).toISOString(),
+        approvedAt: data.approvedAt?.toDate?.()?.toISOString(),
+        featuredUntil: data.featuredUntil?.toDate?.()?.toISOString(),
       };
-      if (data.approvedAt) {
-          providerData.approvedAt = data.approvedAt.toDate().toISOString();
-      }
-      if (data.featuredUntil) {
-        providerData.featuredUntil = data.featuredUntil.toDate().toISOString();
-      }
-      return providerData;
     }
     return undefined;
   } catch (error) {
