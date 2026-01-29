@@ -7,8 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import Link from 'next/link';
-import { ProvidersTable } from './_components/providers-table';
 import { ProviderTabs } from './_components/provider-tabs';
+import ProviderList from './_components/provider-list';
 
 /** ----- Fetch Providers with safe defaults ----- */
 async function getProvidersFromDB(status?: string): Promise<Provider[]> {
@@ -28,11 +28,11 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
   });
 
   // Query providers
-  let providersQuery = adminDb.collection('providers');
+  let providersQuery = adminDb.collection('providers').orderBy('createdAt', 'desc');
   if (status && status !== 'all') {
-    providersQuery = providersQuery.where('status', '==', status);
+    providersQuery = adminDb.collection('providers').where('status', '==', status).orderBy('createdAt', 'desc');
   }
-  const providerSnapshot = await providersQuery.orderBy('createdAt', 'desc').get();
+  const providerSnapshot = await providersQuery.get();
 
   return providerSnapshot.docs.map((doc) => {
     const data = doc.data();
@@ -93,7 +93,7 @@ export default async function ProvidersPage({
 
         <CardContent>
           <ProviderTabs currentStatus={status} />
-          <ProvidersTable providers={providers} />
+          <ProviderList providers={providers} />
         </CardContent>
       </Card>
     </div>
