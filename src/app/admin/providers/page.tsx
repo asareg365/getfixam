@@ -51,7 +51,7 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
       whatsapp: data.whatsapp,
       location: data.location,
       status: data.status,
-      verified: data.verified,
+      verified: data.verified ?? false,
       isFeatured: data.isFeatured ?? false,
       rating: data.rating ?? 0,
       reviewCount: data.reviewCount ?? 0,

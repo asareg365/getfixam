@@ -17,9 +17,9 @@ export async function getCategories(): Promise<Category[]> {
       const data = doc.data();
       return {
         id: doc.id,
-        name: data.name,
-        slug: data.slug,
-        icon: data.icon,
+        name: data.name ?? 'Unknown',
+        slug: data.slug ?? 'unknown',
+        icon: data.icon ?? 'Wrench',
       } as Category;
     });
   } catch (error) {
@@ -49,9 +49,9 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
     const data = docData.data();
     return { 
         id: docData.id, 
-        name: data.name,
-        slug: data.slug,
-        icon: data.icon,
+        name: data.name ?? 'Unknown',
+        slug: data.slug ?? 'unknown',
+        icon: data.icon ?? 'Wrench',
     } as Category;
   } catch (error) {
     console.warn(`Could not fetch category with slug "${slug}" from Firestore. Falling back to mock data.`);
@@ -85,16 +85,16 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
       return {
         id: doc.id,
         name: data.name,
-        category: category?.name || 'N/A',
+        category: category?.name ?? 'N/A',
         serviceId: data.serviceId,
         phone: data.phone,
         whatsapp: data.whatsapp,
         location: data.location,
         status: data.status,
-        verified: data.verified,
-        isFeatured: data.isFeatured || false,
-        rating: data.rating,
-        reviewCount: data.reviewCount,
+        verified: data.verified ?? false,
+        isFeatured: data.isFeatured ?? false,
+        rating: data.rating ?? 0,
+        reviewCount: data.reviewCount ?? 0,
         imageId: data.imageId,
         createdAt: data.createdAt
           ? data.createdAt.toDate().toISOString()
@@ -151,10 +151,10 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
         whatsapp: data.whatsapp,
         location: data.location,
         status: data.status,
-        verified: data.verified,
-        isFeatured: data.isFeatured || false,
-        rating: data.rating,
-        reviewCount: data.reviewCount,
+        verified: data.verified ?? false,
+        isFeatured: data.isFeatured ?? false,
+        rating: data.rating ?? 0,
+        reviewCount: data.reviewCount ?? 0,
         imageId: data.imageId,
         createdAt: data.createdAt
           ? data.createdAt.toDate().toISOString()
@@ -199,7 +199,7 @@ export async function getReviewsByProviderId(providerId: string): Promise<Review
         id: doc.id,
         providerId: data.providerId,
         userName: data.userName,
-        rating: data.rating,
+        rating: data.rating ?? 0,
         comment: data.comment,
         userImageId: data.userImageId,
         status: data.status,
