@@ -40,7 +40,7 @@ export default async function ProviderDetailPage({ params }: { params: { id: str
         <div className="bg-background">
         <div className="container mx-auto px-4 md:px-6 py-8 md:py-12">
             <div className="flex items-center text-sm text-muted-foreground mb-6">
-            <Link href="/browse" className="hover:text-primary transition-colors flex items-center">
+            <Link href="/" className="hover:text-primary transition-colors flex items-center">
                 <Home className="h-4 w-4 mr-2" />
                 Home
             </Link>

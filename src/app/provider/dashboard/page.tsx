@@ -85,7 +85,7 @@ export default function ProviderDashboardPage() {
 
       } else {
         // User is signed out
-        router.push('/');
+        router.push('/provider/login');
       }
       setLoading(false);
     });

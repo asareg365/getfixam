@@ -60,7 +60,7 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
             <p className="mt-2 text-green-700">{state.message}</p>
                 <p className="mt-2 text-green-600">Our team will review your submission and get back to you.</p>
             <Button asChild className="mt-6">
-                <Link href="/browse">Back to Home</Link>
+                <Link href="/">Back to Home</Link>
             </Button>
             </div>
         ) : (

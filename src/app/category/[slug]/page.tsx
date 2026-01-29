@@ -41,7 +41,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
         <div className="container mx-auto px-4 md:px-6 py-12 md:py-16">
             <div className="mb-12">
                 <div className="flex items-center text-sm text-muted-foreground mb-4">
-                <Link href="/browse" className="hover:text-primary transition-colors flex items-center">
+                <Link href="/" className="hover:text-primary transition-colors flex items-center">
                     <Home className="h-4 w-4 mr-2" />
                     Home
                 </Link>
