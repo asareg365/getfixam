@@ -17,10 +17,10 @@ import Link from 'next/link';
 import { logoutAction } from './actions';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const pathname = headers().get('next-url') || '';
+  const pathname = headers().get('x-next-pathname') || '';
 
   // If on login page, render children directly without the layout.
-  // The middleware will handle redirecting logged-in users away from login.
+  // This ensures the login screen is a standalone page.
   if (pathname === '/admin/login') {
     return <>{children}</>;
   }
@@ -37,7 +37,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <Sidebar>
         <SidebarHeader>
           <Link href="/admin/dashboard" className="flex items-center gap-2 p-2">
-            <Wrench className="w-6 h-6 text-primary" />
+            <Wrench className="h-6 h-6 text-primary" />
             <h1 className="font-bold font-headline text-lg">FixAm Admin</h1>
           </Link>
         </SidebarHeader>
