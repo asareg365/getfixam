@@ -82,10 +82,12 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
         
         const providersRef = collection(db, 'providers');
         let q;
+        // If a category slug is provided, we query by serviceId. Otherwise, we fetch all providers.
+        // This avoids a composite query on ('status', 'serviceId') which requires a manual index.
         if (serviceIdForSlug) {
-            q = query(providersRef, where('status', '==', 'approved'), where('serviceId', '==', serviceIdForSlug));
+            q = query(providersRef, where('serviceId', '==', serviceIdForSlug));
         } else {
-            q = query(providersRef, where('status', '==', 'approved'));
+            q = query(providersRef);
         }
         
         const providersSnap = await getDocs(q);
@@ -111,7 +113,9 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
                 featuredUntil: data.featuredUntil?.toDate().toISOString(),
                 imageId: data.imageId,
             } as Provider;
-        }).filter(p => p.location?.city === 'Berekum');
+        })
+        // We then filter by status and location in the application code.
+        .filter(p => p.status === 'approved' && p.location?.city === 'Berekum');
 
         return providers.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
     } catch (error) {
