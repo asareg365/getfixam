@@ -1,8 +1,9 @@
+'use server';
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import { 
+import {
   Card,
   CardContent,
   CardDescription,
