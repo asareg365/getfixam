@@ -9,14 +9,16 @@ import type { Category, Provider, Review, Request, Prediction, StandbyPrediction
  * Fetches all active categories from Firestore using the client SDK.
  */
 export async function getCategories(): Promise<Category[]> {
-  try {
     const servicesRef = collection(db, 'services');
-    const q = query(servicesRef, where('active', '==', true), orderBy('name'));
+    // Fetch active services and sort them in the application code to avoid requiring a composite index.
+    const q = query(servicesRef, where('active', '==', true));
     const servicesSnap = await getDocs(q);
+
     if (servicesSnap.empty) {
       return [];
     }
-    return servicesSnap.docs.map(doc => {
+
+    const categories = servicesSnap.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -25,12 +27,9 @@ export async function getCategories(): Promise<Category[]> {
         icon: data.icon,
       };
     });
-  } catch (error) {
-    console.error("Error fetching categories: ", error);
-    // Fallback to mock data in case of an error during public fetch
-    const { CATEGORIES } = await import('./data');
-    return CATEGORIES;
-  }
+    
+    // Sort by name alphabetically
+    return categories.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**
@@ -40,25 +39,23 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
   if (slug === 'all') {
     return { id: 'all', name: 'All Artisans', slug: 'all', icon: 'Wrench' };
   }
-  try {
-    const servicesRef = collection(db, 'services');
-    const q = query(servicesRef, where('slug', '==', slug), limit(1));
-    const servicesSnap = await getDocs(q);
-    if (servicesSnap.empty) {
-      return undefined;
-    }
-    const doc = servicesSnap.docs[0];
-    const data = doc.data();
-    return {
-      id: doc.id,
-      name: data.name,
-      slug: data.slug,
-      icon: data.icon,
-    };
-  } catch (error) {
-     console.error(`Error fetching category by slug ${slug}: `, error);
-     return undefined;
+  
+  const servicesRef = collection(db, 'services');
+  const q = query(servicesRef, where('slug', '==', slug), limit(1));
+  const servicesSnap = await getDocs(q);
+  
+  if (servicesSnap.empty) {
+    return undefined;
   }
+  
+  const doc = servicesSnap.docs[0];
+  const data = doc.data();
+  return {
+    id: doc.id,
+    name: data.name,
+    slug: data.slug,
+    icon: data.icon,
+  };
 }
 
 /**
@@ -332,4 +329,3 @@ export async function getDashboardData() {
         };
     }
 }
-    
