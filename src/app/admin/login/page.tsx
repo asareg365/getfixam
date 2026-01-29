@@ -25,27 +25,34 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
+      // Step 1: Authenticate with Firebase Auth
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const idToken = await userCredential.user.getIdToken();
       
+      // Step 2: Verify admin permissions with the backend server action
       const sessionResult = await createAdminSession(idToken);
 
       if (sessionResult.success) {
         toast({ title: 'Login successful!', description: 'Redirecting to dashboard...' });
         router.push('/admin/dashboard');
       } else {
-        throw new Error(sessionResult.error || 'You do not have permission to access the admin panel.');
+        // This user is valid in Firebase, but not authorized as an admin in our system.
+        toast({
+          title: 'Permission Denied',
+          description: sessionResult.error || 'You do not have permission to access the admin panel.',
+          variant: 'destructive',
+          duration: 9000,
+        });
       }
     } catch (error: any) {
+      // This catch block primarily handles Firebase Authentication errors
       console.error('Admin login error:', error);
-      let errorMessage = 'An unexpected error occurred.';
+      let errorMessage = 'An unexpected error occurred during login.';
 
-      if (error.code === 'auth/operation-not-allowed') {
-        errorMessage = 'Email/Password sign-in is not enabled. Please enable it in your Firebase Console under Authentication > Sign-in method.';
-      } else if (error.message === 'Unauthorized' || error.code === 'auth/invalid-credential') {
-        errorMessage = 'Invalid credentials or insufficient permissions.';
-      } else {
-        errorMessage = error.message || errorMessage;
+      if (error.code === 'auth/invalid-credential') {
+        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+      } else if (error.code === 'auth/operation-not-allowed') {
+        errorMessage = 'Email/Password sign-in is not enabled. Please enable it in your Firebase Console.';
       }
       
       toast({
@@ -64,7 +71,7 @@ export default function AdminLoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center space-y-4">
             <div className="flex justify-center items-center space-x-2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-primary"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2.12l-.15.1a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1 0-2.12l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-primary"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2.12l-.15.1a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1 0 2.12l.15-.1a2 2 0 0 0 .73 2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 <span className="text-2xl font-bold font-headline">FixAm Ghana</span>
             </div>
             <div>
