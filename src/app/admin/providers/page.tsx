@@ -14,7 +14,7 @@ import { ProvidersTable } from './_components/providers-table';
 import { ProviderTabs } from './_components/provider-tabs';
 
 async function getProvidersFromDB(status?: string): Promise<Provider[]> {
-  console.log('Fetching providers with status:', status);
+  console.log('STATUS:', status);
   // Fetch all services and create a map for efficient lookup.
   const servicesSnap = await adminDb.collection('services').get();
   const servicesMap = new Map<string, Omit<Service, 'icon'>>();
@@ -37,7 +37,7 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
   }
 
   const providerSnapshot = await providersQuery.orderBy('createdAt', 'desc').get();
-  console.log('Providers fetched:', providerSnapshot.size);
+  console.log('DOC COUNT:', providerSnapshot.size);
 
   // Map provider data and enrich it with the service name (category).
   return providerSnapshot.docs.map((doc) => {
