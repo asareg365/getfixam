@@ -22,13 +22,14 @@ async function getAuditLogs(): Promise<AuditLog[]> {
 
   return snapshot.docs.map(doc => {
     const data = doc.data();
+    const timestampDate = data.timestamp?.toDate();
     return {
       id: doc.id,
       adminEmail: data.adminEmail ?? 'N/A',
       providerName: data.providerName ?? 'N/A',
       providerId: data.providerId ?? 'N/A',
       action: data.action ?? 'N/A',
-      timestamp: data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString() : new Date(0).toLocaleString(),
+      timestamp: timestampDate ? new Date(timestampDate).toLocaleString() : new Date(0).toLocaleString(),
     };
   });
 }

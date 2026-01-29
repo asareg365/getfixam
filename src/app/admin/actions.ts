@@ -22,10 +22,15 @@ async function getAdminContext() {
 
 /** ----- AUTH ACTIONS ----- */
 export async function createAdminSession(idToken: string) {
-  const decoded = await adminAuth.verifyIdToken(idToken);
+  // verifyIdToken checks expiration, signature, etc. and decodes the token.
+  // The second argument `true` checks if the token has been revoked.
+  const decoded = await adminAuth.verifyIdToken(idToken, true);
+
+  const firebaseProjectId = "studio-1004537855-178e0";
+  if (decoded.aud !== firebaseProjectId) {
+      return { success: false, error: `ID token audience mismatch. Expected "${firebaseProjectId}", got "${decoded.aud}".` };
+  }
     
-  // This check now aligns with the security guard, using a hardcoded email.
-  // This bypasses the need for a pre-existing document in the 'admins' Firestore collection.
   if (decoded.email?.toLowerCase() !== 'asareg365@gmail.com') {
     return { success: false, error: 'You are not authorized to access the admin panel.' };
   }

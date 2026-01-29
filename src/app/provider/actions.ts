@@ -67,9 +67,9 @@ export async function getProviderDataAndLinkAccount(idToken: string): Promise<{ 
             imageId: providerData.imageId ?? '',
             serviceId: providerData.serviceId ?? '',
             category: categoryName,
-            createdAt: providerData.createdAt ? providerData.createdAt.toDate().toISOString() : new Date(0).toISOString(),
-            approvedAt: providerData.approvedAt ? providerData.approvedAt.toDate().toISOString() : undefined,
-            featuredUntil: providerData.featuredUntil ? providerData.featuredUntil.toDate().toISOString() : undefined,
+            createdAt: providerData.createdAt?.toDate().toISOString() ?? new Date(0).toISOString(),
+            approvedAt: providerData.approvedAt?.toDate().toISOString(),
+            featuredUntil: providerData.featuredUntil?.toDate().toISOString(),
         } as Provider;
         
         return { provider: data, error: null };

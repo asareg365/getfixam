@@ -37,7 +37,7 @@ export default function ProviderReviews({ providerId, providerName }: { provider
                 userName: data.userName,
                 rating: data.rating,
                 comment: data.comment,
-                createdAt: data.createdAt?.toDate().toISOString() || new Date(0).toISOString(),
+                createdAt: data.createdAt?.toDate().toISOString() ?? new Date(0).toISOString(),
                 userImageId: data.userImageId,
                 status: data.status,
               } as Review;

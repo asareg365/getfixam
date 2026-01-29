@@ -19,8 +19,8 @@ async function getJobs(): Promise<Job[]> {
             status: data.status ?? 'unknown',
             assignedTo: data.assignedTo ?? '',
             attemptedArtisans: data.attemptedArtisans ?? [],
-            createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date(0).toISOString(),
-            expiresAt: data.expiresAt ? data.expiresAt.toDate().toISOString() : new Date(0).toISOString(),
+            createdAt: data.createdAt?.toDate().toISOString() ?? new Date(0).toISOString(),
+            expiresAt: data.expiresAt?.toDate().toISOString() ?? new Date(0).toISOString(),
             price: data.price ?? undefined,
             surgeMultiplier: data.surgeMultiplier ?? undefined,
         }
