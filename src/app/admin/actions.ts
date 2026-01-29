@@ -25,9 +25,10 @@ export async function createAdminSession(idToken: string) {
   try {
     const decoded = await adminAuth.verifyIdToken(idToken);
     
-    const adminRef = await adminDb.collection('admins').doc(decoded.uid).get();
-    if (!adminRef.exists) {
-        return { success: false, error: 'You are not authorized as an admin.' };
+    // This check now aligns with the security guard, using a hardcoded email.
+    // This bypasses the need for a pre-existing document in the 'admins' Firestore collection.
+    if (decoded.email?.toLowerCase() !== 'asareg365@gmail.com') {
+      return { success: false, error: 'You are not authorized to access the admin panel.' };
     }
 
     cookies().set('adminSession', idToken, {
@@ -82,9 +83,6 @@ export async function addServiceAction(prevState: any, formData: FormData) {
         };
 
         await adminDb.collection('services').add(serviceData);
-        
-        // The audit logic was moved to a separate API route for provider actions.
-        // The old audit call was removed to fix the build error.
         
         revalidatePath('/admin/services');
         return { success: true, message: 'Service added successfully.' };
