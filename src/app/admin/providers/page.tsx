@@ -14,6 +14,22 @@ import { ProvidersTable } from './_components/providers-table';
 import { ProviderTabs } from './_components/provider-tabs';
 
 async function getProvidersFromDB(status?: string): Promise<Provider[]> {
+  // Fetch all services and create a map for efficient lookup.
+  const servicesSnap = await adminDb.collection('services').get();
+  const servicesMap = new Map<string, Omit<Service, 'icon'>>();
+  servicesSnap.forEach(doc => {
+      const data = doc.data();
+      servicesMap.set(doc.id, { 
+        id: doc.id, 
+        name: data.name,
+        slug: data.slug,
+        active: data.active,
+        basePrice: data.basePrice,
+        currency: data.currency,
+      } as Omit<Service, 'icon'>);
+  });
+
+  // Query providers, filtering by status if provided.
   let providersQuery = adminDb.collection('providers');
   if (status && status !== 'all') {
     providersQuery = providersQuery.where('status', '==', status);
@@ -25,19 +41,10 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
     return [];
   }
 
-  const serviceIds = [
-    ...new Set(providerSnapshot.docs.map((doc) => doc.data().serviceId)),
-  ].filter(Boolean);
-  
-  let services: Omit<Service, 'icon'>[] = [];
-  if (serviceIds.length > 0) {
-      const serviceSnapshot = await adminDb.collection('services').where('__name__', 'in', serviceIds).get();
-      services = serviceSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<Service, 'icon'>));
-  }
-
+  // Map provider data and enrich it with the service name (category).
   return providerSnapshot.docs.map((doc) => {
     const data = doc.data();
-    const service = services.find(s => s.id === data.serviceId);
+    const service = servicesMap.get(data.serviceId);
     const providerData: Provider = {
       id: doc.id,
       name: data.name,
