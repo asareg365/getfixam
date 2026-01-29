@@ -5,6 +5,7 @@ import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { revalidatePath } from 'next/cache';
 import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
+import { redirect } from 'next/navigation';
 
 export async function createAdminSession(idToken: string) {
   console.log('Running as service account');
@@ -36,7 +37,7 @@ export async function createAdminSession(idToken: string) {
 
 export async function logoutAction() {
   cookies().delete('adminSession');
-  revalidatePath('/admin/login');
+  redirect('/admin/login');
 }
 
 
