@@ -6,7 +6,6 @@ import { revalidatePath } from 'next/cache';
 import { FieldValue } from 'firebase-admin/firestore';
 
 export async function createAdminSession(idToken: string) {
-  console.log('Verifying admin token...');
   try {
     const decoded = await adminAuth.verifyIdToken(idToken);
 
