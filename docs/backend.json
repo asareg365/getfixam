@@ -354,19 +354,45 @@
       "required": ["jobId", "reason", "timestamp"]
     },
     "AuditLog": {
-        "title": "Audit Log",
-        "description": "A log of administrative actions performed in the system.",
-        "type": "object",
-        "properties": {
-            "action": { "type": "string" },
-            "entityType": { "type": "string", "enum": ["provider", "job", "service"] },
-            "entityId": { "type": "string" },
-            "performedBy": { "type": "string" },
-            "performedByUid": { "type": "string" },
-            "metadata": { "type": "object" },
-            "createdAt": { "type": "string", "format": "date-time" }
+      "title": "Audit Log",
+      "description": "A log of administrative actions performed in the system for accountability.",
+      "type": "object",
+      "properties": {
+        "adminEmail": {
+          "type": "string"
         },
-        "required": ["action", "entityType", "entityId", "performedBy", "performedByUid", "createdAt"]
+        "action": {
+          "type": "string"
+        },
+        "targetType": {
+          "type": "string",
+          "enum": [
+            "provider",
+            "job",
+            "service"
+          ]
+        },
+        "targetId": {
+          "type": "string"
+        },
+        "before": {
+          "type": "object"
+        },
+        "after": {
+          "type": "object"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "adminEmail",
+        "action",
+        "targetType",
+        "targetId",
+        "createdAt"
+      ]
     }
   },
   "auth": {

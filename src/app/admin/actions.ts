@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
-import { logAuditEvent } from '@/lib/audit-log';
+import { logAuditEvent } from '@/lib/audit';
 
 /** ----- Helper: Get Admin Context ----- */
 async function getAdminContext() {
@@ -58,26 +58,28 @@ export async function approveProvider(prevState: any, formData: FormData) {
   try {
     const admin = await getAdminContext();
     const providerRef = adminDb.collection('providers').doc(providerId);
-    const providerSnap = await providerRef.get();
+    const snap = await providerRef.get();
 
-    if (!providerSnap.exists) {
+    if (!snap.exists) {
       return { success: false, error: 'Provider not found.' };
     }
-    const previousStatus = providerSnap.data()?.status ?? 'unknown';
 
-    await providerRef.update({
+    const before = snap.data();
+    const afterUpdate = {
       status: 'approved',
       verified: true,
       approvedAt: FieldValue.serverTimestamp(),
-    });
+    };
+
+    await providerRef.update(afterUpdate);
 
     await logAuditEvent({
-      action: 'APPROVE_PROVIDER',
-      entityType: 'provider',
-      entityId: providerId,
-      performedBy: admin.email,
-      performedByUid: admin.uid,
-      metadata: { previousStatus, newStatus: 'approved' },
+      adminEmail: admin.email,
+      action: 'approve_provider',
+      targetType: 'provider',
+      targetId: providerId,
+      before,
+      after: { ...before, ...afterUpdate },
     });
 
     revalidatePath('/admin/providers');
@@ -96,23 +98,24 @@ export async function rejectProvider(prevState: any, formData: FormData) {
   try {
     const admin = await getAdminContext();
     const providerRef = adminDb.collection('providers').doc(providerId);
-    const providerSnap = await providerRef.get();
-     if (!providerSnap.exists) {
+    const snap = await providerRef.get();
+     if (!snap.exists) {
       return { success: false, error: 'Provider not found.' };
     }
-    const previousStatus = providerSnap.data()?.status ?? 'unknown';
-
-    await providerRef.update({
+    const before = snap.data();
+    const afterUpdate = {
       status: 'rejected',
-    });
+    };
 
-     await logAuditEvent({
-      action: 'REJECT_PROVIDER',
-      entityType: 'provider',
-      entityId: providerId,
-      performedBy: admin.email,
-      performedByUid: admin.uid,
-      metadata: { previousStatus, newStatus: 'rejected' },
+    await providerRef.update(afterUpdate);
+    
+    await logAuditEvent({
+      adminEmail: admin.email,
+      action: 'reject_provider',
+      targetType: 'provider',
+      targetId: providerId,
+      before,
+      after: { ...before, ...afterUpdate },
     });
 
     revalidatePath('/admin/providers');
@@ -130,23 +133,24 @@ export async function suspendProvider(prevState: any, formData: FormData) {
     try {
         const admin = await getAdminContext();
         const providerRef = adminDb.collection('providers').doc(providerId);
-        const providerSnap = await providerRef.get();
-        if (!providerSnap.exists) {
+        const snap = await providerRef.get();
+        if (!snap.exists) {
             return { success: false, error: 'Provider not found.' };
         }
-        const previousStatus = providerSnap.data()?.status ?? 'unknown';
-
-        await providerRef.update({
+        const before = snap.data();
+        const afterUpdate = {
             status: 'suspended',
-        });
+        };
+
+        await providerRef.update(afterUpdate);
 
         await logAuditEvent({
-            action: 'SUSPEND_PROVIDER',
-            entityType: 'provider',
-            entityId: providerId,
-            performedBy: admin.email,
-            performedByUid: admin.uid,
-            metadata: { previousStatus, newStatus: 'suspended' },
+          adminEmail: admin.email,
+          action: 'suspend_provider',
+          targetType: 'provider',
+          targetId: providerId,
+          before,
+          after: { ...before, ...afterUpdate },
         });
 
         revalidatePath('/admin/providers');
@@ -168,30 +172,28 @@ export async function updateFeatureStatus(prevState: any, formData: FormData) {
   try {
     const admin = await getAdminContext();
     const providerRef = adminDb.collection('providers').doc(providerId);
-    const providerSnap = await providerRef.get();
-    if (!providerSnap.exists) {
+    const snap = await providerRef.get();
+    if (!snap.exists) {
         return { success: false, error: 'Provider not found.' };
     }
-    const previousData = providerSnap.data();
+    const before = snap.data();
 
-    const dataToUpdate: { isFeatured: boolean; featuredUntil: Date | FieldValue | null } = {
+    const afterUpdate: { isFeatured: boolean; featuredUntil: Date | FieldValue | null } = {
       isFeatured,
       featuredUntil: isFeatured && featuredUntil ? new Date(featuredUntil) : FieldValue.delete(),
     };
     
-    await providerRef.update(dataToUpdate);
+    await providerRef.update(afterUpdate);
 
     await logAuditEvent({
-        action: 'UPDATE_FEATURE_STATUS',
-        entityType: 'provider',
-        entityId: providerId,
-        performedBy: admin.email,
-        performedByUid: admin.uid,
-        metadata: { 
-            previous: { isFeatured: previousData?.isFeatured, featuredUntil: previousData?.featuredUntil?.toDate()?.toISOString() },
-            new: { isFeatured: dataToUpdate.isFeatured, featuredUntil: featuredUntil },
-        },
+      adminEmail: admin.email,
+      action: 'update_feature_status',
+      targetType: 'provider',
+      targetId: providerId,
+      before,
+      after: { ...before, ...afterUpdate },
     });
+
 
     revalidatePath('/admin/providers');
     revalidatePath('/');
@@ -235,14 +237,14 @@ export async function addServiceAction(prevState: any, formData: FormData) {
         };
 
         const newServiceRef = await adminDb.collection('services').add(serviceData);
-
+        
         await logAuditEvent({
-            action: 'CREATE_SERVICE',
-            entityType: 'service',
-            entityId: newServiceRef.id,
-            performedBy: admin.email,
-            performedByUid: admin.uid,
-            metadata: { name, slug, basePrice },
+            adminEmail: admin.email,
+            action: 'create_service',
+            targetType: 'service',
+            targetId: newServiceRef.id,
+            before: null,
+            after: serviceData,
         });
 
         revalidatePath('/admin/services');
