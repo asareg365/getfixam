@@ -5,6 +5,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 if (!getApps().length) {
   initializeApp({
     credential: applicationDefault(),
+    projectId: 'studio-1004537855-178e0',
   });
 }
 
