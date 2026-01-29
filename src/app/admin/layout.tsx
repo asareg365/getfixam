@@ -1,6 +1,3 @@
-'use client';
-
-import { usePathname } from 'next/navigation';
 import {
   SidebarProvider,
   Sidebar,
@@ -13,21 +10,15 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { Home, List, Settings, LogOut, Wrench, Workflow } from 'lucide-react';
+import { Home, List, Settings, Wrench, Workflow } from 'lucide-react';
 import Link from 'next/link';
-import { logoutAction } from './actions';
+import { LogoutButton } from './LogoutButton';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  // Middleware in middleware.ts handles the session check.
+  // This layout will only be rendered for authenticated admin users.
+  // The login page itself is excluded from this layout via the middleware logic.
 
-  // If on login page, render children directly without the layout.
-  // This ensures the login screen is a standalone page.
-  if (pathname === '/admin/login') {
-    return <>{children}</>;
-  }
-  
-  // Session check is now handled by middleware.
-  
   return (
     <SidebarProvider>
       <Sidebar>
@@ -74,16 +65,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
-          <form action={logoutAction}>
-            <SidebarMenu>
-                <SidebarMenuItem>
-                    <SidebarMenuButton type="submit" tooltip="Log Out" className="w-full">
-                        <LogOut />
-                        <span>Log Out</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-            </SidebarMenu>
-          </form>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <LogoutButton />
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
