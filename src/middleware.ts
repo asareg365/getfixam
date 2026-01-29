@@ -6,7 +6,12 @@ export const config = {
 
 export function middleware(req: NextRequest) {
   const session = req.cookies.get('adminSession');
-  const { pathname } = req.nextUrl;
+  const { pathname, searchParams } = req.nextUrl;
+
+  // 🔥 Ignore Next.js RSC prefetches
+  if (searchParams.has('_rsc')) {
+    return NextResponse.next();
+  }
 
   // If user is trying to access the login page
   if (pathname === '/admin/login') {
