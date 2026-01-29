@@ -96,7 +96,7 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
         rating: data.rating,
         reviewCount: data.reviewCount,
         imageId: data.imageId,
-        createdAt: data.createdAt.toDate().toISOString(),
+        createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date(0).toISOString(),
       };
       if (data.approvedAt) {
           providerData.approvedAt = data.approvedAt.toDate().toISOString();
@@ -155,7 +155,7 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
         rating: data.rating,
         reviewCount: data.reviewCount,
         imageId: data.imageId,
-        createdAt: data.createdAt.toDate().toISOString(),
+        createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date(0).toISOString(),
       };
       if (data.approvedAt) {
           providerData.approvedAt = data.approvedAt.toDate().toISOString();
@@ -201,7 +201,7 @@ export async function getReviewsByProviderId(providerId: string): Promise<Review
         comment: data.comment,
         userImageId: data.userImageId,
         status: data.status,
-        createdAt: data.createdAt.toDate().toISOString(),
+        createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date(0).toISOString(),
       } as Review;
     });
   } catch (error) {

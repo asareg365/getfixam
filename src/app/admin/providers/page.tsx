@@ -59,7 +59,7 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
       imageId: data.imageId,
       serviceId: data.serviceId,
       category: service?.name || data.serviceId || 'N/A',
-      createdAt: data.createdAt.toDate().toISOString(),
+      createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date(0).toISOString(),
     };
      if (data.approvedAt) {
       providerData.approvedAt = data.approvedAt.toDate().toISOString();

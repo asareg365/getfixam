@@ -73,7 +73,7 @@ export default function ProviderDashboardPage() {
             id: providerDoc.id,
             ...providerData,
             category: categoryName,
-            createdAt: providerData.createdAt.toDate().toISOString(),
+            createdAt: providerData.createdAt ? providerData.createdAt.toDate().toISOString() : new Date(0).toISOString(),
             approvedAt: providerData.approvedAt?.toDate().toISOString(),
             featuredUntil: providerData.featuredUntil?.toDate().toISOString(),
           } as Provider);
