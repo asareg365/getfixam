@@ -40,7 +40,7 @@ export default function AdminLoginPage() {
         // This user is valid in Firebase, but not authorized as an admin in our system.
         toast({
           title: 'Permission Denied',
-          description: 'You do not have permission to access the admin panel.',
+          description: sessionResult.error || 'You do not have permission to access the admin panel.',
           variant: 'destructive',
           duration: 9000,
         });
