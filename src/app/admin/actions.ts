@@ -6,28 +6,28 @@ import { revalidatePath } from 'next/cache';
 import { FieldValue } from 'firebase-admin/firestore';
 
 export async function createAdminSession(idToken: string) {
-  console.log('Running as service account');
-  console.log('GCLOUD PROJECT:', process.env.GCLOUD_PROJECT);
+  console.log('GOOGLE_SERVICE_ACCOUNT_EMAIL:', process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL);
+  console.log('GCP_PROJECT:', process.env.GOOGLE_CLOUD_PROJECT);
+
   try {
     const decoded = await adminAuth.verifyIdToken(idToken);
+    console.log('TOKEN VERIFIED FOR:', decoded.email);
 
-    // Make the check case-insensitive to avoid login issues due to capitalization.
     if (decoded.email?.toLowerCase() !== 'asareg365@gmail.com') {
-      console.warn(`Unauthorized login attempt from: ${decoded.email}`);
-      return { success: false, error: 'Unauthorized: This account is not the designated admin.' };
+      return { success: false };
     }
 
     cookies().set('adminSession', idToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 7, // 1 week
+      maxAge: 60 * 60 * 24 * 7,
       path: '/',
     });
 
     return { success: true };
   } catch (error) {
-    console.error('Session creation failed:', error);
-    return { success: false, error: 'Session creation failed. This can be caused by incorrect server environment configuration. Please ensure the backend service has the correct permissions.' };
+    console.error('VERIFY TOKEN ERROR:', error);
+    throw error;
   }
 }
 
