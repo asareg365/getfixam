@@ -38,15 +38,21 @@ export default function AdminLoginPage() {
       }
     } catch (error: any) {
       console.error('Admin login error:', error);
-      const errorMessage =
-        error.message === 'Unauthorized' || error.code === 'auth/invalid-credential'
-          ? 'Invalid credentials or insufficient permissions.'
-          : error.message || 'An unexpected error occurred.';
+      let errorMessage = 'An unexpected error occurred.';
+
+      if (error.code === 'auth/operation-not-allowed') {
+        errorMessage = 'Email/Password sign-in is not enabled. Please enable it in your Firebase Console under Authentication > Sign-in method.';
+      } else if (error.message === 'Unauthorized' || error.code === 'auth/invalid-credential') {
+        errorMessage = 'Invalid credentials or insufficient permissions.';
+      } else {
+        errorMessage = error.message || errorMessage;
+      }
       
       toast({
         title: 'Login Failed',
         description: errorMessage,
         variant: 'destructive',
+        duration: 9000,
       });
     } finally {
       setLoading(false);
