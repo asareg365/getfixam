@@ -1,10 +1,13 @@
+import { requireAdmin } from '@/lib/admin-guard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AddServiceForm from './form';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
-export default function AddServicePage() {
+export default async function AddServicePage() {
+  await requireAdmin();
+  
   return (
     <div>
         <div className="mb-4">
