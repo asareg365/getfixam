@@ -15,14 +15,14 @@ async function getServices(): Promise<Service[]> {
     const data = doc.data();
     return {
       id: doc.id,
-      name: data.name,
-      slug: data.slug,
-      icon: data.icon,
-      active: data.active,
-      basePrice: data.basePrice || 0,
-      currency: data.currency || 'GHS',
-      maxSurge: data.maxSurge || 1.5,
-      minSurge: data.minSurge || 1.0,
+      name: data.name ?? 'Unknown Service',
+      slug: data.slug ?? 'unknown',
+      icon: data.icon ?? 'Wrench',
+      active: data.active ?? false,
+      basePrice: data.basePrice ?? 0,
+      currency: data.currency ?? 'GHS',
+      maxSurge: data.maxSurge ?? 1.5,
+      minSurge: data.minSurge ?? 1.0,
     } as Service;
   });
 }
