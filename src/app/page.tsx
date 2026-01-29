@@ -30,9 +30,9 @@ export default function ProviderLoginPage() {
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
   useEffect(() => {
-    window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
       'size': 'invisible',
-    }, auth);
+    });
   }, []);
 
   const handleSendOtp = async (e: React.FormEvent) => {
