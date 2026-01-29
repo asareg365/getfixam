@@ -1,10 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 interface ProviderTabsProps {
   currentStatus: 'pending' | 'approved' | 'rejected' | 'suspended' | 'all';
+  counts: Record<string, number>;
 }
 
 const statuses: { label: string; value: ProviderTabsProps['currentStatus'] }[] = [
@@ -15,18 +17,9 @@ const statuses: { label: string; value: ProviderTabsProps['currentStatus'] }[] =
   { label: 'All', value: 'all' },
 ];
 
-export function ProviderTabs({ currentStatus }: ProviderTabsProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
+export function ProviderTabs({ currentStatus, counts }: ProviderTabsProps) {
   const getHref = (status: ProviderTabsProps['currentStatus']) => {
-    const params = new URLSearchParams(searchParams.toString());
-     if (status === 'all') {
-      params.delete('status');
-    } else {
-      params.set('status', status);
-    }
-    return `/admin/providers?${params.toString()}`;
+    return `/admin/providers?status=${status}`;
   }
 
   return (
@@ -35,13 +28,13 @@ export function ProviderTabs({ currentStatus }: ProviderTabsProps) {
         <Link
           key={status.value}
           href={getHref(status.value)}
-          className={`px-4 py-2 rounded-md font-medium transition-colors ${
+          className={`px-4 py-2 rounded-md font-medium transition-colors whitespace-nowrap ${
             currentStatus === status.value
-              ? 'bg-primary text-white'
+              ? 'bg-primary text-white shadow'
               : 'bg-muted text-muted-foreground hover:bg-muted/80'
           }`}
         >
-          {status.label}
+          {status.label} <span className="ml-1.5 rounded-full bg-primary/20 px-2 text-xs">{counts[status.value] ?? 0}</span>
         </Link>
       ))}
     </div>

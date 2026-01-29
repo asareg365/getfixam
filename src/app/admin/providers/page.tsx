@@ -10,6 +10,26 @@ import Link from 'next/link';
 import { ProviderTabs } from './_components/provider-tabs';
 import { ProvidersTable } from './_components/providers-table';
 
+/** ----- Fetch Provider Counts ----- */
+async function getProviderCounts() {
+  const statuses = ['pending', 'approved', 'rejected', 'suspended'];
+  const counts: Record<string, number> = {};
+
+  for (const status of statuses) {
+    const snapshot = await adminDb
+      .collection('providers')
+      .where('status', '==', status)
+      .get();
+    counts[status] = snapshot.size;
+  }
+
+  // Total count
+  const totalSnapshot = await adminDb.collection('providers').get();
+  counts['all'] = totalSnapshot.size;
+
+  return counts;
+}
+
 /** ----- Fetch Providers with safe defaults ----- */
 async function getProvidersFromDB(status?: string): Promise<Provider[]> {
   // Fetch all services and map them
@@ -72,6 +92,7 @@ export default async function ProvidersPage({
 
   const status = searchParams?.status || 'pending';
   const providers = await getProvidersFromDB(status);
+  const counts = await getProviderCounts();
 
   return (
     <div>
@@ -97,12 +118,10 @@ export default async function ProvidersPage({
         </CardHeader>
 
         <CardContent>
-          <ProviderTabs currentStatus={status} />
+          <ProviderTabs currentStatus={status} counts={counts} />
           <ProvidersTable providers={providers} />
         </CardContent>
       </Card>
     </div>
   );
 }
-
-    
