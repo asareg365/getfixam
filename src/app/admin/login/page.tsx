@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { createAdminSession } from '@/app/admin/actions';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -30,14 +29,19 @@ export default function AdminLoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const idToken = await userCredential.user.getIdToken();
       
-      // Step 2: Verify admin permissions with the backend server action
-      const sessionResult = await createAdminSession(idToken);
+      // Step 2: Call the API route to create the session
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
 
-      if (sessionResult.success) {
+      const sessionResult = await res.json();
+
+      if (res.ok && sessionResult.success) {
         toast({ title: 'Login successful!', description: 'Redirecting to dashboard...' });
         router.push('/admin/dashboard');
       } else {
-        // This user is valid in Firebase, but not authorized as an admin in our system.
         toast({
           title: 'Permission Denied',
           description: sessionResult.error || 'You do not have permission to access the admin panel.',
