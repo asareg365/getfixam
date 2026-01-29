@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PublicLayout from '@/components/layout/PublicLayout';
+import { isAdminUser } from '@/lib/admin-guard';
 
 export async function generateStaticParams() {
   const categories = await getCategories();
@@ -34,6 +35,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
   }
 
   const providers: Provider[] = await getProviders(params.slug);
+  const isAdmin = await isAdminUser();
 
   return (
     <PublicLayout>
@@ -68,9 +70,11 @@ export default async function CategoryPage({ params }: { params: { slug: string 
                 <p className="text-muted-foreground mt-2">
                 Be the first to list your business in this category.
                 </p>
-                <Button asChild className="mt-6">
-                <Link href="/add-provider">List Your Business</Link>
-                </Button>
+                {!isAdmin && (
+                    <Button asChild className="mt-6">
+                        <Link href="/add-provider">List Your Business</Link>
+                    </Button>
+                )}
             </div>
             )}
         </div>

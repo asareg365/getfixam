@@ -18,3 +18,16 @@ export async function requireAdmin() {
     redirect('/admin/login');
   }
 }
+
+export async function isAdminUser(): Promise<boolean> {
+  const token = cookies().get('adminSession')?.value;
+  if (!token) return false;
+
+  try {
+    const decoded = await adminAuth.verifyIdToken(token);
+    return decoded.email?.toLowerCase() === 'asareg365@gmail.com';
+  } catch (error) {
+    // Not a critical error for a public page check, so we can ignore it.
+    return false;
+  }
+}
