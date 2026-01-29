@@ -4,7 +4,7 @@ import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
 import { FieldValue } from 'firebase-admin/firestore';
 
-export async function POST(req: NextRequest, { params }: { params: { action: 'approve' | 'reject' } }) {
+export async function POST(req: NextRequest, { params }: { params: { action: 'approve' | 'reject' | 'suspend' } }) {
   const body = await req.formData();
   const providerId = body.get('providerId') as string;
   if (!providerId) return NextResponse.json({ success: false, error: 'Provider ID missing' });
@@ -21,17 +21,23 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
 
     if (!providerData) return NextResponse.json({ success: false, error: 'Provider not found' });
 
-    const updateData: any = {
-      status: params.action === 'approve' ? 'approved' : 'rejected',
-      verified: params.action === 'approve',
-    };
+    const updateData: any = {};
 
     if (params.action === 'approve') {
+      updateData.status = 'approved';
+      updateData.verified = true;
       updateData.approvedAt = FieldValue.serverTimestamp();
       updateData.approvedBy = adminEmail;
-    } else { // 'reject'
+    } else if (params.action === 'reject') {
+      updateData.status = 'rejected';
+      updateData.verified = false;
       updateData.rejectedAt = FieldValue.serverTimestamp();
       updateData.rejectedBy = adminEmail;
+    } else if (params.action === 'suspend') {
+        updateData.status = 'suspended';
+        updateData.verified = false;
+        updateData.suspendedAt = FieldValue.serverTimestamp();
+        updateData.suspendedBy = adminEmail;
     }
 
     await providerRef.update(updateData);
@@ -51,5 +57,3 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
     return NextResponse.json({ success: false, error: error.message || 'Unexpected error' });
   }
 }
-
-    

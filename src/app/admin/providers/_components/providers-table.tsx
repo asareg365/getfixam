@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Table,
   TableBody,
@@ -21,11 +22,11 @@ interface ProvidersTableProps {
 export function ProvidersTable({
   providers
 }: ProvidersTableProps) {
+    const router = useRouter();
     const [loadingIds, setLoadingIds] = useState<string[]>([]);
-    const [localProviders, setLocalProviders] = useState(providers);
     const { toast } = useToast();
 
-    const handleAction = async (providerId: string, action: 'approve' | 'reject') => {
+    const handleAction = async (providerId: string, action: 'approve' | 'reject' | 'suspend') => {
         try {
             setLoadingIds(prev => [...prev, providerId]);
 
@@ -41,11 +42,7 @@ export function ProvidersTable({
 
             if (result.success) {
                 toast({ title: `Provider ${action}d successfully!`, variant: 'success' });
-
-                // Update local state to reflect new status
-                setLocalProviders(prev =>
-                    prev.map(p => p.id === providerId ? { ...p, status: action === 'approve' ? 'approved' : 'rejected', verified: action === 'approve' } : p)
-                );
+                router.refresh();
             } else {
                 toast({ title: `Failed to ${action} provider`, description: result.error, variant: 'destructive' });
             }
@@ -57,7 +54,7 @@ export function ProvidersTable({
     };
 
 
-  if (!localProviders || localProviders.length === 0) {
+  if (!providers || providers.length === 0) {
     return (
       <p className="text-center py-8 text-muted-foreground">
         No providers found for this status.
@@ -80,7 +77,7 @@ export function ProvidersTable({
         </TableHeader>
 
         <TableBody>
-          {localProviders.map((p) => {
+          {providers.map((p) => {
             const createdAt = p.createdAt
               ? new Date(p.createdAt).toLocaleDateString()
               : '—';
@@ -101,7 +98,7 @@ export function ProvidersTable({
                       : p.status === 'rejected'
                       ? 'destructive'
                       : p.status === 'suspended'
-                      ? 'outline'
+                      ? 'destructive'
                       : 'secondary'
                   }>
                     {p.status ?? 'pending'}
@@ -119,7 +116,11 @@ export function ProvidersTable({
                     <div className="text-xs text-muted-foreground">
                       by {p.rejectedBy}<br/>on {new Date(p.rejectedAt).toLocaleDateString()}
                     </div>
-                  ) : (
+                  ) :  p.status === 'suspended' && p.suspendedBy && p.suspendedAt ? (
+                    <div className="text-xs text-muted-foreground">
+                      by {p.suspendedBy}<br/>on {new Date(p.suspendedAt).toLocaleDateString()}
+                    </div>
+                  ): (
                     '—'
                   )}
                 </TableCell>
@@ -145,6 +146,26 @@ export function ProvidersTable({
                         </Button>
                         </>
                     )}
+                    {p.status === 'approved' && (
+                         <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleAction(p.id, 'suspend')}
+                            disabled={loadingIds.includes(p.id)}
+                        >
+                            Suspend
+                        </Button>
+                    )}
+                     {(p.status === 'rejected' || p.status === 'suspended') && (
+                        <Button
+                            size="sm"
+                            variant="success"
+                            onClick={() => handleAction(p.id, 'approve')}
+                            disabled={loadingIds.includes(p.id)}
+                        >
+                            Approve
+                        </Button>
+                    )}
                 </TableCell>
               </TableRow>
             );
@@ -154,5 +175,3 @@ export function ProvidersTable({
     </div>
   );
 }
-
-    
