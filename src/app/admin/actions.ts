@@ -1,3 +1,4 @@
+
 'use server';
 
 import { cookies } from 'next/headers';
@@ -9,8 +10,8 @@ export async function createAdminSession(idToken: string) {
   try {
     const decoded = await adminAuth.verifyIdToken(idToken);
 
-    // Optional: restrict to specific admin email
-    if (decoded.email !== 'asareg365@gmail.com') {
+    // Make the check case-insensitive to avoid login issues due to capitalization.
+    if (decoded.email?.toLowerCase() !== 'asareg365@gmail.com') {
       console.warn(`Unauthorized login attempt from: ${decoded.email}`);
       return { success: false, error: 'Unauthorized' };
     }
