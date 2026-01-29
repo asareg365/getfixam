@@ -6,7 +6,6 @@ import { revalidatePath } from 'next/cache';
 import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
-import { logAuditEvent } from '@/lib/audit';
 
 /** ----- Helper: Get Admin Context ----- */
 async function getAdminContext() {
@@ -19,6 +18,23 @@ async function getAdminContext() {
     uid: decoded.uid,
   };
 }
+
+/** ----- Helper: Audit Logger ----- */
+async function logAudit(adminEmail: string, providerId: string, providerName: string, action: 'approved' | 'rejected') {
+  try {
+    await adminDb.collection('auditLogs').add({
+      adminEmail,
+      providerId,
+      providerName,
+      action,
+      timestamp: FieldValue.serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Failed to log audit action:', error);
+    // Non-blocking so we don't fail the main action
+  }
+}
+
 
 /** ----- AUTH ACTIONS ----- */
 export async function createAdminSession(idToken: string) {
@@ -63,24 +79,18 @@ export async function approveProvider(prevState: any, formData: FormData) {
     if (!snap.exists) {
       return { success: false, error: 'Provider not found.' };
     }
+    const providerData = snap.data();
+    if (!providerData) {
+        return { success: false, error: 'Provider data is empty.' };
+    }
 
-    const before = snap.data();
-    const afterUpdate = {
+    await providerRef.update({
       status: 'approved',
       verified: true,
       approvedAt: FieldValue.serverTimestamp(),
-    };
-
-    await providerRef.update(afterUpdate);
-
-    await logAuditEvent({
-      adminEmail: admin.email,
-      action: 'approve_provider',
-      targetType: 'provider',
-      targetId: providerId,
-      before,
-      after: { ...before, ...afterUpdate },
     });
+
+    await logAudit(admin.email, providerId, providerData.name, 'approved');
 
     revalidatePath('/admin/providers');
     revalidatePath('/');
@@ -102,21 +112,14 @@ export async function rejectProvider(prevState: any, formData: FormData) {
      if (!snap.exists) {
       return { success: false, error: 'Provider not found.' };
     }
-    const before = snap.data();
-    const afterUpdate = {
-      status: 'rejected',
-    };
+    const providerData = snap.data();
+    if (!providerData) {
+        return { success: false, error: 'Provider data is empty.' };
+    }
 
-    await providerRef.update(afterUpdate);
+    await providerRef.update({ status: 'rejected' });
     
-    await logAuditEvent({
-      adminEmail: admin.email,
-      action: 'reject_provider',
-      targetType: 'provider',
-      targetId: providerId,
-      before,
-      after: { ...before, ...afterUpdate },
-    });
+    await logAudit(admin.email, providerId, providerData.name, 'rejected');
 
     revalidatePath('/admin/providers');
     return { success: true, message: 'Provider rejected.' };
@@ -137,21 +140,8 @@ export async function suspendProvider(prevState: any, formData: FormData) {
         if (!snap.exists) {
             return { success: false, error: 'Provider not found.' };
         }
-        const before = snap.data();
-        const afterUpdate = {
-            status: 'suspended',
-        };
 
-        await providerRef.update(afterUpdate);
-
-        await logAuditEvent({
-          adminEmail: admin.email,
-          action: 'suspend_provider',
-          targetType: 'provider',
-          targetId: providerId,
-          before,
-          after: { ...before, ...afterUpdate },
-        });
+        await providerRef.update({ status: 'suspended' });
 
         revalidatePath('/admin/providers');
         return { success: true, message: 'Provider suspended.' };
@@ -176,24 +166,18 @@ export async function updateFeatureStatus(prevState: any, formData: FormData) {
     if (!snap.exists) {
         return { success: false, error: 'Provider not found.' };
     }
-    const before = snap.data();
 
-    const afterUpdate: { isFeatured: boolean; featuredUntil: Date | FieldValue | null } = {
+    const update: { isFeatured: boolean; featuredUntil?: Date | FieldValue } = {
       isFeatured,
-      featuredUntil: isFeatured && featuredUntil ? new Date(featuredUntil) : FieldValue.delete(),
     };
+
+    if (isFeatured && featuredUntil) {
+      update.featuredUntil = new Date(featuredUntil);
+    } else {
+      update.featuredUntil = FieldValue.delete();
+    }
     
-    await providerRef.update(afterUpdate);
-
-    await logAuditEvent({
-      adminEmail: admin.email,
-      action: 'update_feature_status',
-      targetType: 'provider',
-      targetId: providerId,
-      before,
-      after: { ...before, ...afterUpdate },
-    });
-
+    await providerRef.update(update);
 
     revalidatePath('/admin/providers');
     revalidatePath('/');
@@ -236,17 +220,8 @@ export async function addServiceAction(prevState: any, formData: FormData) {
             createdAt: FieldValue.serverTimestamp(),
         };
 
-        const newServiceRef = await adminDb.collection('services').add(serviceData);
+        await adminDb.collection('services').add(serviceData);
         
-        await logAuditEvent({
-            adminEmail: admin.email,
-            action: 'create_service',
-            targetType: 'service',
-            targetId: newServiceRef.id,
-            before: null,
-            after: serviceData,
-        });
-
         revalidatePath('/admin/services');
         return { success: true, message: 'Service added successfully.' };
     } catch (error: any) {

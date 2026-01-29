@@ -34,8 +34,9 @@ service cloud.firestore {
     /* ============================
        AUDIT LOGS (SERVER ONLY)
     ============================ */
-    match /audit_logs/{logId} {
-      allow read, write: if false;
+    match /auditLogs/{logId} {
+      allow read: if request.auth != null;
+      allow write: if false; // server-only via Admin SDK
     }
 
     /* ============================

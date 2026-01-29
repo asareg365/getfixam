@@ -62,6 +62,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+             <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Audit Logs">
+                    <Link href="/admin/audit-logs">
+                        <Workflow />
+                        <span>Audit Logs</span>
+                    </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>

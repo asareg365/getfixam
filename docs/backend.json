@@ -358,40 +358,18 @@
       "description": "A log of administrative actions performed in the system for accountability.",
       "type": "object",
       "properties": {
-        "adminEmail": {
-          "type": "string"
-        },
-        "action": {
-          "type": "string"
-        },
-        "targetType": {
-          "type": "string",
-          "enum": [
-            "provider",
-            "job",
-            "service"
-          ]
-        },
-        "targetId": {
-          "type": "string"
-        },
-        "before": {
-          "type": "object"
-        },
-        "after": {
-          "type": "object"
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        }
+        "adminEmail": { "type": "string" },
+        "providerId": { "type": "string" },
+        "providerName": { "type": "string" },
+        "action": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
       },
       "required": [
         "adminEmail",
+        "providerId",
+        "providerName",
         "action",
-        "targetType",
-        "targetId",
-        "createdAt"
+        "timestamp"
       ]
     }
   },
@@ -465,7 +443,7 @@
       },
       "description": "Stores a log of all job reassignments."
     },
-    "/audit_logs/{logId}": {
+    "/auditLogs/{logId}": {
       "schema": { "$ref": "#/entities/AuditLog" },
       "description": "Stores a log of all administrative actions for accountability."
     }
