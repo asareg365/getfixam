@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 
 interface ProviderTabsProps {
   currentStatus: 'pending' | 'approved' | 'rejected' | 'suspended' | 'all';
@@ -18,33 +19,30 @@ export function ProviderTabs({ currentStatus }: ProviderTabsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const handleTabClick = (status: ProviderTabsProps['currentStatus']) => {
+  const getHref = (status: ProviderTabsProps['currentStatus']) => {
     const params = new URLSearchParams(searchParams.toString());
-
-    if (status === 'all') {
+     if (status === 'all') {
       params.delete('status');
     } else {
       params.set('status', status);
     }
-
-    router.push(`/admin/providers?${params.toString()}`);
-  };
+    return `/admin/providers?${params.toString()}`;
+  }
 
   return (
     <div className="flex gap-4 mb-4 overflow-x-auto">
       {statuses.map((status) => (
-        <button
+        <Link
           key={status.value}
-          type="button"
-          onClick={() => handleTabClick(status.value)}
-          className={`px-4 py-2 rounded-md font-medium transition ${
+          href={getHref(status.value)}
+          className={`px-4 py-2 rounded-md font-medium transition-colors ${
             currentStatus === status.value
               ? 'bg-primary text-white'
               : 'bg-muted text-muted-foreground hover:bg-muted/80'
           }`}
         >
           {status.label}
-        </button>
+        </Link>
       ))}
     </div>
   );
