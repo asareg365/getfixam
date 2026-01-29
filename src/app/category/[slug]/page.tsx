@@ -1,4 +1,4 @@
-import { getCategoryBySlug, getProviders } from '@/lib/services';
+import { getCategories, getCategoryBySlug, getProviders } from '@/lib/services';
 import ProviderCard from '@/components/ProviderCard';
 import { notFound } from 'next/navigation';
 import type { Provider } from '@/lib/types';
@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import PublicLayout from '@/components/layout/PublicLayout';
 
 export async function generateStaticParams() {
-  const { CATEGORIES } = await import('@/lib/data');
-  const slugs = CATEGORIES.map((category) => ({ slug: category.slug }));
+  const categories = await getCategories();
+  const slugs = categories.map((category) => ({ slug: category.slug }));
   slugs.push({ slug: 'all' });
   return slugs;
 }
