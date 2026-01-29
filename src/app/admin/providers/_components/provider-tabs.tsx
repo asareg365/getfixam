@@ -1,27 +1,27 @@
 'use client';
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 export function ProviderTabs({ currentStatus }: { currentStatus: string }) {
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
-
-    const handleTabChange = (value: string) => {
-        const params = new URLSearchParams(searchParams);
-        params.set('status', value);
-        router.push(`${pathname}?${params.toString()}`);
-    }
-
     return (
-        <Tabs value={currentStatus} onValueChange={handleTabChange} className="mb-4">
+        <Tabs value={currentStatus} className="mb-4">
             <TabsList>
-                <TabsTrigger value="pending">Pending</TabsTrigger>
-                <TabsTrigger value="approved">Approved</TabsTrigger>
-                <TabsTrigger value="rejected">Rejected</TabsTrigger>
-                <TabsTrigger value="suspended">Suspended</TabsTrigger>
-                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="pending" asChild>
+                    <Link href="/admin/providers?status=pending">Pending</Link>
+                </TabsTrigger>
+                <TabsTrigger value="approved" asChild>
+                    <Link href="/admin/providers?status=approved">Approved</Link>
+                </TabsTrigger>
+                <TabsTrigger value="rejected" asChild>
+                    <Link href="/admin/providers?status=rejected">Rejected</Link>
+                </TabsTrigger>
+                <TabsTrigger value="suspended" asChild>
+                    <Link href="/admin/providers?status=suspended">Suspended</Link>
+                </TabsTrigger>
+                <TabsTrigger value="all" asChild>
+                    <Link href="/admin/providers?status=all">All</Link>
+                </TabsTrigger>
             </TabsList>
         </Tabs>
     )
