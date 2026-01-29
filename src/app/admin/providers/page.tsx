@@ -19,14 +19,14 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
   const servicesMap = new Map<string, Omit<Service, 'icon'>>();
   servicesSnap.forEach(doc => {
       const data = doc.data();
-      servicesMap.set(doc.id, { 
-        id: doc.id, 
-        name: data.name,
-        slug: data.slug,
-        active: data.active,
-        basePrice: data.basePrice,
-        currency: data.currency,
-      } as Omit<Service, 'icon'>);
+      servicesMap.set(doc.id, {
+        id: doc.id,
+        name: data.name ?? 'Unknown',
+        slug: data.slug ?? '',
+        active: data.active ?? false,
+        basePrice: data.basePrice ?? 0,
+        currency: data.currency ?? 'GHS',
+      });
   });
 
   // Query providers, filtering by status if provided.
