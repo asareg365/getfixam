@@ -352,6 +352,21 @@
         "timestamp": { "type": "string", "format": "date-time" }
       },
       "required": ["jobId", "reason", "timestamp"]
+    },
+    "AuditLog": {
+        "title": "Audit Log",
+        "description": "A log of administrative actions performed in the system.",
+        "type": "object",
+        "properties": {
+            "action": { "type": "string" },
+            "entityType": { "type": "string", "enum": ["provider", "job", "service"] },
+            "entityId": { "type": "string" },
+            "performedBy": { "type": "string" },
+            "performedByUid": { "type": "string" },
+            "metadata": { "type": "object" },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["action", "entityType", "entityId", "performedBy", "performedByUid", "createdAt"]
     }
   },
   "auth": {
@@ -423,6 +438,10 @@
         "$ref": "#/entities/ReassignmentLog"
       },
       "description": "Stores a log of all job reassignments."
+    },
+    "/audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Stores a log of all administrative actions for accountability."
     }
   }
 }
