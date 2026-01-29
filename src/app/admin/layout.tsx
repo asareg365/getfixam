@@ -1,5 +1,6 @@
-import { cookies, headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+'use client';
+
+import { usePathname } from 'next/navigation';
 import {
   SidebarProvider,
   Sidebar,
@@ -17,7 +18,7 @@ import Link from 'next/link';
 import { logoutAction } from './actions';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const pathname = headers().get('x-next-pathname') || '';
+  const pathname = usePathname();
 
   // If on login page, render children directly without the layout.
   // This ensures the login screen is a standalone page.
@@ -25,12 +26,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return <>{children}</>;
   }
   
-  const session = cookies().get('adminSession');
-  
-  // For all other admin pages, block access if not logged in.
-  if (!session) {
-    redirect('/admin/login');
-  }
+  // Session check is now handled by middleware.
   
   return (
     <SidebarProvider>

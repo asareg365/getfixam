@@ -10,20 +10,22 @@ export function middleware(req: NextRequest) {
   const session = req.cookies.get('adminSession');
   const { pathname } = req.nextUrl;
 
-  // Add the pathname to the request headers for use in server components
-  const requestHeaders = new Headers(req.headers);
-  requestHeaders.set('x-next-pathname', pathname);
-
-  if (session && pathname === '/admin/login') {
-    return NextResponse.redirect(new URL('/admin/dashboard', req.url));
+  // If user is trying to access the login page
+  if (pathname === '/admin/login') {
+    // If they are already logged in, redirect to dashboard
+    if (session) {
+      return NextResponse.redirect(new URL('/admin/dashboard', req.url));
+    }
+    // Otherwise, allow them to see the login page
+    return NextResponse.next();
   }
 
-  // NOTE: The primary protection is in the layout, which will redirect if no session.
-  // This middleware is mainly for redirecting logged-in users away from login.
+  // For any other admin page
+  // If they are not logged in, redirect to login page
+  if (!session) {
+    return NextResponse.redirect(new URL('/admin/login', req.url));
+  }
 
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
+  // Otherwise, allow access
+  return NextResponse.next();
 }
