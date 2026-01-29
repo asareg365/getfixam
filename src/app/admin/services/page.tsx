@@ -5,6 +5,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import type { Service } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 
 async function getServices(): Promise<Service[]> {
   const snapshot = await adminDb.collection('services').orderBy('name').get();
@@ -38,9 +39,11 @@ export default async function ServicesPage() {
                     <h1 className="text-3xl font-bold font-headline">Manage Services</h1>
                     <p className="text-muted-foreground">Add, edit, or deactivate service categories and pricing.</p>
                 </div>
-                <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Service
+                <Button asChild>
+                    <Link href="/admin/services/new">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add Service
+                    </Link>
                 </Button>
             </div>
             <Card>
