@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, getDocs, collection, query, where, updateDoc, getDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
+import { getProviderDataAndLinkAccount } from '../actions';
 import type { Provider } from '@/lib/types';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,70 +25,20 @@ export default function ProviderDashboardPage() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         try {
-          // 1. First, try to find by UID
-          let providerQuery = query(collection(db, 'providers'), where('authUid', '==', currentUser.uid));
-          let providerSnap = await getDocs(providerQuery);
-          let providerDoc;
+          const idToken = await currentUser.getIdToken();
+          const { provider: providerData, error } = await getProviderDataAndLinkAccount(idToken);
 
-          if (providerSnap.empty) {
-            // 2. If not found, try to find by phone number (without status check)
-            if (!currentUser.phoneNumber) {
-                setAccountError("Your account has no phone number associated. Please contact support.");
-                setLoading(false);
-                return;
-            }
-            // In Ghana, numbers start with 0, but Firebase stores them as +233...
-            // We need to match the format in the DB, which is `0...`
-            const localPhoneNumber = currentUser.phoneNumber.substring(4); 
-            providerQuery = query(
-              collection(db, 'providers'),
-              where('phone', '==', `0${localPhoneNumber}`),
-            );
-            providerSnap = await getDocs(providerQuery);
-
-            if (!providerSnap.empty) {
-              // 3. Found by phone! Link the UID for future logins.
-              providerDoc = providerSnap.docs[0];
-              await updateDoc(doc(db, 'providers', providerDoc.id), { authUid: currentUser.uid });
-            } else {
-                // 4. Not found by UID or Phone. They need to register.
-                setAccountError("No provider account found for this phone number. Please create a listing first.");
-                setLoading(false);
-                return;
-            }
+          if (error) {
+              setAccountError(error);
+          } else if (providerData) {
+              setProvider(providerData);
           } else {
-            providerDoc = providerSnap.docs[0];
+              setAccountError("An unknown error occurred while retrieving your account.");
           }
-          
-          const providerData = providerDoc.data();
-          let categoryName = 'N/A';
-          if (providerData.serviceId) {
-            const serviceDoc = await getDoc(doc(db, 'services', providerData.serviceId));
-            if(serviceDoc.exists()) {
-                categoryName = serviceDoc.data().name;
-            }
-          }
-
-          setProvider({
-            id: providerDoc.id,
-            ...providerData,
-            category: categoryName,
-            createdAt: providerData.createdAt
-              ? providerData.createdAt.toDate().toISOString()
-              : new Date(0).toISOString(),
-            approvedAt: providerData.approvedAt
-              ? providerData.approvedAt.toDate().toISOString()
-              : undefined,
-            featuredUntil: providerData.featuredUntil
-              ? providerData.featuredUntil.toDate().toISOString()
-              : undefined,
-          } as Provider);
-
         } catch(e: any) {
             console.error("Error fetching provider data: ", e);
             setAccountError(e.message || 'An error occurred while fetching your data.');
         }
-
       } else {
         // User is signed out
         router.push('/provider/login');
