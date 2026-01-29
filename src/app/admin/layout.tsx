@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Home, List, Settings, LogOut, Wrench, Workflow } from 'lucide-react';
 import Link from 'next/link';
+import { logoutAction } from './actions';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -73,16 +74,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
-          <SidebarMenu>
-              <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Log Out">
-                      <Link href="/admin/logout">
-                          <LogOut />
-                          <span>Log Out</span>
-                      </Link>
-                  </SidebarMenuButton>
-              </SidebarMenuItem>
-          </SidebarMenu>
+          <form action={logoutAction}>
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton type="submit" tooltip="Log Out" className="w-full">
+                        <LogOut />
+                        <span>Log Out</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
+          </form>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>

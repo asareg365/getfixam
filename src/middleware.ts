@@ -10,13 +10,6 @@ export function middleware(req: NextRequest) {
   const session = req.cookies.get('adminSession');
   const { pathname } = req.nextUrl;
 
-  // Handle logout
-  if (pathname === '/admin/logout') {
-    const response = NextResponse.redirect(new URL('/admin/login', req.url));
-    response.cookies.delete('adminSession');
-    return response;
-  }
-
   // If user is trying to access the login page
   if (pathname === '/admin/login') {
     // If they are already logged in, redirect to dashboard

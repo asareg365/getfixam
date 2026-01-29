@@ -35,6 +35,11 @@ export async function createAdminSession(idToken: string) {
   }
 }
 
+export async function logoutAction() {
+  cookies().delete('adminSession');
+  redirect('/admin/login');
+}
+
 export async function approveProvider(prevState: any, formData: FormData) {
   const providerId = formData.get('providerId') as string;
   if (!providerId) return { success: false, error: 'Provider ID is missing.' };
