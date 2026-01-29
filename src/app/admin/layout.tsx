@@ -19,6 +19,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = headers().get('next-url');
 
   // Do not render the admin layout on the login page.
+  // This ensures the login screen is a standalone page.
   if (pathname === '/admin/login') {
     return <>{children}</>;
   }
