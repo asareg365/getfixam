@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import {
   SidebarProvider,
   Sidebar,
@@ -15,6 +16,13 @@ import Link from 'next/link';
 import { logoutAction } from './actions';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const pathname = headers().get('next-url');
+
+  // Do not render the admin layout on the login page.
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
+  
   return (
     <SidebarProvider>
       <Sidebar>
