@@ -22,27 +22,32 @@ async function getAdminContext() {
 
 /** ----- AUTH ACTIONS ----- */
 export async function createAdminSession(idToken: string) {
-  // verifyIdToken checks expiration, signature, etc. and decodes the token.
-  // The second argument `true` checks if the token has been revoked.
-  const decoded = await adminAuth.verifyIdToken(idToken, true);
+  try {
+    // verifyIdToken checks expiration, signature, etc. and decodes the token.
+    // The second argument `true` checks if the token has been revoked.
+    const decoded = await adminAuth.verifyIdToken(idToken, true);
 
-  const firebaseProjectId = "studio-1004537855-178e0";
-  if (decoded.aud !== firebaseProjectId) {
-      return { success: false, error: `ID token audience mismatch. Expected "${firebaseProjectId}", got "${decoded.aud}".` };
+    const firebaseProjectId = "studio-1004537855-178e0";
+    if (decoded.aud !== firebaseProjectId) {
+        return { success: false, error: `ID token audience mismatch. Expected "${firebaseProjectId}", got "${decoded.aud}".` };
+    }
+      
+    if (decoded.email?.toLowerCase() !== 'asareg365@gmail.com') {
+      return { success: false, error: 'You are not authorized to access the admin panel.' };
+    }
+
+    cookies().set('adminSession', idToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    });
+
+    return { success: true };
+  } catch (err: any) {
+    console.error("Firebase Admin error:", err);
+    return { success: false, error: "Admin login failed" };
   }
-    
-  if (decoded.email?.toLowerCase() !== 'asareg365@gmail.com') {
-    return { success: false, error: 'You are not authorized to access the admin panel.' };
-  }
-
-  cookies().set('adminSession', idToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-    path: '/',
-  });
-
-  return { success: true };
 }
 
 export async function logoutAction() {
