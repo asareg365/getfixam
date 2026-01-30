@@ -2,25 +2,28 @@
 
 import { admin } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/admin-guard';
 
 export async function POST(req: NextRequest, { params }: { params: { action: 'approve' | 'reject' | 'suspend' } }) {
-  const body = await req.formData();
-  const providerId = body.get('providerId') as string;
-  if (!providerId) return NextResponse.json({ success: false, error: 'Provider ID missing' });
-
-  const sessionToken = req.cookies.get('adminSession')?.value;
-  if (!sessionToken) return NextResponse.json({ success: false, error: 'Unauthorized' });
-
   try {
-    const decoded = await admin.auth().verifyIdToken(sessionToken);
-    const adminEmail = decoded.email ?? 'Unknown Admin';
+    const adminUser = await requireAdmin(); // Secure the route
+    const body = await req.formData();
+    const providerId = body.get('providerId') as string;
+    
+    if (!providerId) {
+      return NextResponse.json({ success: false, error: 'Provider ID missing' }, { status: 400 });
+    }
+
     const providerRef = admin.firestore().collection('providers').doc(providerId);
     const providerSnap = await providerRef.get();
     const providerData = providerSnap.data();
 
-    if (!providerData) return NextResponse.json({ success: false, error: 'Provider not found' });
+    if (!providerData) {
+      return NextResponse.json({ success: false, error: 'Provider not found' }, { status: 404 });
+    }
 
     const updateData: any = {};
+    const adminEmail = adminUser.email;
 
     if (params.action === 'approve') {
       updateData.status = 'approved';
@@ -37,13 +40,15 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
         updateData.verified = false;
         updateData.suspendedAt = admin.firestore.FieldValue.serverTimestamp();
         updateData.suspendedBy = adminEmail;
+    } else {
+        return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
     }
 
     await providerRef.update(updateData);
 
     // Audit log
     await admin.firestore().collection('auditLogs').add({
-      adminEmail: decoded.email,
+      adminEmail: adminEmail,
       providerId,
       providerName: providerData.name ?? 'Unknown',
       action: params.action,
@@ -52,7 +57,10 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error(error);
-    return NextResponse.json({ success: false, error: error.message || 'Unexpected error' });
+    console.error(`Error processing action: ${params.action}`, error);
+     if (error.message.includes('Invalid admin session')) {
+        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    return NextResponse.json({ success: false, error: error.message || 'Unexpected error' }, { status: 500 });
   }
 }

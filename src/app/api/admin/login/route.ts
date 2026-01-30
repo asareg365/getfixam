@@ -1,6 +1,8 @@
 'use server';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { admin } from '@/lib/firebase-admin';
+import { signToken } from '@/lib/jwt';
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,50 +11,46 @@ export async function POST(req: NextRequest) {
     if (!email || !password) {
       return NextResponse.json({ success: false, message: 'Email and password are required.' }, { status: 400 });
     }
-    
-    // Authorization check
+
+    // This is a temporary auth solution. A production app would have a more robust user management system.
     if (email.toLowerCase() !== 'asareg365@gmail.com') {
-        return NextResponse.json({ success: false, message: 'You are not authorized to access the admin panel.' }, { status: 401 });
+      return NextResponse.json({ success: false, message: 'You are not authorized to access the admin panel.' }, { status: 401 });
     }
 
     const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
     if (!apiKey) {
-        console.error('Server Error: NEXT_PUBLIC_FIREBASE_API_KEY is not set.');
-        return NextResponse.json({ success: false, message: 'Server configuration error.' }, { status: 500 });
+      console.error('Server Error: NEXT_PUBLIC_FIREBASE_API_KEY is not set.');
+      return NextResponse.json({ success: false, message: 'Server configuration error.' }, { status: 500 });
     }
     
+    // Use the Firebase Auth REST API to verify the password.
     const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            email,
-            password,
-            returnSecureToken: true,
-        }),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, returnSecureToken: true }),
     });
 
     const authData = await res.json();
 
     if (!res.ok) {
-        const errorMessage = authData.error?.message === 'INVALID_LOGIN_CREDENTIALS'
-            ? 'Invalid email or password.'
-            : 'An authentication error occurred.';
-        return NextResponse.json({ success: false, message: errorMessage }, { status: 401 });
+      const errorMessage = authData.error?.message === 'INVALID_LOGIN_CREDENTIALS'
+        ? 'Invalid email or password.'
+        : 'An authentication error occurred.';
+      return NextResponse.json({ success: false, message: errorMessage }, { status: 401 });
     }
     
-    const { idToken } = authData;
+    // The user is authenticated. Now create our own session token.
+    const userRecord = await admin.auth().getUserByEmail(email);
 
-    if (!idToken) {
-        return NextResponse.json({ success: false, message: 'Could not retrieve authentication token.' }, { status: 500 });
-    }
+    const token = signToken({ uid: userRecord.uid, email: userRecord.email });
 
     const response = NextResponse.json({ success: true, message: 'Login successful' });
     const expires = new Date();
-    expires.setDate(expires.getDate() + 7); // 7 days
+    expires.setHours(expires.getHours() + 2); // cookie valid for 2 hours
 
     response.cookies.set({
       name: 'adminSession',
-      value: idToken,
+      value: token,
       httpOnly: true,
       path: '/',
       sameSite: 'lax',

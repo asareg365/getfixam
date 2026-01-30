@@ -1,4 +1,3 @@
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getDashboardData } from '@/lib/services';
@@ -6,14 +5,12 @@ import { DashboardCharts } from './_components/dashboard-charts';
 import { HeatmapList } from './_components/heatmap-list';
 import { PredictionCard } from './_components/prediction-card';
 import { StandbyCard } from './_components/standby-card';
+import { requireAdmin } from '@/lib/admin-guard';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
-  const session = cookies().get('adminSession')?.value;
-  if (!session) {
-    redirect('/admin/login');
-  }
+  await requireAdmin();
 
   const data = await getDashboardData();
 

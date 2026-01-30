@@ -5,50 +5,27 @@ import { admin } from '@/lib/firebase-admin';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
+import { verifyToken } from '@/lib/jwt';
+
 
 /** ----- Helper: Get Admin Context ----- */
 async function getAdminContext() {
   const token = cookies().get('adminSession')?.value;
   if (!token) throw new Error('No admin session found. Please log in.');
 
-  const decoded = await admin.auth().verifyIdToken(token);
-  return {
-    email: decoded.email ?? 'unknown',
-    uid: decoded.uid,
-  };
+  try {
+    const decoded = verifyToken(token);
+    return {
+      email: decoded.email ?? 'unknown',
+      uid: decoded.uid,
+    };
+  } catch (error) {
+    throw new Error('Invalid admin session. Please log in again.');
+  }
 }
 
 
 /** ----- AUTH ACTIONS ----- */
-export async function createAdminSession(idToken: string) {
-  try {
-    // verifyIdToken checks expiration, signature, etc. and decodes the token.
-    // The second argument `true` checks if the token has been revoked.
-    const decoded = await admin.auth().verifyIdToken(idToken, true);
-
-    const firebaseProjectId = "studio-1004537855-178e0";
-    if (decoded.aud !== firebaseProjectId) {
-        return { success: false, error: `ID token audience mismatch. Expected "${firebaseProjectId}", got "${decoded.aud}".` };
-    }
-      
-    if (decoded.email?.toLowerCase() !== 'asareg365@gmail.com') {
-      return { success: false, error: 'You are not authorized to access the admin panel.' };
-    }
-
-    cookies().set('adminSession', idToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: '/',
-    });
-
-    return { success: true };
-  } catch (err: any) {
-    console.error("Firebase Admin error:", err);
-    return { success: false, error: "Admin login failed" };
-  }
-}
-
 export async function logoutAction() {
   cookies().delete('adminSession');
   redirect('/admin/login');
