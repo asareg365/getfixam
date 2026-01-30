@@ -2,11 +2,11 @@
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { verifyToken } from '@/lib/jwt';
+import { admin } from '@/lib/firebase-admin';
 
 type AdminUser = {
   uid: string;
-  email: string;
+  email: string | undefined;
 }
 
 export async function requireAdmin(): Promise<AdminUser> {
@@ -16,11 +16,15 @@ export async function requireAdmin(): Promise<AdminUser> {
   }
 
   try {
-    const decoded = verifyToken<AdminUser>(token); // throws if invalid or expired
-    if (decoded.email.toLowerCase() !== 'asareg365@gmail.com') {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    
+    if (decodedToken.email?.toLowerCase() !== 'asareg365@gmail.com') {
       throw new Error('Unauthorized user');
     }
-    return decoded;
+    return {
+        uid: decodedToken.uid,
+        email: decodedToken.email
+    };
   } catch (err) {
     // If token is invalid, delete the bad cookie and redirect
     cookies().delete('adminSession');
@@ -33,8 +37,8 @@ export async function isAdminUser(): Promise<boolean> {
   if (!token) return false;
 
   try {
-    const decoded = verifyToken(token);
-    return decoded.email.toLowerCase() === 'asareg365@gmail.com';
+    const decoded = await admin.auth().verifyIdToken(token);
+    return decoded.email?.toLowerCase() === 'asareg365@gmail.com';
   } catch (error) {
     return false;
   }

@@ -5,24 +5,7 @@ import { admin } from '@/lib/firebase-admin';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
-import { verifyToken } from '@/lib/jwt';
-
-
-/** ----- Helper: Get Admin Context ----- */
-async function getAdminContext() {
-  const token = cookies().get('adminSession')?.value;
-  if (!token) throw new Error('No admin session found. Please log in.');
-
-  try {
-    const decoded = verifyToken(token);
-    return {
-      email: decoded.email ?? 'unknown',
-      uid: decoded.uid,
-    };
-  } catch (error) {
-    throw new Error('Invalid admin session. Please log in again.');
-  }
-}
+import { requireAdmin } from '@/lib/admin-guard';
 
 
 /** ----- AUTH ACTIONS ----- */
@@ -49,7 +32,7 @@ export async function addServiceAction(prevState: any, formData: FormData) {
     }
   
     try {
-        const adminContext = await getAdminContext();
+        const adminContext = await requireAdmin();
         const { name, icon, basePrice, maxSurge, minSurge, active } = validatedFields.data;
         const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
 

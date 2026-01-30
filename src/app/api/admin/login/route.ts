@@ -2,7 +2,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { admin } from '@/lib/firebase-admin';
-import { signToken } from '@/lib/jwt';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,7 +11,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Email and password are required.' }, { status: 400 });
     }
 
-    // This is a temporary auth solution. A production app would have a more robust user management system.
     if (email.toLowerCase() !== 'asareg365@gmail.com') {
       return NextResponse.json({ success: false, message: 'You are not authorized to access the admin panel.' }, { status: 401 });
     }
@@ -23,7 +21,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Server configuration error.' }, { status: 500 });
     }
     
-    // Use the Firebase Auth REST API to verify the password.
     const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -39,18 +36,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: errorMessage }, { status: 401 });
     }
     
-    // The user is authenticated. Now create our own session token.
-    const userRecord = await admin.auth().getUserByEmail(email);
-
-    const token = signToken({ uid: userRecord.uid, email: userRecord.email });
-
+    const idToken = authData.idToken;
     const response = NextResponse.json({ success: true, message: 'Login successful' });
     const expires = new Date();
-    expires.setHours(expires.getHours() + 2); // cookie valid for 2 hours
+    expires.setHours(expires.getHours() + 2);
 
     response.cookies.set({
       name: 'adminSession',
-      value: token,
+      value: idToken,
       httpOnly: true,
       path: '/',
       sameSite: 'lax',
