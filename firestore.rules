@@ -23,6 +23,26 @@ service cloud.firestore {
     }
 
     /* ============================
+       REVIEWS
+    ============================ */
+    match /reviews/{reviewId} {
+      // Anyone can read reviews that have been approved.
+      // On a collection query, this rule is checked for every document.
+      allow read: if resource.data.status == 'approved';
+
+      // Writes are handled by server actions, no client writes.
+      allow write: if false;
+    }
+
+    /* ============================
+       LOCATIONS (Public data)
+    ============================ */
+    match /locations/{locationId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    /* ============================
        JOBS
     ============================ */
     match /jobs/{jobId} {
