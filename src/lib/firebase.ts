@@ -2,8 +2,6 @@ import { initializeApp, getApps, getApp, type FirebaseOptions } from "firebase/a
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
-console.log(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
-
 const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 
 if (!projectId) {
