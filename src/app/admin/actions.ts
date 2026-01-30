@@ -1,9 +1,8 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { admin } from '@/lib/firebase-admin';
 import { revalidatePath } from 'next/cache';
-import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
 
@@ -12,7 +11,7 @@ async function getAdminContext() {
   const token = cookies().get('adminSession')?.value;
   if (!token) throw new Error('No admin session found. Please log in.');
 
-  const decoded = await adminAuth.verifyIdToken(token);
+  const decoded = await admin.auth().verifyIdToken(token);
   return {
     email: decoded.email ?? 'unknown',
     uid: decoded.uid,
@@ -25,7 +24,7 @@ export async function createAdminSession(idToken: string) {
   try {
     // verifyIdToken checks expiration, signature, etc. and decodes the token.
     // The second argument `true` checks if the token has been revoked.
-    const decoded = await adminAuth.verifyIdToken(idToken, true);
+    const decoded = await admin.auth().verifyIdToken(idToken, true);
 
     const firebaseProjectId = "studio-1004537855-178e0";
     if (decoded.aud !== firebaseProjectId) {
@@ -73,21 +72,21 @@ export async function addServiceAction(prevState: any, formData: FormData) {
     }
   
     try {
-        const admin = await getAdminContext();
+        const adminContext = await getAdminContext();
         const { name, icon, basePrice, maxSurge, minSurge, active } = validatedFields.data;
         const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
 
-        const existingService = await adminDb.collection('services').where('slug', '==', slug).get();
+        const existingService = await admin.firestore().collection('services').where('slug', '==', slug).get();
         if (!existingService.empty) {
             return { success: false, message: 'A service with this name already exists.' };
         }
 
         const serviceData = {
             name, slug, icon, basePrice, maxSurge, minSurge, active, currency: 'GHS',
-            createdAt: FieldValue.serverTimestamp(),
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
         };
 
-        await adminDb.collection('services').add(serviceData);
+        await admin.firestore().collection('services').add(serviceData);
         
         revalidatePath('/admin/services');
         return { success: true, message: 'Service added successfully.' };

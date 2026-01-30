@@ -1,6 +1,6 @@
 
 import { requireAdmin } from '@/lib/admin-guard';
-import { adminDb } from '@/lib/firebase-admin';
+import { admin } from '@/lib/firebase-admin';
 import type { Provider, Service } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ async function getProviderCounts() {
   const counts: Record<string, number> = {};
 
   for (const status of statuses) {
-    const snapshot = await adminDb
+    const snapshot = await admin.firestore()
       .collection('providers')
       .where('status', '==', status)
       .get();
@@ -25,7 +25,7 @@ async function getProviderCounts() {
   }
 
   // Total count
-  const totalSnapshot = await adminDb.collection('providers').get();
+  const totalSnapshot = await admin.firestore().collection('providers').get();
   counts['all'] = totalSnapshot.size;
 
   return counts;
@@ -34,7 +34,7 @@ async function getProviderCounts() {
 /** ----- Fetch Providers with safe defaults ----- */
 async function getProvidersFromDB(status?: string): Promise<Provider[]> {
   // Fetch all services and map them
-  const servicesSnap = await adminDb.collection('services').get();
+  const servicesSnap = await admin.firestore().collection('services').get();
   const servicesMap = new Map<string, Omit<Service, 'icon'>>();
   servicesSnap.forEach((doc) => {
     const data = doc.data();
@@ -49,9 +49,9 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
   });
 
   // Query providers
-  let providersQuery = adminDb.collection('providers').orderBy('createdAt', 'desc');
+  let providersQuery = admin.firestore().collection('providers').orderBy('createdAt', 'desc');
   if (status && status !== 'all') {
-    providersQuery = adminDb.collection('providers').where('status', '==', status).orderBy('createdAt', 'desc');
+    providersQuery = admin.firestore().collection('providers').where('status', '==', status).orderBy('createdAt', 'desc');
   }
   const providerSnapshot = await providersQuery.get();
 

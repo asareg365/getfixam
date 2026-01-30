@@ -1,8 +1,7 @@
 
 import { collection, getDocs, query, where, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
-import { adminDb } from './firebase-admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { admin } from './firebase-admin';
 import type { Category, Provider, Review, Request, Prediction, StandbyPrediction } from './types';
 import { cache } from 'react';
 
@@ -191,7 +190,7 @@ export async function getReviewsByProviderId(providerId: string): Promise<Review
 export async function addProvider(
     data: { name: string; serviceId: string; phone: string; whatsapp: string; location: object; imageId: string; }
 ) {
-    await adminDb.collection('providers').add({
+    await admin.firestore().collection('providers').add({
       name: data.name,
       phone: data.phone,
       whatsapp: data.whatsapp,
@@ -203,7 +202,7 @@ export async function addProvider(
       isFeatured: false,
       rating: 0,
       reviewCount: 0,
-      createdAt: FieldValue.serverTimestamp()
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
     
     return { success: true };
@@ -213,10 +212,10 @@ export async function addProvider(
  * Adds a new review to Firestore with 'pending' status for moderation. Uses Admin SDK.
  */
 export async function addReview(data: Omit<Review, 'id' | 'createdAt' | 'status'>) {
-    await adminDb.collection('reviews').add({
+    await admin.firestore().collection('reviews').add({
       ...data,
       status: 'pending',
-      createdAt: FieldValue.serverTimestamp()
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
     return { success: true };
 }

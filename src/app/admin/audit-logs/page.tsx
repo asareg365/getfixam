@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { adminDb } from '@/lib/firebase-admin';
+import { admin } from '@/lib/firebase-admin';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { requireAdmin } from '@/lib/admin-guard';
 
@@ -16,7 +16,7 @@ interface AuditLog {
 }
 
 async function getAuditLogs(): Promise<AuditLog[]> {
-  const snapshot = await adminDb.collection('auditLogs').orderBy('timestamp', 'desc').limit(100).get();
+  const snapshot = await admin.firestore().collection('auditLogs').orderBy('timestamp', 'desc').limit(100).get();
 
   if (snapshot.empty) {
     return [];

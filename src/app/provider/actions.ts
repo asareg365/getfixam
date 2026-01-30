@@ -1,6 +1,6 @@
 'use server';
 
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { admin } from '@/lib/firebase-admin';
 import type { Provider } from '@/lib/types';
 
 /**
@@ -11,12 +11,12 @@ import type { Provider } from '@/lib/types';
  */
 export async function getProviderDataAndLinkAccount(idToken: string): Promise<{ provider: Provider | null; error: string | null }> {
     try {
-        const decodedToken = await adminAuth.verifyIdToken(idToken);
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
         const uid = decodedToken.uid;
         const phone = decodedToken.phone_number;
 
         // 1. Try to find provider by UID
-        const providersRef = adminDb.collection('providers');
+        const providersRef = admin.firestore().collection('providers');
         let providerQuery = providersRef.where('authUid', '==', uid);
         let providerSnap = await providerQuery.get();
         let providerDoc;
@@ -47,7 +47,7 @@ export async function getProviderDataAndLinkAccount(idToken: string): Promise<{ 
         const providerData = providerDoc.data();
         let categoryName = 'N/A';
         if (providerData.serviceId) {
-            const serviceDoc = await adminDb.collection('services').doc(providerData.serviceId).get();
+            const serviceDoc = await admin.firestore().collection('services').doc(providerData.serviceId).get();
             if(serviceDoc.exists()) {
                 categoryName = serviceDoc.data()?.name;
             }
