@@ -11,7 +11,7 @@ type AdminUser = {
 }
 
 export async function requireAdmin(): Promise<AdminUser> {
-  const token = cookies().get('adminSession')?.value;
+  const token = cookies().get('admin_token')?.value;
   if (!token) {
     redirect('/admin/login');
   }
@@ -31,13 +31,13 @@ export async function requireAdmin(): Promise<AdminUser> {
   } catch (err) {
     // If token is invalid (expired, tampered), delete the bad cookie and redirect.
     console.error('Admin session verification failed:', err);
-    cookies().delete('adminSession');
+    cookies().delete('admin_token');
     redirect('/admin/login');
   }
 }
 
 export async function isAdminUser(): Promise<boolean> {
-  const token = cookies().get('adminSession')?.value;
+  const token = cookies().get('admin_token')?.value;
   if (!token) return false;
 
   try {

@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     const response = NextResponse.json({ success: true, message: 'Login successful' });
     
     response.cookies.set({
-      name: 'adminSession', // This is the cookie our middleware and guards will look for
+      name: 'admin_token',
       value: token,
       httpOnly: true,
       path: '/',

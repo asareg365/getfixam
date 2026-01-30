@@ -5,7 +5,7 @@ export const config = {
 };
 
 export function middleware(req: NextRequest) {
-  const session = req.cookies.get('adminSession');
+  const session = req.cookies.get('admin_token');
   const { pathname } = req.nextUrl;
 
   if (pathname === '/admin/login') {

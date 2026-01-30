@@ -10,7 +10,7 @@ import { requireAdmin } from '@/lib/admin-guard';
 
 /** ----- AUTH ACTIONS ----- */
 export async function logoutAction() {
-  cookies().delete('adminSession');
+  cookies().delete('admin_token');
   redirect('/admin/login');
 }
 
