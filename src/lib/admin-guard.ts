@@ -2,8 +2,9 @@
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { verifyToken } from '@/lib/jwt';
-import type { JwtPayload } from 'jsonwebtoken';
+import jwt, { type JwtPayload } from 'jsonwebtoken';
+
+const SECRET = process.env.ADMIN_JWT_SECRET || 'this-is-a-super-secret-key-that-should-be-in-an-env-file';
 
 type AdminUser = {
   uid: string;
@@ -17,7 +18,7 @@ export async function requireAdmin(): Promise<AdminUser> {
   }
 
   try {
-    const decoded = await verifyToken<JwtPayload>(token);
+    const decoded = jwt.verify(token, SECRET) as JwtPayload;
     
     // The token contains the user's email, which we verified on login.
     // We double-check it here as an extra layer of security.
@@ -25,7 +26,7 @@ export async function requireAdmin(): Promise<AdminUser> {
       throw new Error('Unauthorized user: Invalid email in token.');
     }
     return {
-        uid: decoded.uid,
+        uid: decoded.uid as string,
         email: decoded.email
     };
   } catch (err) {
@@ -41,7 +42,7 @@ export async function isAdminUser(): Promise<boolean> {
   if (!token) return false;
 
   try {
-    const decoded = await verifyToken<JwtPayload>(token);
+    const decoded = jwt.verify(token, SECRET) as JwtPayload;
     return decoded.email?.toLowerCase() === 'asareg365@gmail.com';
   } catch (error) {
     return false;

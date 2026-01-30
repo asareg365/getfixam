@@ -18,18 +18,3 @@ if (process.env.NODE_ENV === 'production' && SECRET === 'this-is-a-super-secret-
 export async function signToken(payload: object, expiresIn = '2h'): Promise<string> {
   return jwt.sign(payload, SECRET, { expiresIn });
 }
-
-/**
- * Verifies a JWT. Throws an error if the token is invalid or expired.
- * @param token The JWT string to verify.
- * @returns The decoded payload of the token.
- */
-export async function verifyToken<T extends object | string>(token: string): Promise<T> {
-  try {
-    return jwt.verify(token, SECRET) as T;
-  } catch (error) {
-    console.error("JWT Verification Error:", error);
-    // Don't expose internal error details to the client
-    throw new Error("Invalid or expired session token.");
-  }
-}
