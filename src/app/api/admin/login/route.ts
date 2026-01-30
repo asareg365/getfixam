@@ -1,24 +1,26 @@
 'use server';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminSession } from '@/app/admin/actions';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { email, password } = body;
+    const { email, password } = await req.json();
 
     if (!email || !password) {
-      return NextResponse.json({ success: false, error: 'Email and password are required.' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Email and password are required.' }, { status: 400 });
+    }
+    
+    // Authorization check
+    if (email.toLowerCase() !== 'asareg365@gmail.com') {
+        return NextResponse.json({ success: false, message: 'You are not authorized to access the admin panel.' }, { status: 401 });
     }
 
     const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
     if (!apiKey) {
         console.error('Server Error: NEXT_PUBLIC_FIREBASE_API_KEY is not set.');
-        return NextResponse.json({ success: false, error: 'Server configuration error.' }, { status: 500 });
+        return NextResponse.json({ success: false, message: 'Server configuration error.' }, { status: 500 });
     }
     
-    // Use the Firebase Auth REST API to sign in with email and password
     const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -32,29 +34,36 @@ export async function POST(req: NextRequest) {
     const authData = await res.json();
 
     if (!res.ok) {
-        // Forward the error from Firebase Auth API
         const errorMessage = authData.error?.message === 'INVALID_LOGIN_CREDENTIALS'
             ? 'Invalid email or password.'
             : 'An authentication error occurred.';
-        return NextResponse.json({ success: false, error: errorMessage }, { status: 401 });
+        return NextResponse.json({ success: false, message: errorMessage }, { status: 401 });
     }
     
     const { idToken } = authData;
 
     if (!idToken) {
-        return NextResponse.json({ success: false, error: 'Could not retrieve authentication token.' }, { status: 500 });
+        return NextResponse.json({ success: false, message: 'Could not retrieve authentication token.' }, { status: 500 });
     }
 
-    // Use the existing action to verify the token and create a session cookie
-    const result = await createAdminSession(idToken);
+    const response = NextResponse.json({ success: true, message: 'Login successful' });
+    const expires = new Date();
+    expires.setDate(expires.getDate() + 7); // 7 days
 
-    if (result.success) {
-      return NextResponse.json({ success: true });
-    } else {
-      return NextResponse.json({ success: false, error: result.error }, { status: 401 });
-    }
+    response.cookies.set({
+      name: 'adminSession',
+      value: idToken,
+      httpOnly: true,
+      path: '/',
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      expires,
+    });
+
+    return response;
+
   } catch (error: any) {
-    console.error("Error in admin login API route:", error);
-    return NextResponse.json({ success: false, error: error.message || 'Server error during login process.' }, { status: 500 });
+    console.error('Login error:', error);
+    return NextResponse.json({ message: 'Server error' }, { status: 500 });
   }
 }

@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
         router.push('/admin/dashboard');
       } else {
         const data = await res.json();
-        throw new Error(data.error || 'Login failed');
+        throw new Error(data.message || 'Login failed');
       }
     } catch (error: any) {
       console.error('Admin login error:', error);
