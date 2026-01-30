@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -25,52 +23,24 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      // Step 1: Sign in with Firebase client-side to get an ID token
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const idToken = await userCredential.user.getIdToken();
-
-      // Step 2: POST the ID token to our API route to create a session cookie
-      const response = await fetch('/api/admin/login', {
+      const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken }),
+        body: JSON.stringify({ email, password }),
       });
 
-      const sessionResult = await response.json();
-
-      if (response.ok && sessionResult.success) {
+      if (res.ok) {
         toast({ title: 'Login successful!', description: 'Redirecting to dashboard...' });
         router.push('/admin/dashboard');
       } else {
-        // Throw an error that will be caught and displayed in the toast
-        throw new Error(sessionResult.error || 'Unable to create session.');
+        const data = await res.json();
+        throw new Error(data.error || 'Login failed');
       }
     } catch (error: any) {
       console.error('Admin login error:', error);
-      let description = 'An unexpected error occurred. Please check your credentials and try again.';
-      
-      // Handle known Firebase client auth errors
-      if (error.code) {
-        switch (error.code) {
-          case 'auth/user-not-found':
-          case 'auth/wrong-password':
-          case 'auth/invalid-credential':
-             description = 'Invalid email or password.';
-             break;
-          case 'auth/invalid-email':
-            description = 'Please enter a valid email address.';
-            break;
-          default:
-            description = error.message;
-        }
-      } else if (error.message) {
-          // Handle errors from our API route or other fetch issues
-          description = error.message;
-      }
-      
       toast({
         title: 'Login Failed',
-        description,
+        description: error.message || 'An unexpected error occurred.',
         variant: 'destructive',
       });
     } finally {

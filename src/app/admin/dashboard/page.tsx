@@ -1,11 +1,15 @@
 
-import { requireAdmin } from '@/lib/admin-guard';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
-  await requireAdmin(); // 🔐 PROTECT PAGE
+  const session = cookies().get('adminSession')?.value;
+  if (!session) {
+    redirect('/admin/login');
+  }
 
   return (
     <div className="space-y-6">
