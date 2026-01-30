@@ -13,18 +13,16 @@ import ProviderReviews from '@/components/ProviderReviews';
 import { Phone, MessageCircle, CheckCircle, MapPin, Home, Plus } from 'lucide-react';
 import PublicLayout from '@/components/layout/PublicLayout';
 
-export const dynamic = "force-dynamic";
-
-// export async function generateMetadata({ params }: { params: { id: string } }) {
-//   const provider = await getProviderById(params.id);
-//   if (!provider) {
-//     return { title: 'Provider Not Found' };
-//   }
-//   return {
-//     title: `${provider.name} | FixAm Ghana`,
-//     description: `Contact and review ${provider.name}, a ${provider.category.toLowerCase()} in ${provider.location.zone}.`,
-//   };
-// }
+export async function generateMetadata({ params }: { params: { id: string } }) {
+  const provider = await getProviderById(params.id);
+  if (!provider) {
+    return { title: 'Provider Not Found' };
+  }
+  return {
+    title: `${provider.name} | FixAm Ghana`,
+    description: `Contact and review ${provider.name}, a ${provider.category.toLowerCase()} in ${provider.location.zone}.`,
+  };
+}
 
 export default async function ProviderDetailPage({ params }: { params: { id: string } }) {
   const provider = await getProviderById(params.id);
