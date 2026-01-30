@@ -1,7 +1,7 @@
 'use server';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { admin } from '@/lib/firebase-admin';
+import { signToken } from '@/lib/jwt';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,10 +11,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Email and password are required.' }, { status: 400 });
     }
 
+    // Only allow the designated admin email
     if (email.toLowerCase() !== 'asareg365@gmail.com') {
-      return NextResponse.json({ success: false, message: 'You are not authorized to access the admin panel.' }, { status: 401 });
+        return NextResponse.json({ success: false, message: 'You are not authorized to access the admin panel.' }, { status: 403 });
     }
 
+    // Use Firebase Auth REST API to verify password. This is more secure than
+    // using the Admin SDK to fetch user data and comparing passwords manually.
     const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
     if (!apiKey) {
       console.error('Server Error: NEXT_PUBLIC_FIREBASE_API_KEY is not set.');
@@ -36,25 +39,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: errorMessage }, { status: 401 });
     }
     
-    const idToken = authData.idToken;
-    const response = NextResponse.json({ success: true, message: 'Login successful' });
-    const expires = new Date();
-    expires.setHours(expires.getHours() + 2);
+    // If Firebase auth is successful, create our own session JWT
+    const { localId, email: userEmail } = authData;
+    const token = signToken({ uid: localId, email: userEmail });
 
+    const response = NextResponse.json({ success: true, message: 'Login successful' });
+    
     response.cookies.set({
-      name: 'adminSession',
-      value: idToken,
+      name: 'adminSession', // This is the cookie our middleware and guards will look for
+      value: token,
       httpOnly: true,
       path: '/',
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
-      expires,
+      maxAge: 60 * 60 * 2, // 2 hours
     });
 
     return response;
 
   } catch (error: any) {
-    console.error('Login error:', error);
+    console.error('Login API error:', error);
     return NextResponse.json({ message: 'Server error' }, { status: 500 });
   }
 }

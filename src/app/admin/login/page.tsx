@@ -32,6 +32,7 @@ export default function AdminLoginPage() {
       if (res.ok) {
         toast({ title: 'Login successful!', description: 'Redirecting to dashboard...' });
         router.push('/admin/dashboard');
+        router.refresh(); // Forces a refresh of server components
       } else {
         const data = await res.json();
         throw new Error(data.message || 'Login failed');

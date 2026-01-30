@@ -2,7 +2,8 @@
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { admin } from '@/lib/firebase-admin';
+import { verifyToken } from '@/lib/jwt';
+import type { JwtPayload } from 'jsonwebtoken';
 
 type AdminUser = {
   uid: string;
@@ -16,17 +17,20 @@ export async function requireAdmin(): Promise<AdminUser> {
   }
 
   try {
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    const decoded = verifyToken(token) as JwtPayload;
     
-    if (decodedToken.email?.toLowerCase() !== 'asareg365@gmail.com') {
-      throw new Error('Unauthorized user');
+    // The token contains the user's email, which we verified on login.
+    // We double-check it here as an extra layer of security.
+    if (decoded.email?.toLowerCase() !== 'asareg365@gmail.com') {
+      throw new Error('Unauthorized user: Invalid email in token.');
     }
     return {
-        uid: decodedToken.uid,
-        email: decodedToken.email
+        uid: decoded.uid,
+        email: decoded.email
     };
   } catch (err) {
-    // If token is invalid, delete the bad cookie and redirect
+    // If token is invalid (expired, tampered), delete the bad cookie and redirect.
+    console.error('Admin session verification failed:', err);
     cookies().delete('adminSession');
     redirect('/admin/login');
   }
@@ -37,7 +41,7 @@ export async function isAdminUser(): Promise<boolean> {
   if (!token) return false;
 
   try {
-    const decoded = await admin.auth().verifyIdToken(token);
+    const decoded = verifyToken(token) as JwtPayload;
     return decoded.email?.toLowerCase() === 'asareg365@gmail.com';
   } catch (error) {
     return false;
