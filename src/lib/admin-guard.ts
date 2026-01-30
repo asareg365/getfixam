@@ -17,7 +17,7 @@ export async function requireAdmin(): Promise<AdminUser> {
   }
 
   try {
-    const decoded = verifyToken(token) as JwtPayload;
+    const decoded = await verifyToken<JwtPayload>(token);
     
     // The token contains the user's email, which we verified on login.
     // We double-check it here as an extra layer of security.
@@ -41,7 +41,7 @@ export async function isAdminUser(): Promise<boolean> {
   if (!token) return false;
 
   try {
-    const decoded = verifyToken(token) as JwtPayload;
+    const decoded = await verifyToken<JwtPayload>(token);
     return decoded.email?.toLowerCase() === 'asareg365@gmail.com';
   } catch (error) {
     return false;

@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     
     // If Firebase auth is successful, create our own session JWT
     const { localId, email: userEmail } = authData;
-    const token = signToken({ uid: localId, email: userEmail });
+    const token = await signToken({ uid: localId, email: userEmail });
 
     const response = NextResponse.json({ success: true, message: 'Login successful' });
     

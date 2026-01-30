@@ -15,7 +15,7 @@ if (process.env.NODE_ENV === 'production' && SECRET === 'this-is-a-super-secret-
  * @param expiresIn How long the token should be valid (e.g., '2h', '7d').
  * @returns The signed JWT string.
  */
-export function signToken(payload: object, expiresIn = '2h'): string {
+export async function signToken(payload: object, expiresIn = '2h'): Promise<string> {
   return jwt.sign(payload, SECRET, { expiresIn });
 }
 
@@ -24,9 +24,9 @@ export function signToken(payload: object, expiresIn = '2h'): string {
  * @param token The JWT string to verify.
  * @returns The decoded payload of the token.
  */
-export function verifyToken(token: string): string | jwt.JwtPayload {
+export async function verifyToken<T extends object | string>(token: string): Promise<T> {
   try {
-    return jwt.verify(token, SECRET);
+    return jwt.verify(token, SECRET) as T;
   } catch (error) {
     console.error("JWT Verification Error:", error);
     // Don't expose internal error details to the client
