@@ -7,6 +7,9 @@ import { Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PublicLayout from '@/components/layout/PublicLayout';
 
+export const dynamic = "force-dynamic";
+
+/*
 export async function generateStaticParams() {
   const categories = await getCategories();
   const slugs = categories.map((category) => ({ slug: category.slug }));
@@ -30,6 +33,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     description: `Find trusted ${category.name.toLowerCase()} in Berekum.`,
   };
 }
+*/
 
 export default async function CategoryPage({ params }: { params: { slug: string } }) {
   let categoryName = 'All Providers';
