@@ -1,4 +1,3 @@
-'use server';
 
 import { requireAdmin } from '@/lib/admin-guard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

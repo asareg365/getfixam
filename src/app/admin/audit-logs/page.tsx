@@ -1,4 +1,3 @@
-'use server';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { adminDb } from '@/lib/firebase-admin';

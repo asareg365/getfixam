@@ -1,4 +1,3 @@
-'use server';
 
 import { requireAdmin } from '@/lib/admin-guard';
 import { adminDb } from '@/lib/firebase-admin';
