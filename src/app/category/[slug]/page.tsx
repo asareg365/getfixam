@@ -7,29 +7,31 @@ import { Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PublicLayout from '@/components/layout/PublicLayout';
 
-export async function generateStaticParams() {
-  const categories = await getCategories();
-  const slugs = categories.map((category) => ({ slug: category.slug }));
-  slugs.push({ slug: 'all' }); // Include "all" as a special category
-  return slugs;
-}
+export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
-  if (params.slug === 'all') {
-    return {
-      title: `All Providers | FixAm Ghana`,
-      description: `Browse all trusted service providers in Berekum.`,
-    };
-  }
+// export async function generateStaticParams() {
+//   const categories = await getCategories();
+//   const slugs = categories.map((category) => ({ slug: category.slug }));
+//   slugs.push({ slug: 'all' }); // Include "all" as a special category
+//   return slugs;
+// }
 
-  const category = await getCategoryBySlug(params.slug);
-  if (!category) return { title: 'Category Not Found' };
+// export async function generateMetadata({ params }: { params: { slug: string } }) {
+//   if (params.slug === 'all') {
+//     return {
+//       title: `All Providers | FixAm Ghana`,
+//       description: `Browse all trusted service providers in Berekum.`,
+//     };
+//   }
 
-  return {
-    title: `${category.name} | FixAm Ghana`,
-    description: `Find trusted ${category.name.toLowerCase()} in Berekum.`,
-  };
-}
+//   const category = await getCategoryBySlug(params.slug);
+//   if (!category) return { title: 'Category Not Found' };
+
+//   return {
+//     title: `${category.name} | FixAm Ghana`,
+//     description: `Find trusted ${category.name.toLowerCase()} in Berekum.`,
+//   };
+// }
 
 export default async function CategoryPage({ params }: { params: { slug: string } }) {
   let categoryName = 'All Providers';
