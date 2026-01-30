@@ -5,30 +5,19 @@ export const config = {
 };
 
 export function middleware(req: NextRequest) {
-  const session = req.cookies.get('adminSession');
-  const { pathname, searchParams } = req.nextUrl;
+  const session = req.cookies().get('adminSession');
+  const { pathname } = req.nextUrl;
 
-  // 🔥 Ignore Next.js RSC prefetches
-  if (searchParams.has('_rsc')) {
-    return NextResponse.next();
-  }
-
-  // If user is trying to access the login page
   if (pathname === '/admin/login') {
-    // If they are already logged in, redirect to dashboard
     if (session) {
       return NextResponse.redirect(new URL('/admin/dashboard', req.url));
     }
-    // Otherwise, allow them to see the login page
     return NextResponse.next();
   }
 
-  // For any other admin page
-  // If they are not logged in, redirect to login page
   if (!session) {
     return NextResponse.redirect(new URL('/admin/login', req.url));
   }
 
-  // Otherwise, allow access
   return NextResponse.next();
 }
