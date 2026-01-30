@@ -3,6 +3,9 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { adminDb } from '@/lib/firebase-admin';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { requireAdmin } from '@/lib/admin-guard';
+
+export const dynamic = 'force-dynamic';
 
 interface AuditLog {
   id: string;
@@ -35,6 +38,7 @@ async function getAuditLogs(): Promise<AuditLog[]> {
 }
 
 export default async function AuditLogsPage() {
+  await requireAdmin();
   const logs = await getAuditLogs();
 
   return (

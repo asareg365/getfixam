@@ -10,6 +10,8 @@ import Link from 'next/link';
 import { ProviderTabs } from './_components/provider-tabs';
 import { ProvidersTable } from './_components/providers-table';
 
+export const dynamic = 'force-dynamic';
+
 /** ----- Fetch Provider Counts ----- */
 async function getProviderCounts() {
   const statuses = ['pending', 'approved', 'rejected', 'suspended'];

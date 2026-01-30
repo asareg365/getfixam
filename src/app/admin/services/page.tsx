@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import type { Service } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 async function getServices(): Promise<Service[]> {
   const snapshot = await adminDb.collection('services').orderBy('name').get();
   if (snapshot.empty) return [];

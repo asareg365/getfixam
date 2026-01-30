@@ -5,6 +5,8 @@ import { adminDb } from '@/lib/firebase-admin';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { Job } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 async function getJobs(): Promise<Job[]> {
     const jobsSnap = await adminDb.collection('jobs').orderBy('createdAt', 'desc').get();
     if (jobsSnap.empty) {
