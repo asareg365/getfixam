@@ -67,6 +67,9 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
     
     // Revalidate relevant pages
     revalidatePath('/admin/reviews');
+    revalidatePath('/'); // Revalidate home page for featured providers
+    revalidatePath('/category/all'); // Revalidate all providers page
+
     const review = (await reviewRef.get()).data();
     if(review) {
       revalidatePath(`/providers/${review.providerId}`);
