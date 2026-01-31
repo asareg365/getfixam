@@ -1,0 +1,84 @@
+'use server';
+
+import { admin } from '@/lib/firebase-admin';
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/admin-guard';
+import { revalidatePath } from 'next/cache';
+
+export async function POST(req: NextRequest, { params }: { params: { action: 'approve' | 'reject' } }) {
+  try {
+    const adminUser = await requireAdmin();
+    const body = await req.formData();
+    const reviewId = body.get('reviewId') as string;
+
+    if (!reviewId) {
+      return NextResponse.json({ success: false, error: 'Review ID missing' }, { status: 400 });
+    }
+
+    const reviewRef = admin.firestore().collection('reviews').doc(reviewId);
+    
+    if (params.action === 'approve') {
+      await admin.firestore().runTransaction(async (transaction) => {
+        const reviewSnap = await transaction.get(reviewRef);
+        if (!reviewSnap.exists) throw new Error('Review not found.');
+        
+        const reviewData = reviewSnap.data()!;
+        if (reviewData.status === 'approved') return;
+
+        const providerRef = admin.firestore().collection('providers').doc(reviewData.providerId);
+        const providerSnap = await transaction.get(providerRef);
+        if (!providerSnap.exists) throw new Error('Associated provider not found.');
+
+        const providerData = providerSnap.data()!;
+        const currentRating = providerData.rating || 0;
+        const currentReviewCount = providerData.reviewCount || 0;
+        const newReviewCount = currentReviewCount + 1;
+        const newRating = ((currentRating * currentReviewCount) + reviewData.rating) / newReviewCount;
+
+        transaction.update(providerRef, {
+          rating: newRating,
+          reviewCount: newReviewCount
+        });
+
+        transaction.update(reviewRef, {
+          status: 'approved',
+          approvedAt: admin.firestore.FieldValue.serverTimestamp(),
+          approvedBy: adminUser.email,
+        });
+      });
+
+    } else if (params.action === 'reject') {
+      const reviewSnap = await reviewRef.get();
+      if (!reviewSnap.exists) throw new Error('Review not found.');
+
+      if (reviewSnap.data()!.status !== 'pending') {
+        return NextResponse.json({ success: true, message: 'Review was not in pending state.' });
+      }
+      
+      await reviewRef.update({
+        status: 'rejected',
+        rejectedAt: admin.firestore.FieldValue.serverTimestamp(),
+        rejectedBy: adminUser.email,
+      });
+
+    } else {
+      return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
+    }
+    
+    // Revalidate relevant pages
+    revalidatePath('/admin/reviews');
+    const review = (await reviewRef.get()).data();
+    if(review) {
+      revalidatePath(`/providers/${review.providerId}`);
+    }
+
+    return NextResponse.json({ success: true });
+
+  } catch (error: any) {
+    console.error(`Error processing review action: ${params.action}`, error);
+    if (error.message.includes('Invalid admin session')) {
+        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    return NextResponse.json({ success: false, error: error.message || 'Unexpected error' }, { status: 500 });
+  }
+}

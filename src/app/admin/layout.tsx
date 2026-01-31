@@ -10,7 +10,7 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { Home, List, Settings, Wrench, Workflow } from 'lucide-react';
+import { Home, List, Settings, Star, Wrench, Workflow } from 'lucide-react';
 import Link from 'next/link';
 import { LogoutButton } from './LogoutButton';
 
@@ -45,6 +45,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <span>Providers</span>
                 </Link>
               </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Reviews">
+                    <Link href="/admin/reviews">
+                        <Star />
+                        <span>Reviews</span>
+                    </Link>
+                </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip="Jobs">

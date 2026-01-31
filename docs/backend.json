@@ -221,6 +221,24 @@
           "type": "string",
           "format": "date-time",
           "description": "The timestamp when the review was submitted."
+        },
+        "approvedBy": {
+            "type": "string",
+            "description": "Email of the admin who approved the review."
+        },
+        "approvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the review was approved."
+        },
+        "rejectedBy": {
+            "type": "string",
+            "description": "Email of the admin who rejected the review."
+        },
+        "rejectedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the review was rejected."
         }
       },
       "required": ["providerId", "userName", "rating", "comment", "status", "createdAt"]
@@ -471,5 +489,3 @@
     }
   }
 }
-
-    

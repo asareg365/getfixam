@@ -57,6 +57,10 @@ export type Review = {
   createdAt: string; // ISO 8601 date string
   userImageId: string;
   status: 'pending' | 'approved' | 'rejected';
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
 };
 
 export type Request = {
