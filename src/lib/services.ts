@@ -233,9 +233,46 @@ export async function getDashboardData() {
         const totalRequests = requestsSnap.data().count;
         const activeServices = activeServicesSnap.data().count;
         
-        // Keep using mock data for charts and predictions for now
-        const { PROVIDERS, REQUESTS } = await import('./data');
-        
+        // Fetch live standby and prediction data
+        const predictionDoc = await admin.firestore().collection('predictions').doc('tomorrow').get();
+        const predictionData = predictionDoc.data();
+        const prediction: Prediction | null = predictionDoc.exists && predictionData ? { 
+            ...predictionData, 
+            generatedAt: predictionData.generatedAt.toDate().toISOString() 
+        } as Prediction : null;
+
+        const standbyDoc = await admin.firestore().collection('standby').doc('tomorrow').get();
+        let standby: StandbyPrediction | null = null;
+        if (standbyDoc.exists) {
+            const standbyData = standbyDoc.data()!;
+            const artisanIds = (standbyData.artisans || []) as string[];
+            let standbyArtisans: Provider[] = [];
+
+            if (artisanIds.length > 0) {
+                 // Fetch provider details in a single query
+                const providersSnap = await admin.firestore().collection('providers').where(admin.firestore.FieldPath.documentId(), 'in', artisanIds).get();
+                const providersMap = new Map<string, Provider>();
+                providersSnap.forEach(doc => {
+                    const data = doc.data();
+                    providersMap.set(doc.id, {
+                        id: doc.id,
+                        name: data.name ?? 'Unknown',
+                        phone: data.phone ?? '',
+                    } as Provider);
+                });
+                standbyArtisans = artisanIds.map(id => providersMap.get(id)).filter(Boolean) as Provider[];
+            }
+
+            standby = {
+                serviceType: standbyData.serviceType,
+                area: standbyData.area,
+                artisans: standbyArtisans,
+                generatedAt: standbyData.generatedAt.toDate().toISOString(),
+            };
+        }
+
+        // Keep using mock data for charts and other stats for now
+        const { REQUESTS } = await import('./data');
         const whatsappMessages = 250; // Mock value
         const failedMessages = 15; // Mock value
 
@@ -251,22 +288,6 @@ export async function getDashboardData() {
 
         const serviceChartData = Object.entries(serviceCounts).map(([name, total]) => ({ name, total }));
         const locationChartData = Object.entries(locationCounts).map(([name, total]) => ({ name, total }));
-
-        const prediction: Prediction | null = {
-            topService: ['Electrician', 12],
-            topArea: ['Kato', 8],
-            confidence: 'High',
-            basedOnDays: 7,
-            generatedAt: new Date().toISOString(),
-        };
-        
-        const standbyArtisans = PROVIDERS.filter(p => p.category === 'Electrician' && p.status === 'approved').slice(0, 2);
-        const standby: StandbyPrediction | null = standbyArtisans.length > 0 ? {
-            serviceType: 'Electrician',
-            area: 'Kato',
-            artisans: standbyArtisans,
-            generatedAt: new Date().toISOString(),
-        } : null;
 
         return {
             totalProviders,

@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/admin-guard';
+import type { Provider } from '@/lib/types';
 
 
 /** ----- AUTH ACTIONS ----- */
@@ -53,5 +54,85 @@ export async function addServiceAction(prevState: any, formData: FormData) {
     } catch (error: any) {
         console.error('Error adding service:', error);
         return { success: false, message: error.message || 'Failed to add service.' };
+    }
+}
+
+/** ----- STANDBY ACTIONS ----- */
+
+export async function getSwappableArtisans(serviceType: string, excludedArtisanIds: string[]): Promise<{ success: boolean; artisans?: Provider[]; message?: string; }> {
+    try {
+        await requireAdmin();
+
+        // Find serviceId from serviceType (which is the name)
+        const servicesSnap = await admin.firestore().collection('services').where('name', '==', serviceType).limit(1).get();
+        if (servicesSnap.empty) {
+            return { success: false, message: `Service '${serviceType}' not found.` };
+        }
+        const serviceId = servicesSnap.docs[0].id;
+
+        const q = admin.firestore().collection('providers')
+            .where('status', '==', 'approved')
+            .where('serviceId', '==', serviceId);
+        
+        const providersSnap = await q.get();
+
+        if (providersSnap.empty) {
+            return { success: true, artisans: [] };
+        }
+
+        const artisans = providersSnap.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as Provider))
+            .filter(artisan => !excludedArtisanIds.includes(artisan.id));
+
+        return { success: true, artisans: artisans };
+    } catch (error: any) {
+        console.error("Error getting swappable artisans:", error);
+        return { success: false, message: error.message || 'Failed to fetch artisans.' };
+    }
+}
+
+
+export async function swapStandbyArtisan(artisanToRemoveId: string, artisanToAddId: string): Promise<{ success: boolean; message?: string; }> {
+     try {
+        await requireAdmin();
+        const standbyRef = admin.firestore().collection('standby').doc('tomorrow');
+        
+        await admin.firestore().runTransaction(async (transaction) => {
+            const standbyDoc = await transaction.get(standbyRef);
+            if (!standbyDoc.exists) {
+                throw new Error("Standby document not found.");
+            }
+            const currentArtisans = standbyDoc.data()?.artisans as string[] || [];
+            const index = currentArtisans.indexOf(artisanToRemoveId);
+            
+            if (index === -1) {
+                // Artisan not in the list, maybe already swapped. Don't throw error.
+                console.log(`Artisan ${artisanToRemoveId} not found in standby list.`);
+                return;
+            }
+
+            const newArtisans = [...currentArtisans];
+            newArtisans[index] = artisanToAddId;
+
+            transaction.update(standbyRef, { artisans: newArtisans });
+        });
+
+        revalidatePath('/admin/dashboard');
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error swapping standby artisan:", error);
+        return { success: false, message: error.message || 'Failed to swap artisan.' };
+    }
+}
+
+export async function overrideStandbyPool(): Promise<{ success: boolean; message?: string; }> {
+    try {
+        await requireAdmin();
+        await admin.firestore().collection('standby').doc('tomorrow').delete();
+        revalidatePath('/admin/dashboard');
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error overriding standby pool:", error);
+        return { success: false, message: error.message || 'Failed to override standby pool.' };
     }
 }
