@@ -5,8 +5,25 @@ import { Button } from "@/components/ui/button";
 import { type StandbyPrediction } from "@/lib/types";
 import { Flame, List, Pin, RefreshCw, Settings, UserCheck } from "lucide-react";
 import { formatDistanceToNow } from 'date-fns';
+import { useToast } from "@/hooks/use-toast";
 
 export function StandbyCard({ standby }: { standby: StandbyPrediction | null }) {
+    const { toast } = useToast();
+
+    const handleSwap = () => {
+        toast({
+            title: "Coming Soon!",
+            description: "Artisan swapping functionality is not yet implemented.",
+        });
+    };
+
+    const handleOverride = () => {
+        toast({
+            title: "Coming Soon!",
+            description: "Prediction override functionality is not yet implemented.",
+        });
+    };
+
     if (!standby) {
         return (
             <Card>
@@ -68,12 +85,10 @@ export function StandbyCard({ standby }: { standby: StandbyPrediction | null }) 
                     </ul>
                 </div>
                     <div className="flex gap-2 pt-4 border-t">
-                    <Button variant="outline" size="sm"><RefreshCw className="mr-2 h-3 w-3"/> Swap Artisan</Button>
-                    <Button variant="outline" size="sm"><Settings className="mr-2 h-3 w-3"/> Override</Button>
+                    <Button variant="outline" size="sm" onClick={handleSwap}><RefreshCw className="mr-2 h-3 w-3"/> Swap Artisan</Button>
+                    <Button variant="outline" size="sm" onClick={handleOverride}><Settings className="mr-2 h-3 w-3"/> Override</Button>
                 </div>
             </CardContent>
         </Card>
     )
 }
-
-    

@@ -233,16 +233,30 @@ export async function getBerekumZones(): Promise<string[]> {
 
 /**
  * Fetches all data needed for the admin dashboard.
- * This implementation uses mock data to ensure the dashboard is fast and responsive.
  */
 export async function getDashboardData() {
     try {
-        const { PROVIDERS, CATEGORIES, REQUESTS } = await import('./data');
+        // Fetch live counts for the stat cards
+        const [
+            providersSnap,
+            pendingProvidersSnap,
+            requestsSnap,
+            activeServicesSnap
+        ] = await Promise.all([
+            admin.firestore().collection('providers').count().get(),
+            admin.firestore().collection('providers').where('status', '==', 'pending').count().get(),
+            admin.firestore().collection('requests').count().get(),
+            admin.firestore().collection('services').where('active', '==', true).count().get()
+        ]);
+
+        const totalProviders = providersSnap.data().count;
+        const pendingProviders = pendingProvidersSnap.data().count;
+        const totalRequests = requestsSnap.data().count;
+        const activeServices = activeServicesSnap.data().count;
         
-        const totalProviders = PROVIDERS.length;
-        const pendingProviders = PROVIDERS.filter(p => p.status === 'pending').length;
-        const activeServices = CATEGORIES.length;
-        const totalRequests = REQUESTS.length;
+        // Keep using mock data for charts and predictions for now
+        const { PROVIDERS, REQUESTS } = await import('./data');
+        
         const whatsappMessages = 250; // Mock value
         const failedMessages = 15; // Mock value
 
@@ -288,7 +302,8 @@ export async function getDashboardData() {
             standby,
         };
     } catch (error) {
-        console.error('CRITICAL: Could not generate mock dashboard data.', error);
+        console.error('CRITICAL: Could not generate dashboard data.', error);
+        // Fallback to all zeros if Firestore fails
         return {
             totalProviders: 0,
             pendingProviders: 0,
