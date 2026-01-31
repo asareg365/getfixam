@@ -4,8 +4,25 @@ import './globals.css';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 export const metadata: Metadata = {
-  title: 'FixAm Ghana - Berekum',
-  description: 'Your trusted directory for local service providers in Berekum.',
+  title: "Fixam – Smart Repairs & Services",
+  description:
+    "Fixam connects you to trusted repair experts and service providers in Ghana.",
+  openGraph: {
+    title: "Fixam",
+    description:
+      "Find trusted technicians, artisans & service providers with Fixam.",
+    url: "https://getfixam.com",
+    siteName: "Fixam",
+    images: [
+      {
+        url: "https://getfixam.com/og-image.png",
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: "en_GH",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
