@@ -1,37 +1,19 @@
 
+
 import { collection, getDocs, query, where, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { admin } from './firebase-admin';
 import type { Category, Provider, Review, Request, Prediction, StandbyPrediction } from './types';
 import { cache } from 'react';
+import { BEREKUM_ZONES, CATEGORIES } from './data';
 
 /**
  * Fetches all active categories from Firestore using the client SDK.
  * This function is cached to ensure data consistency across server components.
  */
 export const getCategories = cache(async (): Promise<Category[]> => {
-    // Querying all services and filtering client-side to avoid needing a composite index.
-    const servicesRef = collection(db, 'services');
-    const servicesSnap = await getDocs(servicesRef);
-
-    if (servicesSnap.empty) {
-      return [];
-    }
-
-    const categories = servicesSnap.docs
-        .filter(doc => doc.data().active === true) // Filter for active categories here
-        .map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                name: data.name,
-                slug: data.slug,
-                icon: data.icon,
-            };
-        });
-    
-    // Sort by name alphabetically
-    return categories.sort((a, b) => a.name.localeCompare(b.name));
+    // NOTE: Returning static data for now to ensure dropdowns are populated.
+    return CATEGORIES.sort((a, b) => a.name.localeCompare(b.name));
 });
 
 /**
@@ -224,11 +206,8 @@ export async function addReview(data: Omit<Review, 'id' | 'createdAt' | 'status'
  * Fetches the list of zones for Berekum from Firestore using the client SDK.
  */
 export async function getBerekumZones(): Promise<string[]> {
-    const locationDoc = await getDoc(doc(db, 'locations', 'berekum'));
-    if (locationDoc.exists()) {
-        return locationDoc.data()?.zones || [];
-    }
-    return [];
+    // NOTE: Returning static data to ensure dropdown is populated.
+    return BEREKUM_ZONES;
 }
 
 /**
