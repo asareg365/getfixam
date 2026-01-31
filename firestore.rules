@@ -52,6 +52,13 @@ service cloud.firestore {
     }
 
     /* ============================
+       ADMIN LOGIN ATTEMPTS (SERVER ONLY)
+    ============================ */
+    match /admin_login_attempts/{ipAddress} {
+      allow read, write: if false; // server-only via Admin SDK
+    }
+
+    /* ============================
        AUDIT LOGS (SERVER ONLY)
     ============================ */
     match /auditLogs/{logId} {

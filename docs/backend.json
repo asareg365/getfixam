@@ -431,6 +431,28 @@
         "targetId",
         "timestamp"
       ]
+    },
+    "AdminLoginAttempt": {
+      "title": "Admin Login Attempt",
+      "description": "Tracks failed login attempts for an IP address to prevent brute-force attacks.",
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "number",
+          "description": "The number of failed attempts from this IP."
+        },
+        "lastAttempt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of the last failed attempt."
+        },
+        "blockedUntil": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp until which this IP is blocked from attempting to log in."
+        }
+      },
+      "required": ["count", "lastAttempt"]
     }
   },
   "auth": {
@@ -506,6 +528,12 @@
     "/auditLogs/{logId}": {
       "schema": { "$ref": "#/entities/AuditLog" },
       "description": "Stores a log of all administrative actions for accountability."
+    },
+    "/admin_login_attempts/{ipAddress}": {
+      "schema": {
+        "$ref": "#/entities/AdminLoginAttempt"
+      },
+      "description": "Stores records of failed admin login attempts by IP address for rate limiting."
     }
   }
 }
