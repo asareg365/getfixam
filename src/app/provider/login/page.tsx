@@ -147,13 +147,15 @@ export default function ProviderLoginPage() {
           </div>
         </CardHeader>
         <CardContent>
-           <Alert className="mb-4 text-left">
-              <Terminal className="h-4 w-4" />
-              <AlertTitle>Developer Tip</AlertTitle>
-              <AlertDescription>
-                  SMS messages may not arrive in development. For testing, go to your Firebase Console → Authentication → Settings → Phone numbers and add a test phone number (e.g., +1 650-555-3434) and code (e.g., 123456).
-              </AlertDescription>
-          </Alert>
+          {process.env.NODE_ENV === 'development' && (
+            <Alert className="mb-4 text-left">
+                <Terminal className="h-4 w-4" />
+                <AlertTitle>Developer Tip</AlertTitle>
+                <AlertDescription>
+                    SMS messages may not arrive in development. For testing, go to your Firebase Console → Authentication → Settings → Phone numbers and add a test phone number (e.g., +1 650-555-3434) and code (e.g., 123456).
+                </AlertDescription>
+            </Alert>
+          )}
           {step === 'phone' ? (
             <form onSubmit={handleSendOtp} className="space-y-4">
               <div className="space-y-2">
