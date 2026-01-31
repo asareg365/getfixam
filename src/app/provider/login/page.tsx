@@ -11,7 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Terminal } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // This is required to extend the window object with our verifier
 // in a type-safe way.
@@ -115,7 +116,7 @@ export default function ProviderLoginPage() {
       await confirmationResult.confirm(otp);
       toast({ title: 'Login Successful!', description: 'Redirecting to your dashboard...' });
       router.push('/provider/dashboard');
-    } catch (error: any) {
+    } catch (error: any)      {
       console.error('OTP verification error', error);
       toast({
         title: 'Login Failed',
@@ -146,6 +147,13 @@ export default function ProviderLoginPage() {
           </div>
         </CardHeader>
         <CardContent>
+           <Alert className="mb-4 text-left">
+              <Terminal className="h-4 w-4" />
+              <AlertTitle>Developer Tip</AlertTitle>
+              <AlertDescription>
+                  SMS messages may not arrive in development. For testing, go to your Firebase Console → Authentication → Settings → Phone numbers and add a test phone number (e.g., +1 650-555-3434) and code (e.g., 123456).
+              </AlertDescription>
+          </Alert>
           {step === 'phone' ? (
             <form onSubmit={handleSendOtp} className="space-y-4">
               <div className="space-y-2">
