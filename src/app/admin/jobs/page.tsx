@@ -60,9 +60,9 @@ export default async function JobsPage() {
                         </ul>
                     ) : (
                         <div className="border-2 border-dashed rounded-lg p-12 text-center">
-                            <h2 className="text-xl font-semibold">Live Job Engine Coming Soon</h2>
+                            <h2 className="text-xl font-semibold">No Active Jobs</h2>
                             <p className="mt-2 text-muted-foreground">
-                                This is where you'll see a list of all active jobs and be able to monitor the reassignment engine.
+                                There are no active jobs in the system at the moment.
                             </p>
                         </div>
                     )}

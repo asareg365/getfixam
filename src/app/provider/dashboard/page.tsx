@@ -11,7 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import StarRating from '@/components/StarRating';
-import { Building, CheckCircle, Clock, Contact, Hand, Info, Star as StarIcon, User as UserIcon } from 'lucide-react';
+import ProviderReviews from '@/components/ProviderReviews';
+import { Building, CheckCircle, Clock, Hand, Info, Star as StarIcon, User as UserIcon } from 'lucide-react';
 import Loading from './loading';
 import { format } from 'date-fns';
 
@@ -102,7 +103,6 @@ export default function ProviderDashboardPage() {
                         Your provider account has been {provider.status}. Please contact an administrator for more information and next steps.
                     </AlertDescription>
                 </Alert>
-                 <Button><Contact className="mr-2 h-4 w-4"/> Contact Admin</Button>
             </CardContent>
         </Card>
     );
@@ -128,16 +128,12 @@ export default function ProviderDashboardPage() {
                 <h1 className="text-3xl font-bold font-headline">Welcome back, {provider.name}!</h1>
                 <p className="text-muted-foreground">Here's an overview of your provider profile.</p>
             </div>
-             <Button>
-                <Contact className="mr-2 h-4 w-4"/> Contact Admin
-             </Button>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <StatCard title="Approval Status" value={provider.status} icon={provider.status === 'approved' ? CheckCircle : Clock} description={provider.status === 'approved' && provider.approvedAt ? `Approved on ${format(new Date(provider.approvedAt), "dd MMM yyyy")}` : 'Awaiting admin review'}/>
             <StatCard title="Featured Status" value={provider.isFeatured ? 'Active' : 'Not Active'} icon={StarIcon} description={provider.isFeatured && provider.featuredUntil ? `Expires on ${format(new Date(provider.featuredUntil), "dd MMM yyyy")}` : 'Increase your visibility'} />
             <StatCard title="Total Reviews" value={provider.reviewCount} icon={UserIcon} description="Number of customer reviews" />
-            <StatCard title="Leads" value="0" icon={Hand} description="Calls & WhatsApp clicks" />
         </div>
 
         <Card>
@@ -148,7 +144,6 @@ export default function ProviderDashboardPage() {
             <CardContent className="space-y-4">
                 <div className="flex items-center"><Building className="mr-3 h-5 w-5 text-primary" /> <strong>Service:</strong> <span className="ml-2">{provider.category}</span></div>
                 <div className="flex items-center"><Info className="mr-3 h-5 w-5 text-primary" /> <strong>Location:</strong> <span className="ml-2">{provider.location.zone}, {provider.location.city}</span></div>
-                <div className="flex items-center"><Contact className="mr-3 h-5 w-5 text-primary" /> <strong>Public Phone:</strong> <span className="ml-2">{provider.phone}</span></div>
             </CardContent>
         </Card>
         
@@ -166,12 +161,7 @@ export default function ProviderDashboardPage() {
                 </div>
             </CardHeader>
             <CardContent>
-                <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">
-                    <h2 className="text-xl font-semibold">Reviews Coming Soon</h2>
-                    <p className="mt-2 text-muted-foreground">
-                        Approved customer reviews will appear here.
-                    </p>
-                </div>
+                <ProviderReviews providerId={provider.id} providerName={provider.name} />
             </CardContent>
         </Card>
     </div>
