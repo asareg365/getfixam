@@ -27,12 +27,29 @@ async function getReviewCounts() {
 /** ----- Fetch Reviews with Provider Names ----- */
 async function getReviews(status?: string): Promise<ReviewWithProvider[]> {
   // 1. Fetch reviews
-  let reviewsQuery = admin.firestore().collection('reviews').orderBy('createdAt', 'desc');
+  let reviewsQuery: admin.firestore.Query = admin.firestore().collection('reviews');
   if (status && status !== 'all') {
     reviewsQuery = reviewsQuery.where('status', '==', status);
   }
-  const reviewsSnap = await reviewsQuery.get();
-  const reviews = reviewsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
+  const reviewsSnap = await reviewsQuery.orderBy('createdAt', 'desc').get();
+  
+  const reviews: Review[] = reviewsSnap.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        providerId: data.providerId,
+        userName: data.userName,
+        rating: data.rating,
+        comment: data.comment,
+        userImageId: data.userImageId,
+        status: data.status,
+        createdAt: data.createdAt?.toDate().toISOString() ?? new Date(0).toISOString(),
+        approvedAt: data.approvedAt?.toDate().toISOString(),
+        approvedBy: data.approvedBy,
+        rejectedAt: data.rejectedAt?.toDate().toISOString(),
+        rejectedBy: data.rejectedBy,
+      } as Review
+  });
   
   if (reviews.length === 0) return [];
 
@@ -42,6 +59,8 @@ async function getReviews(status?: string): Promise<ReviewWithProvider[]> {
   // 3. Fetch corresponding providers
   const providersMap = new Map<string, string>();
   if (providerIds.length > 0) {
+    // Firestore 'in' query is limited to 30 values.
+    // For a more robust solution with many providers, this would need batching.
     const providersSnap = await admin.firestore().collection('providers').where(admin.firestore.FieldPath.documentId(), 'in', providerIds).get();
     providersSnap.forEach(doc => {
       providersMap.set(doc.id, doc.data().name ?? 'Unknown Provider');
@@ -53,7 +72,6 @@ async function getReviews(status?: string): Promise<ReviewWithProvider[]> {
   return reviews.map(review => ({
     ...review,
     providerName: providersMap.get(review.providerId) || 'N/A',
-    createdAt: review.createdAt, 
   }));
 }
 
