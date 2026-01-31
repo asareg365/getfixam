@@ -3,6 +3,7 @@
 import { admin } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-guard';
+import { logAdminAction } from '@/lib/audit-log';
 
 export async function POST(req: NextRequest, { params }: { params: { action: 'approve' | 'reject' | 'suspend' } }) {
   try {
@@ -46,13 +47,15 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
 
     await providerRef.update(updateData);
 
-    // Audit log
-    await admin.firestore().collection('auditLogs').add({
-      adminEmail: adminEmail,
-      providerId,
-      providerName: providerData.name ?? 'Unknown',
+    // Use the centralized audit log helper
+    await logAdminAction({
+      adminEmail: adminEmail!,
       action: params.action,
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      targetType: 'provider',
+      targetId: providerId,
+      details: {
+        providerName: providerData.name ?? 'Unknown',
+      }
     });
 
     return NextResponse.json({ success: true });

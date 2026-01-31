@@ -398,17 +398,37 @@
       "description": "A log of administrative actions performed in the system for accountability.",
       "type": "object",
       "properties": {
-        "adminEmail": { "type": "string" },
-        "providerId": { "type": "string" },
-        "providerName": { "type": "string" },
-        "action": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" }
+        "adminEmail": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "targetType": {
+          "type": "string",
+          "enum": [
+            "provider",
+            "review",
+            "service"
+          ]
+        },
+        "targetId": {
+          "type": "string"
+        },
+        "details": {
+          "type": "object",
+          "description": "Additional human-readable context for the log entry."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
       },
       "required": [
         "adminEmail",
-        "providerId",
-        "providerName",
         "action",
+        "targetType",
+        "targetId",
         "timestamp"
       ]
     }

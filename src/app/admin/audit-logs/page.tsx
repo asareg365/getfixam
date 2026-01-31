@@ -9,9 +9,8 @@ export const dynamic = 'force-dynamic';
 interface AuditLog {
   id: string;
   adminEmail: string;
-  providerName: string;
-  providerId: string;
   action: string;
+  target: string;
   timestamp: string;
 }
 
@@ -25,12 +24,19 @@ async function getAuditLogs(): Promise<AuditLog[]> {
   return snapshot.docs.map(doc => {
     const data = doc.data();
     const timestampDate = data.timestamp?.toDate();
+    
+    let target = `ID: ${data.targetId}`;
+    if (data.targetType === 'provider') {
+      target = data.details?.providerName ? `Provider: ${data.details.providerName}` : `Provider ID: ${data.targetId}`;
+    } else if (data.targetType === 'review') {
+      target = data.details?.providerName ? `Review for ${data.details.providerName}` : `Review ID: ${data.targetId}`;
+    }
+
     return {
       id: doc.id,
       adminEmail: data.adminEmail ?? 'N/A',
-      providerName: data.providerName ?? 'N/A',
-      providerId: data.providerId ?? 'N/A',
       action: data.action ?? 'N/A',
+      target: target,
       timestamp: timestampDate ? new Date(timestampDate).toLocaleString() : new Date(0).toLocaleString(),
     };
   });
@@ -44,9 +50,9 @@ export default async function AuditLogsPage() {
     <div>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl font-headline">Provider Action Logs</CardTitle>
+          <CardTitle className="text-2xl font-headline">Admin Action Logs</CardTitle>
           <CardDescription>
-            A log of all provider approval and rejection actions taken by administrators.
+            A log of all significant actions taken by administrators.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -55,8 +61,8 @@ export default async function AuditLogsPage() {
                 <TableHeader>
                 <TableRow>
                     <TableHead>Admin</TableHead>
-                    <TableHead>Provider</TableHead>
                     <TableHead>Action</TableHead>
+                    <TableHead>Target</TableHead>
                     <TableHead>Timestamp</TableHead>
                 </TableRow>
                 </TableHeader>
@@ -65,12 +71,16 @@ export default async function AuditLogsPage() {
                     logs.map(log => (
                         <TableRow key={log.id}>
                         <TableCell className="font-medium">{log.adminEmail}</TableCell>
-                        <TableCell>{log.providerName}</TableCell>
                         <TableCell>
-                            <span className={`px-2 py-1 text-xs rounded-full ${log.action === 'approved' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                log.action.includes('approve') ? 'bg-green-100 text-green-800' :
+                                log.action.includes('reject') || log.action.includes('suspend') ? 'bg-red-100 text-red-800' :
+                                'bg-blue-100 text-blue-800'
+                            }`}>
                                 {log.action}
                             </span>
                         </TableCell>
+                        <TableCell>{log.target}</TableCell>
                         <TableCell>{log.timestamp}</TableCell>
                         </TableRow>
                     ))

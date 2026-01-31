@@ -4,6 +4,7 @@ import { admin } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-guard';
 import { revalidatePath } from 'next/cache';
+import { logAdminAction } from '@/lib/audit-log';
 
 export async function POST(req: NextRequest, { params }: { params: { action: 'approve' | 'reject' } }) {
   try {
@@ -18,18 +19,21 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
     const reviewRef = admin.firestore().collection('reviews').doc(reviewId);
     
     if (params.action === 'approve') {
+      let reviewData: admin.firestore.DocumentData;
+      let providerData: admin.firestore.DocumentData;
+
       await admin.firestore().runTransaction(async (transaction) => {
         const reviewSnap = await transaction.get(reviewRef);
         if (!reviewSnap.exists) throw new Error('Review not found.');
         
-        const reviewData = reviewSnap.data()!;
+        reviewData = reviewSnap.data()!;
         if (reviewData.status === 'approved') return;
 
         const providerRef = admin.firestore().collection('providers').doc(reviewData.providerId);
         const providerSnap = await transaction.get(providerRef);
         if (!providerSnap.exists) throw new Error('Associated provider not found.');
 
-        const providerData = providerSnap.data()!;
+        providerData = providerSnap.data()!;
         const currentRating = providerData.rating || 0;
         const currentReviewCount = providerData.reviewCount || 0;
         const newReviewCount = currentReviewCount + 1;
@@ -47,11 +51,25 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
         });
       });
 
+      // Log action after transaction commits
+      await logAdminAction({
+        adminEmail: adminUser.email!,
+        action: 'approve',
+        targetType: 'review',
+        targetId: reviewId,
+        details: {
+          providerId: reviewData!.providerId,
+          providerName: providerData!.name ?? 'Unknown',
+          userName: reviewData!.userName,
+        }
+      });
+
     } else if (params.action === 'reject') {
       const reviewSnap = await reviewRef.get();
       if (!reviewSnap.exists) throw new Error('Review not found.');
+      const reviewData = reviewSnap.data()!;
 
-      if (reviewSnap.data()!.status !== 'pending') {
+      if (reviewData.status !== 'pending') {
         return NextResponse.json({ success: true, message: 'Review was not in pending state.' });
       }
       
@@ -61,12 +79,26 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
         rejectedBy: adminUser.email,
       });
 
+      const provider = await admin.firestore().collection('providers').doc(reviewData.providerId).get();
+      await logAdminAction({
+        adminEmail: adminUser.email!,
+        action: 'reject',
+        targetType: 'review',
+        targetId: reviewId,
+        details: {
+          providerId: reviewData.providerId,
+          providerName: provider.exists ? provider.data()!.name : 'Unknown',
+          userName: reviewData.userName
+        }
+      });
+
     } else {
       return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
     }
     
     // Revalidate relevant pages
     revalidatePath('/admin/reviews');
+    revalidatePath('/admin/audit-logs');
     revalidatePath('/'); // Revalidate home page for featured providers
     revalidatePath('/category/all'); // Revalidate all providers page
 
