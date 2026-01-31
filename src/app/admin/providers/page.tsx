@@ -73,13 +73,13 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
       serviceId: data.serviceId ?? '',
       category: service?.name ?? 'N/A',
       createdAt: data.createdAt?.toDate().toISOString() ?? new Date(0).toISOString(),
-      approvedAt: data.approvedAt?.toDate().toISOString(),
+      approvedAt: data.approvedAt ? data.approvedAt.toDate().toISOString() : undefined,
       approvedBy: data.approvedBy ?? undefined,
-      rejectedAt: data.rejectedAt?.toDate().toISOString(),
+      rejectedAt: data.rejectedAt ? data.rejectedAt.toDate().toISOString() : undefined,
       rejectedBy: data.rejectedBy ?? undefined,
-      suspendedAt: data.suspendedAt?.toDate().toISOString(),
+      suspendedAt: data.suspendedAt ? data.suspendedAt.toDate().toISOString() : undefined,
       suspendedBy: data.suspendedBy ?? undefined,
-      featuredUntil: data.featuredUntil?.toDate().toISOString(),
+      featuredUntil: data.featuredUntil ? data.featuredUntil.toDate().toISOString() : undefined,
     };
   });
 }

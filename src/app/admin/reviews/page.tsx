@@ -44,9 +44,9 @@ async function getReviews(status?: string): Promise<ReviewWithProvider[]> {
         userImageId: data.userImageId,
         status: data.status,
         createdAt: data.createdAt?.toDate().toISOString() ?? new Date(0).toISOString(),
-        approvedAt: data.approvedAt?.toDate().toISOString(),
+        approvedAt: data.approvedAt ? data.approvedAt.toDate().toISOString() : undefined,
         approvedBy: data.approvedBy,
-        rejectedAt: data.rejectedAt?.toDate().toISOString(),
+        rejectedAt: data.rejectedAt ? data.rejectedAt.toDate().toISOString() : undefined,
         rejectedBy: data.rejectedBy,
       } as Review
   });
