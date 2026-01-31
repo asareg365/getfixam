@@ -3,6 +3,7 @@ import type {NextConfig} from 'next';
 const nextConfig: NextConfig = {
   output: "standalone",
   /* config options here */
+  allowedDevOrigins: ["https://*.cloudworkstations.dev"],
   typescript: {
     ignoreBuildErrors: true,
   },
