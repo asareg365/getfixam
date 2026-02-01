@@ -5,6 +5,7 @@ import AuditLogsClient from './_components/audit-logs-client';
 
 export const dynamic = 'force-dynamic';
 
+// This interface must match the one in the client component
 interface AuditLog {
   id: string;
   adminEmail: string;
@@ -16,14 +17,12 @@ interface AuditLog {
   createdAt: string;
 }
 
-async function getAuditLogs(): Promise<AuditLog[]> {
+export default async function AuditLogsPage() {
+  await requireAdmin();
+  
   const snapshot = await admin.firestore().collection('auditLogs').orderBy('createdAt', 'desc').limit(500).get();
 
-  if (snapshot.empty) {
-    return [];
-  }
-
-  return snapshot.docs.map(doc => {
+  const logs: AuditLog[] = snapshot.docs.map(doc => {
     const data = doc.data();
     const createdAtDate = data.createdAt?.toDate();
     
@@ -38,11 +37,6 @@ async function getAuditLogs(): Promise<AuditLog[]> {
       createdAt: createdAtDate ? new Date(createdAtDate).toLocaleString() : 'N/A',
     };
   });
-}
-
-export default async function AuditLogsPage() {
-  await requireAdmin();
-  const logs = await getAuditLogs();
 
   return (
     <Card>
