@@ -7,6 +7,8 @@ import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/admin-guard';
 import type { Provider } from '@/lib/types';
+import { logAdminAction } from '@/lib/audit-log';
+import { headers } from 'next/headers';
 
 
 /** ----- AUTH ACTIONS ----- */
@@ -47,9 +49,21 @@ export async function addServiceAction(prevState: any, formData: FormData) {
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
         };
 
-        await admin.firestore().collection('services').add(serviceData);
+        const newServiceRef = await admin.firestore().collection('services').add(serviceData);
+        
+        // Log the admin action
+        const headersList = headers();
+        await logAdminAction({
+            adminEmail: adminContext.email!,
+            action: 'SERVICE_CREATED',
+            targetType: 'service',
+            targetId: newServiceRef.id,
+            ipAddress: headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown',
+            userAgent: headersList.get('user-agent') || 'unknown',
+        });
         
         revalidatePath('/admin/services');
+        revalidatePath('/admin/audit-logs');
         return { success: true, message: 'Service added successfully.' };
     } catch (error: any) {
         console.error('Error adding service:', error);

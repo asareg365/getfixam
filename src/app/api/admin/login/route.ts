@@ -3,20 +3,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { signToken } from '@/lib/jwt';
 import { admin } from '@/lib/firebase-admin';
+import { logAdminAction } from '@/lib/audit-log';
 
 const MAX_ATTEMPTS = 5;
 const BLOCK_DURATION_MINUTES = 10;
 
 export async function POST(req: NextRequest) {
-  // Use `x-forwarded-for` for environments like Vercel/App Hosting, fallback to `ip`
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || req.ip || 'unknown';
-
+  const userAgent = req.headers.get('user-agent') || 'unknown';
   const attemptRef = admin.firestore().collection('admin_login_attempts').doc(ip);
   
   try {
     const attemptSnap = await attemptRef.get();
 
-    // 1. Check if IP is currently blocked
     if (attemptSnap.exists) {
       const data = attemptSnap.data()!;
       if (data.blockedUntil && data.blockedUntil.toDate() > new Date()) {
@@ -30,9 +29,11 @@ export async function POST(req: NextRequest) {
     if (!email || !password) {
       return NextResponse.json({ success: false, message: 'Email and password are required.' }, { status: 400 });
     }
-
+    
+    // Log failed attempt if it's not the admin email, but don't give away that the email is wrong.
     if (email.toLowerCase() !== 'asareg365@gmail.com') {
-        return NextResponse.json({ success: false, message: 'You are not authorized to access the admin panel.' }, { status: 403 });
+        await logAdminAction({ adminEmail: email, action: 'ADMIN_LOGIN_FAILED', targetType: 'system', targetId: email, ipAddress: ip, userAgent });
+        return NextResponse.json({ success: false, message: 'Invalid credentials.' }, { status: 401 });
     }
 
     const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
@@ -49,7 +50,6 @@ export async function POST(req: NextRequest) {
 
     const authData = await res.json();
 
-    // --- On Login Failure ---
     if (!res.ok) {
       const currentCount = attemptSnap.data()?.count || 0;
       const isBlocked = (currentCount + 1) >= MAX_ATTEMPTS;
@@ -66,14 +66,11 @@ export async function POST(req: NextRequest) {
       }
       
       await attemptRef.set(updateData, { merge: true });
+      await logAdminAction({ adminEmail: email, action: 'ADMIN_LOGIN_FAILED', targetType: 'system', targetId: email, ipAddress: ip, userAgent });
       
-      const errorMessage = authData.error?.message === 'INVALID_LOGIN_CREDENTIALS'
-        ? 'Invalid email or password.'
-        : 'An authentication error occurred.';
-      return NextResponse.json({ success: false, message: errorMessage }, { status: 401 });
+      return NextResponse.json({ success: false, message: 'Invalid credentials.' }, { status: 401 });
     }
     
-    // --- On Login Success ---
     if (attemptSnap.exists) {
       await attemptRef.delete();
     }
@@ -93,13 +90,12 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 2, // 2 hours
     });
 
+    await logAdminAction({ adminEmail: userEmail, action: 'ADMIN_LOGIN_SUCCESS', targetType: 'system', targetId: userEmail, ipAddress: ip, userAgent });
+
     return response;
 
   } catch (error: any) {
     console.error('Login API error:', error);
-    // This will catch JSON parsing errors or other unexpected issues
-    // We still log the attempt, but we don't block based on this kind of error
-    // to avoid potential DOS by sending malformed requests.
     return NextResponse.json({ message: 'An unexpected server error occurred.' }, { status: 500 });
   }
 }

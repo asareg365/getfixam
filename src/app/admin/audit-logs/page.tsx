@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { admin } from '@/lib/firebase-admin';
 import { requireAdmin } from '@/lib/admin-guard';
 import AuditLogsClient from './_components/audit-logs-client';
+import { startOfDay, endOfDay } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,12 +18,53 @@ interface AuditLog {
   createdAt: string;
 }
 
-export default async function AuditLogsPage() {
-  await requireAdmin();
-  
-  const snapshot = await admin.firestore().collection('auditLogs').orderBy('createdAt', 'desc').limit(500).get();
+// Helper to get unique values for filter dropdowns
+async function getUniqueLogFields() {
+    const snapshot = await admin.firestore().collection('auditLogs').select('action', 'targetType').get();
+    const actions = new Set<string>();
+    const targetTypes = new Set<string>();
+    snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.action) actions.add(data.action);
+        if (data.targetType) targetTypes.add(data.targetType);
+    });
+    return {
+        uniqueActions: Array.from(actions).sort(),
+        uniqueTargetTypes: Array.from(targetTypes).sort(),
+    };
+}
 
-  const logs: AuditLog[] = snapshot.docs.map(doc => {
+
+export default async function AuditLogsPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | undefined };
+}) {
+  await requireAdmin();
+
+  const { action, targetType, search, from, to } = searchParams;
+  
+  let query: admin.firestore.Query = admin.firestore().collection('auditLogs');
+
+  if (action) {
+    query = query.where('action', '==', action);
+  }
+  if (targetType) {
+    query = query.where('targetType', '==', targetType);
+  }
+  if (from) {
+    query = query.where('createdAt', '>=', startOfDay(new Date(from)));
+  }
+   if (to) {
+    query = query.where('createdAt', '<=', endOfDay(new Date(to)));
+  }
+  
+  // Always order by date
+  query = query.orderBy('createdAt', 'desc').limit(500);
+
+  const snapshot = await query.get();
+
+  let logs: AuditLog[] = snapshot.docs.map(doc => {
     const data = doc.data();
     const createdAtDate = data.createdAt?.toDate();
     
@@ -38,6 +80,17 @@ export default async function AuditLogsPage() {
     };
   });
 
+  // Perform search filter in memory, as Firestore doesn't support partial text search
+  if (search) {
+      const lowercasedSearch = search.toLowerCase();
+      logs = logs.filter(log => 
+        log.adminEmail.toLowerCase().includes(lowercasedSearch) ||
+        log.targetId.toLowerCase().includes(lowercasedSearch)
+      );
+  }
+
+  const { uniqueActions, uniqueTargetTypes } = await getUniqueLogFields();
+
   return (
     <Card>
       <CardHeader>
@@ -47,7 +100,7 @@ export default async function AuditLogsPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <AuditLogsClient logs={logs} />
+        <AuditLogsClient logs={logs} uniqueActions={uniqueActions} uniqueTargetTypes={uniqueTargetTypes} />
       </CardContent>
     </Card>
   );

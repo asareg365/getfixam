@@ -5,7 +5,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-guard';
 import { logAdminAction } from '@/lib/audit-log';
 
-export async function POST(req: NextRequest, { params }: { params: { action: 'approve' | 'reject' | 'suspend' } }) {
+type ActionParam = 'approve' | 'reject' | 'suspend';
+
+export async function POST(req: NextRequest, { params }: { params: { action: ActionParam } }) {
   try {
     const adminUser = await requireAdmin(); // Secure the route
     const body = await req.formData();
@@ -25,22 +27,26 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
 
     const updateData: any = {};
     const adminEmail = adminUser.email;
+    let actionLog: string;
 
     if (params.action === 'approve') {
       updateData.status = 'approved';
       updateData.verified = true;
       updateData.approvedAt = admin.firestore.FieldValue.serverTimestamp();
       updateData.approvedBy = adminEmail;
+      actionLog = 'PROVIDER_APPROVED';
     } else if (params.action === 'reject') {
       updateData.status = 'rejected';
       updateData.verified = false;
       updateData.rejectedAt = admin.firestore.FieldValue.serverTimestamp();
       updateData.rejectedBy = adminEmail;
+      actionLog = 'PROVIDER_REJECTED';
     } else if (params.action === 'suspend') {
         updateData.status = 'suspended';
         updateData.verified = false;
         updateData.suspendedAt = admin.firestore.FieldValue.serverTimestamp();
         updateData.suspendedBy = adminEmail;
+        actionLog = 'PROVIDER_SUSPENDED';
     } else {
         return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
     }
@@ -53,7 +59,7 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
 
     await logAdminAction({
       adminEmail: adminEmail!,
-      action: params.action,
+      action: actionLog,
       targetType: 'provider',
       targetId: providerId,
       ipAddress,
@@ -69,5 +75,3 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
     return NextResponse.json({ success: false, error: error.message || 'Unexpected error' }, { status: 500 });
   }
 }
-
-    

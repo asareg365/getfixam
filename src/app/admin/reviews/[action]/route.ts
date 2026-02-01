@@ -6,7 +6,9 @@ import { requireAdmin } from '@/lib/admin-guard';
 import { revalidatePath } from 'next/cache';
 import { logAdminAction } from '@/lib/audit-log';
 
-export async function POST(req: NextRequest, { params }: { params: { action: 'approve' | 'reject' } }) {
+type ActionParam = 'approve' | 'reject';
+
+export async function POST(req: NextRequest, { params }: { params: { action: ActionParam } }) {
   try {
     const adminUser = await requireAdmin();
     const body = await req.formData();
@@ -56,7 +58,7 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
       // Log action after transaction commits
       await logAdminAction({
         adminEmail: adminUser.email!,
-        action: 'approve',
+        action: 'REVIEW_APPROVED',
         targetType: 'review',
         targetId: reviewId,
         ipAddress,
@@ -80,7 +82,7 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
 
       await logAdminAction({
         adminEmail: adminUser.email!,
-        action: 'reject',
+        action: 'REVIEW_REJECTED',
         targetType: 'review',
         targetId: reviewId,
         ipAddress,
@@ -112,5 +114,3 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
     return NextResponse.json({ success: false, error: error.message || 'Unexpected error' }, { status: 500 });
   }
 }
-
-    

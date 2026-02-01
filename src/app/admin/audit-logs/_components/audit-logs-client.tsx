@@ -1,11 +1,19 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { DateRange } from 'react-day-picker';
+import { format } from 'date-fns';
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // This interface must match the one in page.tsx
 interface AuditLog {
@@ -21,82 +29,146 @@ interface AuditLog {
 
 interface AuditLogsClientProps {
   logs: AuditLog[];
+  uniqueActions: string[];
+  uniqueTargetTypes: string[];
 }
 
 const LOGS_PER_PAGE = 15;
 
-export default function AuditLogsClient({ logs: initialLogs }: AuditLogsClientProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState({
-    targetType: 'all',
-    action: 'all',
-  });
+export default function AuditLogsClient({ logs: initialLogs, uniqueActions, uniqueTargetTypes }: AuditLogsClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [currentPage, setCurrentPage] = useState(1);
-  
-  const actionOptions = useMemo(() => ['all', ...Array.from(new Set(initialLogs.map(log => log.action).filter(Boolean)))], [initialLogs]);
-  const targetTypeOptions = useMemo(() => ['all', ...Array.from(new Set(initialLogs.map(log => log.targetType).filter(Boolean)))], [initialLogs]);
+  const [date, setDate] = useState<DateRange | undefined>(() => {
+    const from = searchParams.get('from');
+    const to = searchParams.get('to');
+    if (from && to) return { from: new Date(from), to: new Date(to) };
+    return undefined;
+  });
 
-  const filteredLogs = useMemo(() => {
-    return initialLogs.filter(log => {
-      const searchMatch = !searchQuery ||
-        log.adminEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.targetId.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const targetTypeMatch = filters.targetType === 'all' || log.targetType === filters.targetType;
-      const actionMatch = filters.action === 'all' || log.action === filters.action;
+  // Use a controlled component for the search input
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
 
-      return searchMatch && targetTypeMatch && actionMatch;
-    });
-  }, [initialLogs, searchQuery, filters]);
-  
-  const totalPages = Math.ceil(filteredLogs.length / LOGS_PER_PAGE);
-  const paginatedLogs = filteredLogs.slice(
-    (currentPage - 1) * LOGS_PER_PAGE,
-    currentPage * LOGS_PER_PAGE
-  );
-  
-  const handleFilterChange = (filterName: 'targetType' | 'action', value: string) => {
-    setFilters(prev => ({ ...prev, [filterName]: value }));
-    setCurrentPage(1);
+  const handleFilterChange = (filterName: 'action' | 'targetType', value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value === 'all') {
+      params.delete(filterName);
+    } else {
+      params.set(filterName, value);
+    }
+    params.set('page', '1'); // Reset to first page
+    router.push(`/admin/audit-logs?${params.toString()}`);
   };
-  
-   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(event.target.value);
-    setCurrentPage(1);
-  };
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const params = new URLSearchParams(searchParams.toString());
+    if (searchQuery) {
+        params.set('search', searchQuery);
+    } else {
+        params.delete('search');
+    }
+    params.set('page', '1'); // Reset to first page
+    router.push(`/admin/audit-logs?${params.toString()}`);
+  }
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (date?.from) {
+        params.set('from', format(date.from, 'yyyy-MM-dd'));
+    } else {
+        params.delete('from');
+    }
+    if (date?.to) {
+        params.set('to', format(date.to, 'yyyy-MM-dd'));
+    } else {
+        params.delete('to');
+    }
+    params.set('page', '1'); // Reset to first page
+    router.push(`/admin/audit-logs?${params.toString()}`, { scroll: false });
+  }, [date]);
+
 
   const ActionBadge = ({ action }: { action: string }) => {
      let variant: "default" | "destructive" | "success" | "secondary" | "outline" | null | undefined = "secondary";
-     if (action.includes('approve')) variant = 'success';
-     if (action.includes('reject') || action.includes('suspend') || action.includes('delete')) variant = 'destructive';
-     if (action.includes('add') || action.includes('create')) variant = 'default';
-     return <Badge variant={variant}>{action}</Badge>
+     if (action.includes('APPROVE')) variant = 'success';
+     if (action.includes('REJECT') || action.includes('SUSPEND') || action.includes('DELETE') || action.includes('FAILED')) variant = 'destructive';
+     if (action.includes('ADD') || action.includes('CREATE') || action.includes('SUCCESS')) variant = 'default';
+     return <Badge variant={variant}>{action.replace(/_/g, ' ')}</Badge>
   }
+
+  // Pagination logic now works on the logs passed via props
+  const totalPages = Math.ceil(initialLogs.length / LOGS_PER_PAGE);
+  const paginatedLogs = initialLogs.slice(
+    (currentPage - 1) * LOGS_PER_PAGE,
+    currentPage * LOGS_PER_PAGE
+  );
 
   return (
     <div>
         <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <Input
-                placeholder="Search by email or target ID..."
-                value={searchQuery}
-                onChange={handleSearchChange}
-                className="max-w-sm"
-            />
+            <form onSubmit={handleSearch} className="flex-1">
+                <Input
+                    placeholder="Search by email or target ID..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="max-w-sm"
+                />
+            </form>
             <div className="flex gap-4">
-                <Select value={filters.targetType} onValueChange={(value) => handleFilterChange('targetType', value)}>
+                 <Popover>
+                    <PopoverTrigger asChild>
+                    <Button
+                        id="date"
+                        variant={"outline"}
+                        className={cn(
+                        "w-[240px] justify-start text-left font-normal",
+                        !date && "text-muted-foreground"
+                        )}
+                    >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {date?.from ? (
+                        date.to ? (
+                            <>
+                            {format(date.from, "LLL dd, y")} -{" "}
+                            {format(date.to, "LLL dd, y")}
+                            </>
+                        ) : (
+                            format(date.from, "LLL dd, y")
+                        )
+                        ) : (
+                        <span>Pick a date</span>
+                        )}
+                    </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                            initialFocus
+                            mode="range"
+                            defaultMonth={date?.from}
+                            selected={date}
+                            onSelect={setDate}
+                            numberOfMonths={2}
+                        />
+                    </PopoverContent>
+                </Popover>
+                <Select value={searchParams.get('targetType') || 'all'} onValueChange={(value) => handleFilterChange('targetType', value)}>
                     <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Filter by Target Type" />
                     </SelectTrigger>
                     <SelectContent>
-                        {targetTypeOptions.map(opt => <SelectItem key={opt} value={opt} className="capitalize">{opt}</SelectItem>)}
+                        <SelectItem value="all">All Target Types</SelectItem>
+                        {uniqueTargetTypes.map(opt => <SelectItem key={opt} value={opt} className="capitalize">{opt}</SelectItem>)}
                     </SelectContent>
                 </Select>
-                 <Select value={filters.action} onValueChange={(value) => handleFilterChange('action', value)}>
+                 <Select value={searchParams.get('action') || 'all'} onValueChange={(value) => handleFilterChange('action', value)}>
                     <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Filter by Action" />
                     </SelectTrigger>
                     <SelectContent>
-                        {actionOptions.map(opt => <SelectItem key={opt} value={opt} className="capitalize">{opt}</SelectItem>)}
+                         <SelectItem value="all">All Actions</SelectItem>
+                        {uniqueActions.map(opt => <SelectItem key={opt} value={opt} className="capitalize">{opt.replace(/_/g, ' ')}</SelectItem>)}
                     </SelectContent>
                 </Select>
             </div>
