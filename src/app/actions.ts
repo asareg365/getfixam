@@ -36,5 +36,5 @@ export async function searchAction(formData: FormData) {
   }
 
   // Default fallback
-  redirect('/category/all');
+  redirect(`/category/all?search=${encodeURIComponent(query)}`);
 }
