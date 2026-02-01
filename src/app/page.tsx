@@ -32,6 +32,7 @@ export default async function BrowsePage() {
                 <Input
                 type="search"
                 name="query"
+                autoComplete="off"
                 placeholder="Search for a service (e.g., electrician)"
                 className="flex-1 bg-background"
                 aria-label="Search for a service"
