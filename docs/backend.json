@@ -177,6 +177,23 @@
               "type": "string",
               "format": "date-time",
               "description": "The timestamp when the login PIN was generated."
+            },
+            "services": {
+              "type": "array",
+              "description": "A list of specific services offered by the provider.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "active": { "type": "boolean" },
+                  "price": { "type": "number" }
+                },
+                "required": ["name", "active"]
+              }
+            },
+            "availability": {
+                "type": "object",
+                "description": "The provider's weekly availability schedule."
             }
         },
         "required": ["name", "phone", "serviceId", "location", "status", "verified", "createdAt", "digitalAddress"]
@@ -619,5 +636,3 @@
     }
   }
 }
-
-    
