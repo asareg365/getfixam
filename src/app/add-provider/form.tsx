@@ -67,13 +67,13 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
         <form ref={formRef} action={formAction} className="space-y-6">
         <div className="space-y-2">
             <Label htmlFor="name">Business Name</Label>
-            <Input id="name" name="name" placeholder="e.g., Kwame Electric Works" />
+            <Input id="name" name="name" placeholder="e.g., Kwame Electric Works" required />
             {state.errors?.name && <p className="text-sm text-destructive">{state.errors.name}</p>}
         </div>
 
         <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
-            <Select name="serviceId">
+            <Select name="serviceId" required>
             <SelectTrigger id="category">
                 <SelectValue placeholder="Select a service category" />
             </SelectTrigger>
@@ -89,19 +89,19 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
             <Label htmlFor="phone">Phone Number</Label>
-            <Input id="phone" name="phone" type="tel" placeholder="0241234567" />
+            <Input id="phone" name="phone" type="tel" placeholder="0241234567" required />
                 {state.errors?.phone && <p className="text-sm text-destructive">{state.errors.phone}</p>}
             </div>
             <div className="space-y-2">
             <Label htmlFor="whatsapp">WhatsApp Number</Label>
-            <Input id="whatsapp" name="whatsapp" type="tel" placeholder="0551234567" />
+            <Input id="whatsapp" name="whatsapp" type="tel" placeholder="0551234567" required />
             {state.errors?.whatsapp && <p className="text-sm text-destructive">{state.errors.whatsapp}</p>}
             </div>
         </div>
         
         <div className="space-y-2">
             <Label htmlFor="zone">Area / Zone</Label>
-            <Select name="zone">
+            <Select name="zone" required>
             <SelectTrigger id="zone">
                 <SelectValue placeholder="Select your location/zone in Berekum" />
             </SelectTrigger>
@@ -116,7 +116,7 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
 
         <div className="space-y-2">
             <Label htmlFor="digitalAddress">Digital Address</Label>
-            <Input id="digitalAddress" name="digitalAddress" placeholder="e.g., BK-001-0101" />
+            <Input id="digitalAddress" name="digitalAddress" placeholder="e.g., BK-001-0101" required />
             {state.errors?.digitalAddress && <p className="text-sm text-destructive">{state.errors.digitalAddress}</p>}
         </div>
 

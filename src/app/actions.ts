@@ -61,7 +61,7 @@ export async function addReviewAction(prevState: any, formData: FormData) {
   try {
     await dbAddReview({ ...validatedFields.data, userImageId: randomUserImageId });
     revalidatePath(`/providers/${validatedFields.data.providerId}`);
-    return { success: true, message: 'Thank you! Your review has been submitted.' };
+    return { success: true, message: 'Thank you! Your review has been submitted for moderation.' };
   } catch (error: any) {
     console.error('Error adding review:', error);
     return { success: false, message: error.message || 'Failed to submit review. Please try again.' };
@@ -69,12 +69,12 @@ export async function addReviewAction(prevState: any, formData: FormData) {
 }
 
 const providerSchema = z.object({
-  name: z.string().min(3, 'Business name is required.'),
-  serviceId: z.string().min(1, 'Please select a category.'),
-  phone: z.string().regex(/^0[0-9]{9}$/, 'Enter a valid 10-digit phone number.'),
-  whatsapp: z.string().regex(/^0[0-9]{9}$/, 'Enter a valid 10-digit phone number.'),
-  zone: z.string().min(1, 'Please select a zone.'),
-  digitalAddress: z.string().min(6, 'Please enter a valid digital address.'),
+  name: z.string().min(3, 'Business name must be at least 3 characters.'),
+  serviceId: z.string({ required_error: 'Please select a service category.' }).min(1, 'Please select a service category.'),
+  phone: z.string().regex(/^0[0-9]{9}$/, 'A valid 10-digit phone number is required.'),
+  whatsapp: z.string().regex(/^0[0-9]{9}$/, 'A valid 10-digit WhatsApp number is required.'),
+  zone: z.string({ required_error: 'Please select a zone.' }).min(1, 'Please select a zone.'),
+  digitalAddress: z.string().min(6, 'A valid digital address is required.'),
 });
 
 export async function addProviderAction(prevState: any, formData: FormData) {
