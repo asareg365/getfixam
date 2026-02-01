@@ -2,30 +2,41 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { addProvider as dbAddProvider, addReview as dbAddReview, getCategories } from '@/lib/services';
+import { addProvider as dbAddProvider, addReview as dbAddReview, getCategories, getProviders } from '@/lib/services';
 import { redirect } from 'next/navigation';
 
 export async function searchAction(formData: FormData) {
-  const query = formData.get('query') as string;
+  const query = (formData.get('query') as string)?.trim().toLowerCase();
   if (!query) {
     redirect('/category/all');
     return;
   }
-  
-  const normalizedQuery = query.trim().toLowerCase();
-  const categories = await getCategories();
 
+  const categories = await getCategories();
   const foundCategory = categories.find(
     (cat) =>
-      cat.name.toLowerCase().includes(normalizedQuery) ||
-      cat.slug === normalizedQuery.replace(/\s+/g, '-')
+      cat.name.toLowerCase().includes(query) ||
+      cat.slug === query.replace(/\s+/g, '-')
   );
 
   if (foundCategory) {
     redirect(`/category/${foundCategory.slug}`);
-  } else {
-    redirect('/category/all');
+    return;
   }
+
+  // If no category, search providers by name
+  const providers = await getProviders();
+  const foundProvider = providers.find((p) =>
+    p.name.toLowerCase().includes(query)
+  );
+
+  if (foundProvider) {
+    redirect(`/providers/${foundProvider.id}`);
+    return;
+  }
+
+  // Default fallback
+  redirect('/category/all');
 }
 
 const reviewSchema = z.object({
