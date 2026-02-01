@@ -62,9 +62,9 @@ export async function addReviewAction(prevState: any, formData: FormData) {
     await dbAddReview({ ...validatedFields.data, userImageId: randomUserImageId });
     revalidatePath(`/providers/${validatedFields.data.providerId}`);
     return { success: true, message: 'Thank you! Your review has been submitted.' };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error adding review:', error);
-    return { success: false, message: 'Failed to submit review. Please try again.' };
+    return { success: false, message: error.message || 'Failed to submit review. Please try again.' };
   }
 }
 
@@ -141,8 +141,8 @@ export async function addProviderAction(prevState: any, formData: FormData) {
 
         revalidatePath('/');
         return { success: true, message: 'Your business has been submitted for review!' };
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error adding provider:', error);
-        return { success: false, message: 'Failed to submit your business. Please try again.' };
+        return { success: false, message: error.message || 'Failed to submit your business. Please try again.' };
     }
 }
