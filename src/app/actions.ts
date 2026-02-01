@@ -11,10 +11,11 @@ export async function searchAction(formData: FormData) {
   }
 
   const categories = await getCategories();
-  const foundCategory = categories.find(
-    (cat) =>
-      cat.name.toLowerCase().includes(query) ||
-      cat.slug === query.replace(/\s+/g, '-')
+  const normalizedQuery = query.replace(/\s+/g, '-');
+
+  const foundCategory = categories.find((cat) =>
+    cat.name.toLowerCase().includes(query) ||
+    cat.slug.includes(normalizedQuery)
   );
 
   if (foundCategory) {
