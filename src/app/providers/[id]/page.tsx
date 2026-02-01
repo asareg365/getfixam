@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import StarRating from '@/components/StarRating';
 import ProviderReviews from '@/components/ProviderReviews';
-import { Phone, MessageCircle, CheckCircle, MapPin, Home, Plus } from 'lucide-react';
+import { Phone, MessageCircle, CheckCircle, MapPin, Home, Plus, Star } from 'lucide-react';
 import PublicLayout from '@/components/layout/PublicLayout';
 
 export const dynamic = "force-dynamic";
@@ -39,7 +39,7 @@ export default async function ProviderDetailPage({ params }: { params: { id: str
   return (
     <PublicLayout>
         <div className="bg-background">
-        <div className="container mx-auto px-4 md:px-6 py-8 md:py-12">
+        <div className="container mx-auto px-4 md:px-6 py-8 md:py-12 pb-24 md:pb-12">
             <div className="flex items-center text-sm text-muted-foreground mb-6">
             <Link href="/" className="hover:text-primary transition-colors flex items-center">
                 <Home className="h-4 w-4 mr-2" />
@@ -74,12 +74,22 @@ export default async function ProviderDetailPage({ params }: { params: { id: str
                     <MapPin className="mr-1.5 h-4 w-4" />
                     <span>{provider.location.zone}, {provider.location.city}</span>
                     </div>
-                    {provider.verified && (
-                    <div className="flex items-center text-green-600 text-sm font-semibold mt-2">
-                        <CheckCircle className="mr-1.5 h-4 w-4" />
-                        <span>Verified Artisan</span>
+
+                     <div className="flex flex-wrap gap-2 mt-4">
+                        {provider.isFeatured && (
+                            <Badge className="border-transparent bg-yellow-500 text-white hover:bg-yellow-500/80">
+                                <Star className="mr-1.5 h-4 w-4" />
+                                Featured
+                            </Badge>
+                        )}
+                        {provider.verified && (
+                            <Badge variant="success">
+                                <CheckCircle className="mr-1.5 h-4 w-4" />
+                                Verified
+                            </Badge>
+                        )}
                     </div>
-                    )}
+                    
                     <div className="flex items-center mt-3">
                     <StarRating rating={provider.rating} size={20} />
                     <span className="ml-3 text-sm text-muted-foreground">
@@ -87,7 +97,7 @@ export default async function ProviderDetailPage({ params }: { params: { id: str
                     </span>
                     </div>
                     <Separator className="my-6" />
-                    <div className="space-y-3">
+                    <div className="space-y-3 hidden md:block">
                     <Button asChild className='w-full'>
                         <a href={`https://wa.me/233${provider.whatsapp.slice(1)}`} target="_blank" rel="noopener noreferrer">
                             <MessageCircle className="mr-2 h-4 w-4" />
@@ -118,6 +128,24 @@ export default async function ProviderDetailPage({ params }: { params: { id: str
             </div>
             </div>
         </div>
+        </div>
+
+        {/* Sticky Bottom Bar for Mobile */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background p-3 md:hidden">
+            <div className="container mx-auto flex items-center gap-3">
+            <Button asChild className="flex-1" variant="outline">
+                <a href={`tel:${provider.phone}`}>
+                <Phone className="mr-2 h-4 w-4" />
+                Call
+                </a>
+            </Button>
+            <Button asChild className="flex-1">
+                <a href={`https://wa.me/233${provider.whatsapp.slice(1)}`} target="_blank" rel="noopener noreferrer">
+                <MessageCircle className="mr-2 h-4 w-4" />
+                WhatsApp
+                </a>
+            </Button>
+            </div>
         </div>
     </PublicLayout>
   );
