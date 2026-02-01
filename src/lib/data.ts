@@ -10,6 +10,8 @@ export const CATEGORIES: Category[] = [
   { id: 'beautician', name: 'Beautician', slug: 'beautician', icon: 'Sparkles' },
   { id: 'fashion-designer', name: 'Fashion Designer', slug: 'fashion-designer', icon: 'Shirt' },
   { id: 'tv-repair', name: 'TV Repair', slug: 'tv-repair', icon: 'Tv2' },
+  { id: 'metal-fabrication', name: 'Metal Fabrication', slug: 'metal-fabrication', icon: 'Hammer' },
+  { id: 'masonry', name: 'Masonry', slug: 'masonry', icon: 'Hammer' },
 ];
 
 export const BEREKUM_ZONES = [
