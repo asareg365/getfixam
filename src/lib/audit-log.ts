@@ -5,7 +5,7 @@ import { admin } from './firebase-admin';
 type LogAdminActionParams = {
   adminEmail: string;
   action: string;
-  targetType: 'provider' | 'review' | 'service';
+  targetType: 'provider' | 'review' | 'service' | 'system';
   targetId: string;
   ipAddress: string;
   userAgent: string;

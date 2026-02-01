@@ -409,7 +409,8 @@
           "enum": [
             "provider",
             "review",
-            "service"
+            "service",
+            "system"
           ]
         },
         "targetId": {
@@ -457,6 +458,30 @@
         }
       },
       "required": ["count", "lastAttempt"]
+    },
+    "SystemSettings": {
+      "title": "System Settings",
+      "description": "Global settings for the application, like admin lockout.",
+      "type": "object",
+      "properties": {
+        "adminLocked": {
+          "type": "boolean",
+          "description": "If true, all admin access is disabled."
+        },
+        "reason": {
+          "type": "string",
+          "description": "The reason for the current setting state."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "Email of the admin who made the change."
+        }
+      },
+      "required": ["adminLocked", "updatedAt", "updatedBy"]
     }
   },
   "auth": {
@@ -538,8 +563,12 @@
         "$ref": "#/entities/AdminLoginAttempt"
       },
       "description": "Stores records of failed admin login attempts by IP address for rate limiting."
+    },
+    "/system_settings/{settingId}": {
+      "schema": {
+        "$ref": "#/entities/SystemSettings"
+      },
+      "description": "Stores global system settings. Document ID is typically 'admin'."
     }
   }
 }
-
-    

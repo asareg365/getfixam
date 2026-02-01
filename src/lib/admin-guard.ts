@@ -3,6 +3,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import jwt, { type JwtPayload } from 'jsonwebtoken';
+import { admin } from './firebase-admin';
 
 const SECRET = process.env.ADMIN_JWT_SECRET || 'this-is-a-super-secret-key-that-should-be-in-an-env-file';
 
@@ -12,6 +13,17 @@ type AdminUser = {
 }
 
 export async function requireAdmin(): Promise<AdminUser> {
+  // CRITICAL: Check for admin lockout first.
+  const systemSettingsRef = admin.firestore().collection('system_settings').doc('admin');
+  const systemSettingsSnap = await systemSettingsRef.get();
+
+  if (systemSettingsSnap.exists && systemSettingsSnap.data()?.adminLocked === true) {
+      const reason = systemSettingsSnap.data()?.reason || "No reason provided.";
+      // Instead of redirecting, we throw an error which will be caught by the error boundary.
+      // This is more appropriate for a system-wide lockout.
+      throw new Error(`Admin access is temporarily disabled. Reason: ${reason}`);
+  }
+
   const token = cookies().get('admin_token')?.value;
   if (!token) {
     redirect('/admin/login');
