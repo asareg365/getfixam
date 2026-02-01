@@ -7,12 +7,12 @@ import { Label } from './ui/label';
 import { ListFilter, X } from 'lucide-react';
 
 type FilterBarProps = {
-  onFilterChange: (filters: { zone: string; verified: boolean }) => void;
+  onFilterChange: (filters: { zone: string | undefined; verified: boolean }) => void;
   zones: string[];
 };
 
 export default function FilterBar({ onFilterChange, zones }: FilterBarProps) {
-  const [selectedZone, setSelectedZone] = useState('');
+  const [selectedZone, setSelectedZone] = useState<string | undefined>(undefined);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
 
   const handleApply = () => {
@@ -23,10 +23,10 @@ export default function FilterBar({ onFilterChange, zones }: FilterBarProps) {
   };
 
   const handleClear = () => {
-      setSelectedZone('');
+      setSelectedZone(undefined);
       setVerifiedOnly(false);
       onFilterChange({
-          zone: '',
+          zone: undefined,
           verified: false,
       });
   }

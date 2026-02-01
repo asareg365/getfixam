@@ -21,7 +21,7 @@ export default function ProviderList({ initialProviders, zones }: ProviderListPr
     setFilteredProviders(initialProviders);
   }, [initialProviders]);
 
-  const handleFilterChange = ({ zone, verified }: { zone: string; verified: boolean }) => {
+  const handleFilterChange = ({ zone, verified }: { zone: string | undefined; verified: boolean }) => {
     let providers = [...initialProviders];
 
     if (zone) {
