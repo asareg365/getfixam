@@ -110,7 +110,7 @@ export default function AuditLogsClient({ logs: initialLogs, uniqueActions, uniq
         <div className="flex flex-col md:flex-row gap-4 mb-6">
             <form onSubmit={handleSearch} className="flex-1">
                 <Input
-                    placeholder="Search by email or target ID..."
+                    placeholder="Search email, target, action, IP..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="max-w-sm"

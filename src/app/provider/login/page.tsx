@@ -97,28 +97,34 @@ export default function ProviderLoginPage() {
       toast({ title: 'Provider Found!', description: `An OTP has been sent to ${formattedNumber}.` });
     } catch (error: any) {
       console.error('SMS send error', error);
-       // This error is often due to project configuration.
-      if (error.code === 'auth/configuration-not-found') {
-        toast({
-          title: 'Configuration Error',
-          description: 'Phone Authentication may not be enabled in your Firebase project. Please check your Firebase Console settings.',
-          variant: 'destructive',
-          duration: 9000,
-        });
-      } else if (error.code === 'auth/operation-not-allowed') {
-        toast({
-            title: 'Configuration Error',
-            description: 'The phone number region is not enabled. Please enable it in your Firebase Console under Authentication > Settings > Phone number sign-in.',
-            variant: 'destructive',
-            duration: 9000,
-        });
-      } else {
-         toast({
-            title: 'Error sending OTP',
-            description: error.message || 'Please check the phone number and try again.',
-            variant: 'destructive',
-        });
+      let title = 'Error Sending OTP';
+      let description = error.message || 'An unknown error occurred. Please try again.';
+
+      switch (error.code) {
+        case 'auth/configuration-not-found':
+          title = 'Configuration Error';
+          description = 'Phone Authentication may not be enabled in your Firebase project. Please check your Firebase Console settings.';
+          break;
+        case 'auth/operation-not-allowed':
+           title = 'Configuration Error';
+           description = 'The phone number region is not enabled. Please enable it in your Firebase Console under Authentication > Settings > Phone number sign-in.';
+           break;
+        case 'auth/invalid-phone-number':
+            title = 'Invalid Phone Number';
+            description = 'The phone number you entered is not valid. Please check and re-enter it.';
+            break;
+        case 'auth/too-many-requests':
+            title = 'Too Many Attempts';
+            description = 'You have tried to send too many OTPs. Please wait a while before trying again.';
+            break;
       }
+      
+      toast({
+        title: title,
+        description: description,
+        variant: 'destructive',
+        duration: 9000,
+      });
     } finally {
       setLoading(false);
     }

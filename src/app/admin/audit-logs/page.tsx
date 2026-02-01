@@ -85,7 +85,9 @@ export default async function AuditLogsPage({
       const lowercasedSearch = search.toLowerCase();
       logs = logs.filter(log => 
         log.adminEmail.toLowerCase().includes(lowercasedSearch) ||
-        log.targetId.toLowerCase().includes(lowercasedSearch)
+        log.targetId.toLowerCase().includes(lowercasedSearch) ||
+        log.action.toLowerCase().includes(lowercasedSearch.replace(/ /g, '_')) ||
+        log.ipAddress.toLowerCase().includes(lowercasedSearch)
       );
   }
 
