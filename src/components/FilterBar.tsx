@@ -43,7 +43,6 @@ export default function FilterBar({ onFilterChange, zones }: FilterBarProps) {
                 <SelectValue placeholder="All Zones" />
                 </SelectTrigger>
                 <SelectContent>
-                <SelectItem value="">All Zones</SelectItem>
                 {zones.map((zone) => (
                     <SelectItem key={zone} value={zone}>
                     {zone}
