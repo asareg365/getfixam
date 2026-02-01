@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { checkProviderExists } from '../actions';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,12 +74,27 @@ export default function ProviderLoginPage() {
         return;
     }
     setLoading(true);
+
+    // First, check if a provider exists with this number
+    const { exists, message: checkError } = await checkProviderExists(phoneNumber);
+
+    if (!exists) {
+        toast({
+            title: 'Login Failed',
+            description: checkError || "An unknown error occurred.",
+            variant: "destructive"
+        });
+        setLoading(false);
+        return;
+    }
+    
+    // If provider exists, proceed with OTP
     try {
       const formattedNumber = formatPhoneNumber(phoneNumber);
       const confirmation = await signInWithPhoneNumber(auth, formattedNumber, window.recaptchaVerifier);
       setConfirmationResult(confirmation);
       setStep('otp');
-      toast({ title: 'OTP Sent!', description: `An SMS has been sent to ${formattedNumber}.` });
+      toast({ title: 'Provider Found!', description: `An OTP has been sent to ${formattedNumber}.` });
     } catch (error: any) {
       console.error('SMS send error', error);
        // This error is often due to project configuration.

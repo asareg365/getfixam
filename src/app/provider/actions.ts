@@ -4,6 +4,40 @@ import { admin } from '@/lib/firebase-admin';
 import type { Provider } from '@/lib/types';
 
 /**
+ * Securely checks if a provider account exists for a given phone number.
+ * This is a server action called from the login page before sending an OTP.
+ * @param rawPhoneNumber The phone number entered by the user, expected in `0...` format.
+ * @returns An object indicating if the provider exists and an optional error message.
+ */
+export async function checkProviderExists(rawPhoneNumber: string): Promise<{ exists: boolean; message: string | null }> {
+    if (!rawPhoneNumber || !/^0[0-9]{9}$/.test(rawPhoneNumber)) {
+        return { exists: false, message: 'Please enter a valid 10-digit Ghanaian phone number starting with 0.' };
+    }
+
+    try {
+        const providersRef = admin.firestore().collection('providers');
+        const q = providersRef.where('phone', '==', rawPhoneNumber).limit(1);
+        const providerSnap = await q.get();
+
+        if (providerSnap.empty) {
+            return { exists: false, message: "No provider account found for this phone number. Please list your business first." };
+        }
+        
+        const providerData = providerSnap.docs[0].data();
+        if (providerData.status === 'rejected' || providerData.status === 'suspended') {
+             return { exists: false, message: `Your account is currently ${providerData.status}. Please contact support for assistance.` };
+        }
+
+        return { exists: true, message: null };
+
+    } catch (e: any) {
+        console.error("Error in checkProviderExists:", e);
+        return { exists: false, message: 'An unexpected error occurred while checking for your account.' };
+    }
+}
+
+
+/**
  * Securely fetches provider data from the server and links their Firebase Auth UID on first login.
  * This is called from the client with the user's ID token.
  * @param idToken The Firebase ID token of the currently signed-in user.
