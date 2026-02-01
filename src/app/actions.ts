@@ -103,8 +103,10 @@ export async function addProviderAction(prevState: any, formData: FormData) {
         'beautician': ['provider5'],
         'fashion-designer': ['provider5', 'provider12'],
         'tv-repair': ['provider1', 'provider7'],
-        'metal-fabrication': ['provider4', 'provider6'],
+        'metal-fabricator': ['provider4', 'provider6'],
         'masonry': ['provider6', 'provider11'],
+        'tiller': ['provider6', 'provider11'],
+        'aluminum-fabricator': ['provider4', 'provider6'],
     };
 
     const allProviderImageIds = [
