@@ -2,7 +2,7 @@
 
 import { useFormStatus } from 'react-dom';
 import { useActionState, useEffect, useRef } from 'react';
-import { addProviderAction } from '@/app/actions';
+import { addProviderAction } from './actions';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

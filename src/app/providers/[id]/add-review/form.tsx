@@ -4,7 +4,7 @@ import { useFormStatus } from 'react-dom';
 import { useActionState, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
-import { addReviewAction } from '@/app/actions';
+import { addReviewAction } from '@/app/providers/actions';
 import type { Provider } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
