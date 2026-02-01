@@ -6,8 +6,7 @@ export async function searchAction(formData: FormData) {
   const query = (formData.get('query') as string)?.trim();
 
   if (!query) {
-    redirect('/');
-    return;
+    redirect('/category/all');
   }
 
   redirect(`/search?q=${encodeURIComponent(query)}`);
