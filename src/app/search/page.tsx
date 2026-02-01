@@ -9,7 +9,7 @@ type SearchPageProps = {
 };
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const query = searchParams.q?.toLowerCase().trim();
+  const query = (searchParams.q || '').toLowerCase().trim();
 
   if (!query) {
     return (
