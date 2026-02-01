@@ -7,7 +7,8 @@ type LogAdminActionParams = {
   action: string;
   targetType: 'provider' | 'review' | 'service';
   targetId: string;
-  details?: Record<string, any>;
+  ipAddress: string;
+  userAgent: string;
 }
 
 /**
@@ -15,7 +16,7 @@ type LogAdminActionParams = {
  * @param {LogAdminActionParams} params - The parameters for the log entry.
  */
 export async function logAdminAction(params: LogAdminActionParams) {
-  const { adminEmail, action, targetType, targetId, details } = params;
+  const { adminEmail, action, targetType, targetId, ipAddress, userAgent } = params;
   
   try {
     await admin.firestore().collection('auditLogs').add({
@@ -23,8 +24,9 @@ export async function logAdminAction(params: LogAdminActionParams) {
       action,
       targetType,
       targetId,
-      details: details || {},
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      ipAddress,
+      userAgent,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   } catch (error) {
     console.error("Failed to write to audit log:", error);
@@ -32,3 +34,5 @@ export async function logAdminAction(params: LogAdminActionParams) {
     // It's a background process.
   }
 }
+
+    

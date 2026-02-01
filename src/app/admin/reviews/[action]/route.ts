@@ -16,6 +16,8 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
       return NextResponse.json({ success: false, error: 'Review ID missing' }, { status: 400 });
     }
 
+    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || req.ip || 'unknown';
+    const userAgent = req.headers.get('user-agent') || 'unknown';
     const reviewRef = admin.firestore().collection('reviews').doc(reviewId);
     
     if (params.action === 'approve') {
@@ -57,11 +59,8 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
         action: 'approve',
         targetType: 'review',
         targetId: reviewId,
-        details: {
-          providerId: reviewData!.providerId,
-          providerName: providerData!.name ?? 'Unknown',
-          userName: reviewData!.userName,
-        }
+        ipAddress,
+        userAgent,
       });
 
     } else if (params.action === 'reject') {
@@ -79,17 +78,13 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
         rejectedBy: adminUser.email,
       });
 
-      const provider = await admin.firestore().collection('providers').doc(reviewData.providerId).get();
       await logAdminAction({
         adminEmail: adminUser.email!,
         action: 'reject',
         targetType: 'review',
         targetId: reviewId,
-        details: {
-          providerId: reviewData.providerId,
-          providerName: provider.exists ? provider.data()!.name : 'Unknown',
-          userName: reviewData.userName
-        }
+        ipAddress,
+        userAgent,
       });
 
     } else {
@@ -117,3 +112,5 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
     return NextResponse.json({ success: false, error: error.message || 'Unexpected error' }, { status: 500 });
   }
 }
+
+    

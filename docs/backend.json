@@ -415,11 +415,15 @@
         "targetId": {
           "type": "string"
         },
-        "details": {
-          "type": "object",
-          "description": "Additional human-readable context for the log entry."
+        "ipAddress": {
+          "type": "string",
+          "description": "The IP address of the admin who performed the action."
         },
-        "timestamp": {
+        "userAgent": {
+          "type": "string",
+          "description": "The user agent of the admin's browser."
+        },
+        "createdAt": {
           "type": "string",
           "format": "date-time"
         }
@@ -429,7 +433,7 @@
         "action",
         "targetType",
         "targetId",
-        "timestamp"
+        "createdAt"
       ]
     },
     "AdminLoginAttempt": {
@@ -537,3 +541,5 @@
     }
   }
 }
+
+    

@@ -11,11 +11,13 @@ interface AuditLog {
   adminEmail: string;
   action: string;
   target: string;
-  timestamp: string;
+  ipAddress: string;
+  userAgent: string;
+  createdAt: string;
 }
 
 async function getAuditLogs(): Promise<AuditLog[]> {
-  const snapshot = await admin.firestore().collection('auditLogs').orderBy('timestamp', 'desc').limit(100).get();
+  const snapshot = await admin.firestore().collection('auditLogs').orderBy('createdAt', 'desc').limit(100).get();
 
   if (snapshot.empty) {
     return [];
@@ -23,21 +25,18 @@ async function getAuditLogs(): Promise<AuditLog[]> {
 
   return snapshot.docs.map(doc => {
     const data = doc.data();
-    const timestampDate = data.timestamp?.toDate();
+    const createdAtDate = data.createdAt?.toDate();
     
-    let target = `ID: ${data.targetId}`;
-    if (data.targetType === 'provider') {
-      target = data.details?.providerName ? `Provider: ${data.details.providerName}` : `Provider ID: ${data.targetId}`;
-    } else if (data.targetType === 'review') {
-      target = data.details?.providerName ? `Review for ${data.details.providerName}` : `Review ID: ${data.targetId}`;
-    }
+    const target = `${data.targetType}: ${data.targetId}`;
 
     return {
       id: doc.id,
       adminEmail: data.adminEmail ?? 'N/A',
       action: data.action ?? 'N/A',
       target: target,
-      timestamp: timestampDate ? new Date(timestampDate).toLocaleString() : new Date(0).toLocaleString(),
+      ipAddress: data.ipAddress ?? 'N/A',
+      userAgent: data.userAgent ?? 'N/A',
+      createdAt: createdAtDate ? new Date(createdAtDate).toLocaleString() : 'N/A',
     };
   });
 }
@@ -63,7 +62,9 @@ export default async function AuditLogsPage() {
                     <TableHead>Admin</TableHead>
                     <TableHead>Action</TableHead>
                     <TableHead>Target</TableHead>
-                    <TableHead>Timestamp</TableHead>
+                    <TableHead>IP Address</TableHead>
+                    <TableHead className="w-[300px]">User Agent</TableHead>
+                    <TableHead>Date</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -80,13 +81,15 @@ export default async function AuditLogsPage() {
                                 {log.action}
                             </span>
                         </TableCell>
-                        <TableCell>{log.target}</TableCell>
-                        <TableCell>{log.timestamp}</TableCell>
+                        <TableCell className="font-mono text-xs">{log.target}</TableCell>
+                        <TableCell className="font-mono text-xs">{log.ipAddress}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground truncate">{log.userAgent}</TableCell>
+                        <TableCell>{log.createdAt}</TableCell>
                         </TableRow>
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                        <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
                             No audit logs found.
                         </TableCell>
                     </TableRow>
@@ -99,3 +102,5 @@ export default async function AuditLogsPage() {
     </div>
   );
 }
+
+    

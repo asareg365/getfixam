@@ -48,14 +48,16 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
     await providerRef.update(updateData);
 
     // Use the centralized audit log helper
+    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || req.ip || 'unknown';
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+
     await logAdminAction({
       adminEmail: adminEmail!,
       action: params.action,
       targetType: 'provider',
       targetId: providerId,
-      details: {
-        providerName: providerData.name ?? 'Unknown',
-      }
+      ipAddress,
+      userAgent,
     });
 
     return NextResponse.json({ success: true });
@@ -67,3 +69,5 @@ export async function POST(req: NextRequest, { params }: { params: { action: 'ap
     return NextResponse.json({ success: false, error: error.message || 'Unexpected error' }, { status: 500 });
   }
 }
+
+    
