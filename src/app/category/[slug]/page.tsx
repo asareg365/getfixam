@@ -1,11 +1,10 @@
-import { getCategories, getCategoryBySlug, getProviders } from '@/lib/services';
-import ProviderCard from '@/components/ProviderCard';
+import { getCategories, getCategoryBySlug, getProviders, getBerekumZones } from '@/lib/services';
 import { notFound } from 'next/navigation';
 import type { Provider } from '@/lib/types';
 import Link from 'next/link';
 import { Home } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import PublicLayout from '@/components/layout/PublicLayout';
+import ProviderList from './ProviderList';
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +37,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function CategoryPage({ params }: { params: { slug: string } }) {
   let categoryName = 'All Providers';
   let providers: Provider[] = [];
+  const zones = await getBerekumZones();
 
   try {
     if (params.slug === 'all') {
@@ -69,41 +69,12 @@ export default async function CategoryPage({ params }: { params: { slug: string 
             </div>
             <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">{categoryName}</h1>
             <p className="mt-2 text-lg text-foreground/80">
-              {providers.length > 0
-                ? `Browse through ${providers.length} ${categoryName.toLowerCase()} available in Berekum.`
-                : `No ${categoryName.toLowerCase()} found in this category yet. Check back soon!`}
+              Browse artisans and filter by location and verification status.
             </p>
           </div>
 
-          {/* Providers Grid */}
-          {providers.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-              {providers.map((provider) => (
-                <ProviderCard
-                  key={provider.id}
-                  provider={{
-                    ...provider,
-                    name: provider.name ?? 'Unknown',
-                    phone: provider.phone ?? '-',
-                    category: provider.category ?? 'N/A',
-                    rating: provider.rating ?? 0,
-                    reviewCount: provider.reviewCount ?? 0,
-                    imageId: provider.imageId ?? '',
-                  }}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-20 border-2 border-dashed rounded-lg">
-              <p className="text-xl font-semibold">Nothing to see here... yet!</p>
-              <p className="text-muted-foreground mt-2">
-                Be the first to list your business in this category.
-              </p>
-              <Button asChild className="mt-6">
-                <Link href="/add-provider">List Your Business</Link>
-              </Button>
-            </div>
-          )}
+          <ProviderList initialProviders={providers} zones={zones} />
+
         </div>
       </div>
     </PublicLayout>
