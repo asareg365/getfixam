@@ -1,5 +1,6 @@
 
 
+
 import { collection, getDocs, query, where, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { admin } from './firebase-admin';
@@ -74,6 +75,7 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
             serviceId: data.serviceId,
             phone: data.phone,
             whatsapp: data.whatsapp,
+            digitalAddress: data.digitalAddress ?? '',
             location: data.location,
             status: data.status,
             verified: data.verified,
@@ -122,6 +124,7 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
         serviceId: data.serviceId,
         phone: data.phone,
         whatsapp: data.whatsapp,
+        digitalAddress: data.digitalAddress ?? '',
         location: data.location,
         status: data.status,
         verified: data.verified,
@@ -170,7 +173,7 @@ export async function getReviewsByProviderId(providerId: string): Promise<Review
  * Adds a new provider to Firestore with 'pending' status. Uses Admin SDK.
  */
 export async function addProvider(
-    data: { name: string; serviceId: string; phone: string; whatsapp: string; location: object; imageId: string; }
+    data: { name: string; serviceId: string; phone: string; whatsapp: string; location: object; imageId: string; digitalAddress: string; }
 ) {
     await admin.firestore().collection('providers').add({
       name: data.name,
@@ -179,6 +182,7 @@ export async function addProvider(
       location: data.location,
       serviceId: data.serviceId,
       imageId: data.imageId,
+      digitalAddress: data.digitalAddress,
       status: "pending",
       verified: false,
       isFeatured: false,

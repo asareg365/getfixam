@@ -85,6 +85,10 @@
                 "type": "string",
                 "description": "The contact WhatsApp number."
             },
+            "digitalAddress": {
+                "type": "string",
+                "description": "The GhanaPost GPS digital address of the provider."
+            },
             "serviceId": {
                 "type": "string",
                 "description": "The ID of the service they provide, linking to the 'services' collection."
@@ -166,7 +170,7 @@
                 "description": "Email of the admin who suspended the provider."
             }
         },
-        "required": ["name", "phone", "serviceId", "location", "status", "verified", "createdAt"]
+        "required": ["name", "phone", "serviceId", "location", "status", "verified", "createdAt", "digitalAddress"]
     },
     "Location": {
       "title": "Location",

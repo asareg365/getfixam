@@ -27,6 +27,7 @@ export type Provider = {
   serviceId: string;
   phone: string;
   whatsapp: string;
+  digitalAddress: string;
   location: {
     region: string;
     city: string;

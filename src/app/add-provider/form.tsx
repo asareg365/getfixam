@@ -114,6 +114,12 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
             {state.errors?.zone && <p className="text-sm text-destructive">{state.errors.zone}</p>}
         </div>
 
+        <div className="space-y-2">
+            <Label htmlFor="digitalAddress">Digital Address</Label>
+            <Input id="digitalAddress" name="digitalAddress" placeholder="e.g., BK-001-0101" />
+            {state.errors?.digitalAddress && <p className="text-sm text-destructive">{state.errors.digitalAddress}</p>}
+        </div>
+
         <SubmitButton />
         </form>
         )}

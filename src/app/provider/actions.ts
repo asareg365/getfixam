@@ -92,6 +92,7 @@ export async function getProviderDataAndLinkAccount(idToken: string): Promise<{ 
             name: providerData.name ?? 'Unknown',
             phone: providerData.phone ?? '',
             whatsapp: providerData.whatsapp ?? '',
+            digitalAddress: providerData.digitalAddress ?? '',
             location: providerData.location ?? { region: '', city: '', zone: ''},
             status: providerData.status ?? 'pending',
             verified: providerData.verified ?? false,

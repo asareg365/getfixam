@@ -87,6 +87,7 @@ export function ProvidersTable({
                 <TableCell className="font-medium">
                   <div>{p.name ?? 'Unnamed'}</div>
                   <div className="text-xs text-muted-foreground">{p.phone}</div>
+                  <div className="text-xs text-muted-foreground font-mono">{p.digitalAddress}</div>
                 </TableCell>
 
                 <TableCell>{p.category ?? 'N/A'}</TableCell>

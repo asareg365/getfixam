@@ -1,4 +1,5 @@
 
+
 import { requireAdmin } from '@/lib/admin-guard';
 import { admin } from '@/lib/firebase-admin';
 import type { Provider, Service } from '@/lib/types';
@@ -63,6 +64,7 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
       name: data.name ?? 'Unknown',
       phone: data.phone ?? '',
       whatsapp: data.whatsapp ?? '',
+      digitalAddress: data.digitalAddress ?? '',
       location: data.location ?? { region: '', city: '', zone: ''},
       status: data.status ?? 'pending',
       verified: data.verified ?? false,

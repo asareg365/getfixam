@@ -74,6 +74,7 @@ const providerSchema = z.object({
   phone: z.string().regex(/^0[0-9]{9}$/, 'Enter a valid 10-digit phone number.'),
   whatsapp: z.string().regex(/^0[0-9]{9}$/, 'Enter a valid 10-digit phone number.'),
   zone: z.string().min(1, 'Please select a zone.'),
+  digitalAddress: z.string().min(6, 'Please enter a valid digital address.'),
 });
 
 export async function addProviderAction(prevState: any, formData: FormData) {
@@ -85,7 +86,7 @@ export async function addProviderAction(prevState: any, formData: FormData) {
         };
     }
     
-    const { name, serviceId, phone, whatsapp, zone } = validatedFields.data;
+    const { name, serviceId, phone, whatsapp, zone, digitalAddress } = validatedFields.data;
 
     // Fetch categories to find the slug for the selected serviceId
     const categories = await getCategories();
@@ -134,6 +135,7 @@ export async function addProviderAction(prevState: any, formData: FormData) {
                 city: 'Berekum',
                 zone: zone,
             },
+            digitalAddress,
             verified: false,
             status: 'pending',
             imageId: imageId,
