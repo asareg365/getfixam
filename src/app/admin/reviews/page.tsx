@@ -20,7 +20,11 @@ async function getReviewCounts() {
     counts[status] = snapshot.data().count;
     total += counts[status];
   }
-  counts['all'] = total;
+  
+  // Get the total count more efficiently
+  const totalSnapshot = await admin.firestore().collection('reviews').count().get();
+  counts['all'] = totalSnapshot.data().count;
+  
   return counts;
 }
 
@@ -56,15 +60,25 @@ async function getReviews(status?: string): Promise<ReviewWithProvider[]> {
   // 2. Get unique provider IDs from reviews
   const providerIds = [...new Set(reviews.map(r => r.providerId))];
 
-  // 3. Fetch corresponding providers
+  // 3. Fetch corresponding providers in batches to avoid 30-item limit
   const providersMap = new Map<string, string>();
   if (providerIds.length > 0) {
-    // Firestore 'in' query is limited to 30 values.
-    // For a more robust solution with many providers, this would need batching.
-    const providersSnap = await admin.firestore().collection('providers').where(admin.firestore.FieldPath.documentId(), 'in', providerIds).get();
-    providersSnap.forEach(doc => {
-      providersMap.set(doc.id, doc.data().name ?? 'Unknown Provider');
-    });
+      const MAX_IN_CLAUSE_SIZE = 30;
+      const providerPromises = [];
+
+      for (let i = 0; i < providerIds.length; i += MAX_IN_CLAUSE_SIZE) {
+          const batchIds = providerIds.slice(i, i + MAX_IN_CLAUSE_SIZE);
+          providerPromises.push(
+              admin.firestore().collection('providers').where(admin.firestore.FieldPath.documentId(), 'in', batchIds).get()
+          );
+      }
+
+      const providerSnaps = await Promise.all(providerPromises);
+      for (const snap of providerSnaps) {
+          snap.forEach(doc => {
+              providersMap.set(doc.id, doc.data().name ?? 'Unknown Provider');
+          });
+      }
   }
 
 
