@@ -47,6 +47,8 @@ export type Provider = {
   rejectedBy?: string;
   suspendedAt?: string;
   suspendedBy?: string;
+  loginPinHash?: string;
+  loginPinCreatedAt?: string;
 };
 
 export type Review = {

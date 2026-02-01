@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button';
 import type { Provider } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Copy } from 'lucide-react';
 
 interface ProvidersTableProps {
   providers: Provider[];
@@ -25,6 +27,7 @@ export function ProvidersTable({
     const router = useRouter();
     const [loadingIds, setLoadingIds] = useState<string[]>([]);
     const { toast } = useToast();
+    const [showPinInfo, setShowPinInfo] = useState<{ providerName: string, pin: string } | null>(null);
 
     const handleAction = async (providerId: string, action: 'approve' | 'reject' | 'suspend') => {
         try {
@@ -42,6 +45,10 @@ export function ProvidersTable({
 
             if (result.success) {
                 toast({ title: `Provider ${action}d successfully!`, variant: 'success' });
+                if (action === 'approve' && result.pin) {
+                    const provider = providers.find(p => p.id === providerId);
+                    setShowPinInfo({ providerName: provider?.name || 'the provider', pin: result.pin });
+                }
                 router.refresh();
             } else {
                 toast({ title: `Failed to ${action} provider`, description: result.error, variant: 'destructive' });
@@ -52,6 +59,13 @@ export function ProvidersTable({
             setLoadingIds(prev => prev.filter(id => id !== providerId));
         }
     };
+    
+    const copyPinToClipboard = () => {
+        if (showPinInfo) {
+            navigator.clipboard.writeText(showPinInfo.pin);
+            toast({ title: "PIN Copied!", description: "The PIN has been copied to your clipboard." });
+        }
+    }
 
 
   if (!providers || providers.length === 0) {
@@ -63,6 +77,7 @@ export function ProvidersTable({
   }
 
   return (
+    <>
     <div className="border rounded-lg">
       <Table>
         <TableHeader>
@@ -164,7 +179,7 @@ export function ProvidersTable({
                             onClick={() => handleAction(p.id, 'approve')}
                             disabled={loadingIds.includes(p.id)}
                         >
-                            Approve
+                            Re-Approve
                         </Button>
                     )}
                 </TableCell>
@@ -174,5 +189,26 @@ export function ProvidersTable({
         </TableBody>
       </Table>
     </div>
+    
+     <AlertDialog open={!!showPinInfo} onOpenChange={(open) => !open && setShowPinInfo(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Provider Approved!</AlertDialogTitle>
+                <AlertDialogDescription>
+                    {showPinInfo?.providerName} has been approved. Please share their one-time login PIN with them securely.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="my-4 p-4 bg-muted rounded-lg flex items-center justify-between">
+                <span className="text-2xl font-bold font-mono tracking-widest text-primary">{showPinInfo?.pin}</span>
+                <Button variant="ghost" size="icon" onClick={copyPinToClipboard}>
+                    <Copy className="h-5 w-5" />
+                </Button>
+            </div>
+            <AlertDialogFooter>
+                <AlertDialogAction onClick={() => setShowPinInfo(null)}>Got it, close</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

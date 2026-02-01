@@ -4,6 +4,7 @@ import { admin } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-guard';
 import { logAdminAction } from '@/lib/audit-log';
+import bcrypt from 'bcrypt';
 
 type ActionParam = 'approve' | 'reject' | 'suspend';
 
@@ -26,15 +27,27 @@ export async function POST(req: NextRequest, { params }: { params: { action: Act
     }
 
     const updateData: any = {};
+    let pin: string | null = null;
     const adminEmail = adminUser.email;
     let actionLog: string;
 
     if (params.action === 'approve') {
+      // Only generate a PIN if the provider is not already approved.
+      if (providerData.status !== 'approved') {
+        pin = Math.floor(100000 + Math.random() * 900000).toString();
+        const saltRounds = 10;
+        const pinHash = await bcrypt.hash(pin, saltRounds);
+
+        updateData.loginPinHash = pinHash;
+        updateData.loginPinCreatedAt = admin.firestore.FieldValue.serverTimestamp();
+      }
+
       updateData.status = 'approved';
       updateData.verified = true;
       updateData.approvedAt = admin.firestore.FieldValue.serverTimestamp();
       updateData.approvedBy = adminEmail;
       actionLog = 'PROVIDER_APPROVED';
+
     } else if (params.action === 'reject') {
       updateData.status = 'rejected';
       updateData.verified = false;
@@ -66,7 +79,7 @@ export async function POST(req: NextRequest, { params }: { params: { action: Act
       userAgent,
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, pin });
   } catch (error: any) {
     console.error(`Error processing action: ${params.action}`, error);
      if (error.message.includes('Invalid admin session')) {

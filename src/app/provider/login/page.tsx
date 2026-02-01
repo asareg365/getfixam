@@ -1,74 +1,30 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
+import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { checkProviderExists } from '../actions';
+import { checkProviderForPinLogin } from '../actions';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Terminal } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Loader2 } from 'lucide-react';
 
-// This is required to extend the window object with our verifier
-// in a type-safe way.
-declare global {
-  interface Window {
-    recaptchaVerifier: RecaptchaVerifier;
-  }
-}
-
-// Helper for formatting phone number
-const formatPhoneNumber = (phone: string) => {
-  if (phone.startsWith('+233')) return phone;
-  if (phone.startsWith('0')) return `+233${phone.substring(1)}`;
-  return `+233${phone}`;
-};
 
 export default function ProviderLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [otp, setOtp] = useState('');
+  const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
-  const [isRecaptchaReady, setIsRecaptchaReady] = useState(false);
+  const [step, setStep] = useState<'phone' | 'pin'>('phone');
 
-  useEffect(() => {
-    // This ensures the reCAPTCHA verifier is initialized only once,
-    // and only on the client-side.
-    if (typeof window !== 'undefined' && !window.recaptchaVerifier) {
-      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-      });
-      window.recaptchaVerifier = verifier;
-
-      // Render the reCAPTCHA and update state when it's ready.
-      verifier.render()
-        .then(() => setIsRecaptchaReady(true))
-        .catch((error) => {
-          console.error("reCAPTCHA render error:", error);
-          toast({
-            title: "reCAPTCHA Error",
-            description: "Could not initialize security check. Please refresh the page.",
-            variant: "destructive"
-          });
-        });
-    } else if (typeof window !== 'undefined' && window.recaptchaVerifier) {
-        // If it's already there, we assume it's ready.
-        // This handles scenarios like hot-reloading in development.
-        setIsRecaptchaReady(true);
-    }
-  }, [toast]);
-
-  const handleSendOtp = async (e: React.FormEvent) => {
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phoneNumber) {
         toast({ title: 'Error', description: 'Please enter a phone number.', variant: 'destructive'});
@@ -76,74 +32,54 @@ export default function ProviderLoginPage() {
     }
     setLoading(true);
 
-    // First, check if a provider exists with this number
-    const { exists, message: checkError } = await checkProviderExists(phoneNumber);
+    const { canLogin, message } = await checkProviderForPinLogin(phoneNumber);
 
-    if (!exists) {
+    if (canLogin) {
+        setStep('pin');
+        toast({ title: 'Account Found!', description: `Please enter your one-time PIN.` });
+    } else {
         toast({
-            title: 'Login Failed',
-            description: checkError || "An unknown error occurred.",
+            title: 'Login Unavailable',
+            description: message || "An unknown error occurred.",
             variant: "destructive"
         });
-        setLoading(false);
-        return;
     }
     
-    // If provider exists, proceed with OTP
-    try {
-      const formattedNumber = formatPhoneNumber(phoneNumber);
-      const confirmation = await signInWithPhoneNumber(auth, formattedNumber, window.recaptchaVerifier);
-      setConfirmationResult(confirmation);
-      setStep('otp');
-      toast({ title: 'Provider Found!', description: `An OTP has been sent to ${formattedNumber}.` });
-    } catch (error: any) {
-      console.error('SMS send error', error);
-      let title = 'Error Sending OTP';
-      let description = error.message || 'An unknown error occurred. Please try again.';
-
-      switch (error.code) {
-        case 'auth/configuration-not-found':
-          title = 'Configuration Error';
-          description = 'Phone Authentication may not be enabled in your Firebase project. Please check your Firebase Console settings.';
-          break;
-        case 'auth/operation-not-allowed':
-           title = 'Configuration Error';
-           description = 'The phone number region is not enabled. Please enable it in your Firebase Console under Authentication > Settings > Phone number sign-in.';
-           break;
-        case 'auth/invalid-phone-number':
-            title = 'Invalid Phone Number';
-            description = 'The phone number you entered is not valid. Please check and re-enter it.';
-            break;
-        case 'auth/too-many-requests':
-            title = 'Too Many Attempts';
-            description = 'You have tried to send too many OTPs. Please wait a while before trying again.';
-            break;
-      }
-      
-      toast({
-        title: title,
-        description: description,
-        variant: 'destructive',
-        duration: 9000,
-      });
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
+  const handlePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otp || !confirmationResult) return;
+    if (!pin) {
+        toast({ title: 'Error', description: 'Please enter your PIN.', variant: 'destructive'});
+        return;
+    }
     setLoading(true);
+
     try {
-      await confirmationResult.confirm(otp);
+      const res = await fetch('/api/provider/pin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneNumber, pin }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || 'PIN verification failed.');
+      }
+      
+      // Sign in with the custom token from the server
+      await signInWithCustomToken(auth, result.token);
+      
       toast({ title: 'Login Successful!', description: 'Redirecting to your dashboard...' });
       router.push('/provider/dashboard');
-    } catch (error: any)      {
-      console.error('OTP verification error', error);
+
+    } catch (error: any) {
+      console.error('PIN login error', error);
       toast({
         title: 'Login Failed',
-        description: 'The OTP is incorrect. Please try again.',
+        description: error.message || 'The PIN may be incorrect. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -153,7 +89,6 @@ export default function ProviderLoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-secondary/30">
-      <div id="recaptcha-container"></div>
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center space-y-4">
           <Link href="/" className="flex justify-center items-center space-x-2">
@@ -164,23 +99,14 @@ export default function ProviderLoginPage() {
             <CardTitle className="text-2xl font-headline">Provider Login</CardTitle>
             <CardDescription>
                 {step === 'phone'
-                ? 'Enter your phone number to receive an OTP.'
-                : 'Enter the OTP sent to your phone.'}
+                ? 'Enter your registered phone number.'
+                : 'Enter the one-time PIN provided by the admin.'}
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
-          {process.env.NODE_ENV === 'development' && (
-            <Alert className="mb-4 text-left">
-                <Terminal className="h-4 w-4" />
-                <AlertTitle>Developer Tip</AlertTitle>
-                <AlertDescription>
-                    SMS messages may not arrive in development. For testing, go to your Firebase Console → Authentication → Settings → Phone numbers and add a test phone number (e.g., +1 650-555-3434) and code (e.g., 123456).
-                </AlertDescription>
-            </Alert>
-          )}
           {step === 'phone' ? (
-            <form onSubmit={handleSendOtp} className="space-y-4">
+            <form onSubmit={handlePhoneSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
@@ -190,26 +116,28 @@ export default function ProviderLoginPage() {
                   required
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  disabled={loading || !isRecaptchaReady}
+                  disabled={loading}
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading || !isRecaptchaReady}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {loading ? 'Sending...' : !isRecaptchaReady ? 'Initializing...' : 'Send OTP'}
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Continue
               </Button>
             </form>
           ) : (
-            <form onSubmit={handleVerifyOtp} className="space-y-4">
+            <form onSubmit={handlePinSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="otp">OTP Code</Label>
+                <Label htmlFor="pin">One-Time PIN</Label>
                 <Input
-                  id="otp"
+                  id="pin"
                   type="text"
-                  placeholder="123456"
+                  inputMode='numeric'
+                  placeholder="_ _ _ _ _ _"
                   required
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value)}
                   disabled={loading}
+                  maxLength={6}
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>

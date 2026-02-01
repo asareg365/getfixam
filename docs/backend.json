@@ -168,6 +168,15 @@
             "suspendedBy": {
                 "type": "string",
                 "description": "Email of the admin who suspended the provider."
+            },
+            "loginPinHash": {
+              "type": "string",
+              "description": "The hashed one-time login PIN for the provider's first login."
+            },
+            "loginPinCreatedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The timestamp when the login PIN was generated."
             }
         },
         "required": ["name", "phone", "serviceId", "location", "status", "verified", "createdAt", "digitalAddress"]

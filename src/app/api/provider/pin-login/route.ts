@@ -1,0 +1,78 @@
+'use server';
+
+import { NextRequest, NextResponse } from 'next/server';
+import { admin } from '@/lib/firebase-admin';
+import bcrypt from 'bcrypt';
+
+const formatPhoneNumber = (phone: string) => {
+  if (phone.startsWith('+233')) return phone;
+  if (phone.startsWith('0')) return `+233${phone.substring(1)}`;
+  return `+233${phone}`;
+};
+
+export async function POST(req: NextRequest) {
+  try {
+    const { phone: rawPhone, pin } = await req.json();
+
+    if (!rawPhone || !pin) {
+      return NextResponse.json({ success: false, message: 'Phone number and PIN are required.' }, { status: 400 });
+    }
+    
+    // Find provider by phone number
+    const providersRef = admin.firestore().collection('providers');
+    const q = providersRef.where('phone', '==', rawPhone).limit(1);
+    const providerSnap = await q.get();
+
+    if (providerSnap.empty) {
+        return NextResponse.json({ success: false, message: 'Account not found for this phone number.' }, { status: 404 });
+    }
+
+    const providerDoc = providerSnap.docs[0];
+    const providerData = providerDoc.data();
+    
+    // Security checks
+    if (providerData.status !== 'approved') {
+        return NextResponse.json({ success: false, message: `Your account is currently ${providerData.status}.` }, { status: 403 });
+    }
+    if (!providerData.loginPinHash) {
+        return NextResponse.json({ success: false, message: 'This account is not eligible for PIN login, or the PIN has already been used.' }, { status: 403 });
+    }
+
+    // Verify PIN
+    const pinMatch = await bcrypt.compare(pin, providerData.loginPinHash);
+
+    if (!pinMatch) {
+        return NextResponse.json({ success: false, message: 'The PIN you entered is incorrect.' }, { status: 401 });
+    }
+    
+    // PIN is correct. Now, create a custom token.
+    const formattedPhone = formatPhoneNumber(rawPhone);
+    let user;
+
+    // Get or create the Firebase Auth user associated with this phone number.
+    try {
+        user = await admin.auth().getUserByPhoneNumber(formattedPhone);
+    } catch (error: any) {
+        if (error.code === 'auth/user-not-found') {
+            user = await admin.auth().createUser({ phoneNumber: formattedPhone });
+        } else {
+            throw error; // Re-throw other errors
+        }
+    }
+
+    const customToken = await admin.auth().createCustomToken(user.uid);
+
+    // After successful PIN verification, nullify the PIN and link the auth UID
+    await providerDoc.ref.update({
+        loginPinHash: null,
+        loginPinCreatedAt: null, // Also clear the creation date
+        authUid: user.uid
+    });
+    
+    return NextResponse.json({ success: true, token: customToken });
+
+  } catch (error: any) {
+    console.error('PIN Login API error:', error);
+    return NextResponse.json({ message: 'An unexpected server error occurred.' }, { status: 500 });
+  }
+}
