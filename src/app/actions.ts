@@ -85,12 +85,43 @@ export async function addProviderAction(prevState: any, formData: FormData) {
         };
     }
     
-    // TODO: Replace with actual image upload logic
-    const randomProviderImageId = `provider${Math.floor(Math.random() * 12) + 1}`;
+    const { name, serviceId, phone, whatsapp, zone } = validatedFields.data;
+
+    // Fetch categories to find the slug for the selected serviceId
+    const categories = await getCategories();
+    const category = categories.find(cat => cat.id === serviceId);
+    const slug = category?.slug;
+
+    // Map service slugs to relevant placeholder image IDs
+    const serviceToImageMap: { [key: string]: string[] } = {
+        'plumber': ['provider2', 'provider8'],
+        'electrician': ['provider1', 'provider7'],
+        'phone-repair': ['provider3', 'provider9'],
+        'mechanic': ['provider4', 'provider10'],
+        'carpenter': ['provider6', 'provider11'],
+        'hairdresser': ['provider5', 'provider12'],
+        'beautician': ['provider5'],
+        'fashion-designer': ['provider5', 'provider12'],
+        'tv-repair': ['provider1', 'provider7'],
+        'metal-fabrication': ['provider4', 'provider6'],
+        'masonry': ['provider6', 'provider11'],
+    };
+
+    const allProviderImageIds = [
+        'provider1', 'provider2', 'provider3', 'provider4', 'provider5', 'provider6', 
+        'provider7', 'provider8', 'provider9', 'provider10', 'provider11', 'provider12'
+    ];
+
+    let imageId;
+    if (slug && serviceToImageMap[slug]) {
+        const possibleImages = serviceToImageMap[slug];
+        imageId = possibleImages[Math.floor(Math.random() * possibleImages.length)];
+    } else {
+        // Fallback for services without specific images or if slug not found
+        imageId = allProviderImageIds[Math.floor(Math.random() * allProviderImageIds.length)];
+    }
 
     try {
-        const { name, serviceId, phone, whatsapp, zone } = validatedFields.data;
-        
         await dbAddProvider({
             name,
             serviceId,
@@ -103,7 +134,7 @@ export async function addProviderAction(prevState: any, formData: FormData) {
             },
             verified: false,
             status: 'pending',
-            imageId: randomProviderImageId,
+            imageId: imageId,
         });
 
         revalidatePath('/');
