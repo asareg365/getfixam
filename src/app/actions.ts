@@ -27,7 +27,7 @@ export async function searchAction(formData: FormData) {
   const providers = await getProviders();
   const foundProvider = providers.find((p) =>
     p.name.toLowerCase().includes(query) ||
-    p.category.toLowerCase().includes(query)
+    (p.category && p.category.toLowerCase() !== 'n/a' && p.category.toLowerCase().includes(query))
   );
 
   if (foundProvider) {
