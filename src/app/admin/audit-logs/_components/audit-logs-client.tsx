@@ -87,13 +87,13 @@ export default function AuditLogsClient({ logs: initialLogs, uniqueActions, uniq
     }
     params.set('page', '1'); // Reset to first page
     router.push(`/admin/audit-logs?${params.toString()}`, { scroll: false });
-  }, [date]);
+  }, [date, router, searchParams]);
 
 
   const ActionBadge = ({ action }: { action: string }) => {
      let variant: "default" | "destructive" | "success" | "secondary" | "outline" | null | undefined = "secondary";
-     if (action.includes('APPROVE')) variant = 'success';
-     if (action.includes('REJECT') || action.includes('SUSPEND') || action.includes('DELETE') || action.includes('FAILED')) variant = 'destructive';
+     if (action.includes('APPROVE') || action.includes('UNLOCKED')) variant = 'success';
+     if (action.includes('REJECT') || action.includes('SUSPEND') || action.includes('DELETE') || action.includes('FAILED') || action.includes('LOCKED')) variant = 'destructive';
      if (action.includes('ADD') || action.includes('CREATE') || action.includes('SUCCESS')) variant = 'default';
      return <Badge variant={variant}>{action.replace(/_/g, ' ')}</Badge>
   }
@@ -116,14 +116,14 @@ export default function AuditLogsClient({ logs: initialLogs, uniqueActions, uniq
                     className="max-w-sm"
                 />
             </form>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap items-center gap-2">
                  <Popover>
                     <PopoverTrigger asChild>
                     <Button
                         id="date"
                         variant={"outline"}
                         className={cn(
-                        "w-[240px] justify-start text-left font-normal",
+                        "w-full sm:w-[240px] justify-start text-left font-normal",
                         !date && "text-muted-foreground"
                         )}
                     >
@@ -154,7 +154,7 @@ export default function AuditLogsClient({ logs: initialLogs, uniqueActions, uniq
                     </PopoverContent>
                 </Popover>
                 <Select value={searchParams.get('targetType') || 'all'} onValueChange={(value) => handleFilterChange('targetType', value)}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-full sm:w-[180px]">
                         <SelectValue placeholder="Filter by Target Type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -163,7 +163,7 @@ export default function AuditLogsClient({ logs: initialLogs, uniqueActions, uniq
                     </SelectContent>
                 </Select>
                  <Select value={searchParams.get('action') || 'all'} onValueChange={(value) => handleFilterChange('action', value)}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-full sm:w-[180px]">
                         <SelectValue placeholder="Filter by Action" />
                     </SelectTrigger>
                     <SelectContent>
