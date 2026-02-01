@@ -23,10 +23,11 @@ export async function searchAction(formData: FormData) {
     return;
   }
 
-  // If no category, search providers by name
+  // If no category, search providers by name or service category
   const providers = await getProviders();
   const foundProvider = providers.find((p) =>
-    p.name.toLowerCase().includes(query)
+    p.name.toLowerCase().includes(query) ||
+    p.category.toLowerCase().includes(query)
   );
 
   if (foundProvider) {
