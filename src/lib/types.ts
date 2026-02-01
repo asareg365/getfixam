@@ -112,4 +112,15 @@ export type ReassignmentLog = {
   timestamp: string;
 };
 
+export type ProviderLog = {
+  id: string;
+  providerId: string;
+  action: string;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+}
+    
+
+
     

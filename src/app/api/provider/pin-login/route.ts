@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { admin } from '@/lib/firebase-admin';
 import bcrypt from 'bcrypt';
+import { logProviderAction } from '@/lib/audit-log';
 
 const formatPhoneNumber = (phone: string) => {
   if (phone.startsWith('+233')) return phone;
@@ -69,6 +70,16 @@ export async function POST(req: NextRequest) {
         authUid: user.uid
     });
     
+    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || req.ip || 'unknown';
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+
+    await logProviderAction({
+        providerId: providerDoc.id,
+        action: 'PROVIDER_LOGIN_SUCCESS',
+        ipAddress,
+        userAgent,
+    });
+    
     return NextResponse.json({ success: true, token: customToken });
 
   } catch (error: any) {
@@ -76,3 +87,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'An unexpected server error occurred.' }, { status: 500 });
   }
 }
+
+    

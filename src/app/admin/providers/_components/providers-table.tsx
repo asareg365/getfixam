@@ -14,8 +14,8 @@ import { Button } from '@/components/ui/button';
 import type { Provider } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Copy } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Copy, RefreshCw } from 'lucide-react';
 
 interface ProvidersTableProps {
   providers: Provider[];
@@ -57,6 +57,35 @@ export function ProvidersTable({
             toast({ title: 'Error', description: error.message || 'Unexpected error', variant: 'destructive' });
         } finally {
             setLoadingIds(prev => prev.filter(id => id !== providerId));
+        }
+    };
+    
+     const handleResetPin = async (providerId: string) => {
+        try {
+            setLoadingIds(prev => [...prev, providerId]);
+
+            const formData = new FormData();
+            formData.set('providerId', providerId);
+            
+            const res = await fetch(`/api/admin/providers/reset-pin`, {
+                method: 'POST',
+                body: formData,
+            });
+            
+            const result = await res.json();
+
+            if (result.success) {
+                const provider = providers.find(p => p.id === providerId);
+                setShowPinInfo({ providerName: provider?.name || 'the provider', pin: result.pin });
+                toast({ title: "PIN has been reset!", variant: 'success' });
+                router.refresh();
+            } else {
+                 toast({ title: `Failed to reset PIN`, description: result.error, variant: 'destructive' });
+            }
+        } catch (error: any) {
+            toast({ title: 'Error', description: error.message || 'Unexpected error', variant: 'destructive' });
+        } finally {
+             setLoadingIds(prev => prev.filter(id => id !== providerId));
         }
     };
     
@@ -163,6 +192,26 @@ export function ProvidersTable({
                         </>
                     )}
                     {p.status === 'approved' && (
+                        <>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="secondary" disabled={loadingIds.includes(p.id)}>
+                                    <RefreshCw className="h-4 w-4" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Reset Provider PIN?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will generate a new one-time PIN for {p.name}. The provider's old PIN (if unused) will no longer work. Are you sure?
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleResetPin(p.id)}>Yes, Reset PIN</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                          <Button
                             size="sm"
                             variant="destructive"
@@ -171,6 +220,7 @@ export function ProvidersTable({
                         >
                             Suspend
                         </Button>
+                        </>
                     )}
                      {(p.status === 'rejected' || p.status === 'suspended') && (
                         <Button
@@ -193,9 +243,9 @@ export function ProvidersTable({
      <AlertDialog open={!!showPinInfo} onOpenChange={(open) => !open && setShowPinInfo(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Provider Approved!</AlertDialogTitle>
+                <AlertDialogTitle>Provider Action Complete!</AlertDialogTitle>
                 <AlertDialogDescription>
-                    {showPinInfo?.providerName} has been approved. Please share their one-time login PIN with them securely.
+                    Please share this new one-time login PIN with {showPinInfo?.providerName} securely.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="my-4 p-4 bg-muted rounded-lg flex items-center justify-between">
@@ -212,3 +262,5 @@ export function ProvidersTable({
     </>
   );
 }
+
+    

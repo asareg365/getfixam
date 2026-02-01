@@ -29,10 +29,40 @@ export async function logAdminAction(params: LogAdminActionParams) {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   } catch (error) {
-    console.error("Failed to write to audit log:", error);
+    console.error("Failed to write to admin audit log:", error);
     // This failure is not surfaced to the user to avoid confusing them.
     // It's a background process.
   }
 }
+
+type LogProviderActionParams = {
+  providerId: string;
+  action: string;
+  ipAddress: string;
+  userAgent: string;
+};
+
+/**
+ * Logs a provider action to the provider_logs collection in Firestore.
+ * @param {LogProviderActionParams} params - The parameters for the log entry.
+ */
+export async function logProviderAction(params: LogProviderActionParams) {
+  const { providerId, action, ipAddress, userAgent } = params;
+
+  try {
+    await admin.firestore().collection('provider_logs').add({
+      providerId,
+      action,
+      ipAddress,
+      userAgent,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("Failed to write to provider log:", error);
+  }
+}
+
+    
+
 
     
