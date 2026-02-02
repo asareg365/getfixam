@@ -14,6 +14,10 @@ export const dynamic = 'force-dynamic';
 
 async function getDashboardData() {
     try {
+        if (!adminDb) {
+            throw new Error("Database not connected");
+        }
+
         // Fetch live counts for the stat cards
         const [
             providersSnap,
@@ -70,10 +74,6 @@ async function getDashboardData() {
             };
         }
 
-        // Keep using mock data for charts and other stats for now
-        const whatsappMessages = 250; // Mock value
-        const failedMessages = 15; // Mock value
-
         const serviceCounts = REQUESTS.reduce((acc, req) => {
             acc[req.serviceType] = (acc[req.serviceType] || 0) + 1;
             return acc;
@@ -92,23 +92,18 @@ async function getDashboardData() {
             pendingProviders,
             activeServices,
             totalRequests,
-            whatsappMessages,
-            failedMessages,
             serviceChartData,
             locationChartData,
             prediction,
             standby,
         };
     } catch (error) {
-        console.error('CRITICAL: Could not generate dashboard data.', error);
-        // Fallback to all zeros if Firestore fails
+        console.error('Dashboard data fallback:', error);
         return {
             totalProviders: 0,
             pendingProviders: 0,
             activeServices: 0,
             totalRequests: 0,
-            whatsappMessages: 0,
-            failedMessages: 0,
             serviceChartData: [],
             locationChartData: [],
             prediction: null,
@@ -129,27 +124,43 @@ export default async function AdminDashboard() {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Link href="/admin/providers?status=all">
-            <Card className="hover:bg-muted/50 transition-colors">
-                <CardHeader><CardTitle>Total Providers</CardTitle></CardHeader>
-                <CardContent><p className="text-3xl font-bold">{data.totalProviders}</p></CardContent>
+            <Card className="hover:bg-muted/50 transition-colors cursor-pointer border-primary/20 hover:border-primary">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Providers</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-3xl font-bold">{data.totalProviders}</p>
+                </CardContent>
             </Card>
           </Link>
           <Link href="/admin/providers?status=pending">
-            <Card className="hover:bg-muted/50 transition-colors">
-                <CardHeader><CardTitle>Pending</CardTitle></CardHeader>
-                <CardContent><p className="text-3xl font-bold">{data.pendingProviders}</p></CardContent>
+            <Card className="hover:bg-muted/50 transition-colors cursor-pointer border-primary/20 hover:border-primary">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-3xl font-bold text-orange-500">{data.pendingProviders}</p>
+                </CardContent>
             </Card>
           </Link>
           <Link href="/admin/jobs">
-            <Card className="hover:bg-muted/50 transition-colors">
-                <CardHeader><CardTitle>Total Requests</CardTitle></CardHeader>
-                <CardContent><p className="text-3xl font-bold">{data.totalRequests}</p></CardContent>
+            <Card className="hover:bg-muted/50 transition-colors cursor-pointer border-primary/20 hover:border-primary">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Requests</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-3xl font-bold">{data.totalRequests}</p>
+                </CardContent>
             </Card>
           </Link>
           <Link href="/admin/services">
-            <Card className="hover:bg-muted/50 transition-colors">
-                <CardHeader><CardTitle>Services</CardTitle></CardHeader>
-                <CardContent><p className="text-3xl font-bold">{data.activeServices}</p></CardContent>
+            <Card className="hover:bg-muted/50 transition-colors cursor-pointer border-primary/20 hover:border-primary">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Services</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-3xl font-bold">{data.activeServices}</p>
+                </CardContent>
             </Card>
           </Link>
       </div>

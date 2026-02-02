@@ -2,37 +2,44 @@ import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getAuth, type Auth } from 'firebase-admin/auth';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 
-let adminDb: Firestore | null;
-let adminAuth: Auth | null;
+let adminDb: Firestore | null = null;
+let adminAuth: Auth | null = null;
 
 const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 const projectId = process.env.FIREBASE_PROJECT_ID;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 
-// Check for missing environment variables.
-// In a build environment (like `next build`) or other environments without full credentials,
-// we set the admin objects to null and warn the developer.
-// Data fetching functions must handle the case where adminDb is null.
-if (!privateKey || !projectId || !clientEmail) {
-  console.warn("Firebase Admin SDK credentials not found. This is expected during the build process. Admin-dependent features will be disabled or fall back to mock data at build time.");
-  adminDb = null;
-  adminAuth = null;
-} else {
-  // If credentials are present, initialize the app.
-  // This ensures we don't re-initialize on hot reloads.
-  const app =
-    getApps().length === 0
-      ? initializeApp({
-          credential: cert({
-            projectId,
-            clientEmail,
-            privateKey,
-          }),
-        })
-      : getApps()[0];
+/**
+ * Robust initialization of the Firebase Admin SDK.
+ * During the build process (next build), environment variables may be missing.
+ * In such cases, we set the instances to null so that consuming functions can
+ * gracefully fall back to mock data or skip live database operations.
+ */
+try {
+  if (privateKey && projectId && clientEmail) {
+    const app =
+      getApps().length === 0
+        ? initializeApp({
+            credential: cert({
+              projectId,
+              clientEmail,
+              privateKey,
+            }),
+          })
+        : getApps()[0];
 
-  adminDb = getFirestore(app);
-  adminAuth = getAuth(app);
+    adminDb = getFirestore(app);
+    adminAuth = getAuth(app);
+  } else {
+    // During local build or if secrets aren't set yet, we log a warning but don't crash.
+    if (process.env.NODE_ENV === 'production') {
+        console.error("CRITICAL: Firebase Admin credentials missing in production environment.");
+    } else {
+        console.warn("Firebase Admin SDK: Credentials not found. Build will proceed using fallback data.");
+    }
+  }
+} catch (error) {
+  console.error("Firebase Admin SDK Initialization Error:", error);
 }
 
 export { adminDb, adminAuth };
