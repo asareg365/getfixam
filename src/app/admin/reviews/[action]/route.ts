@@ -7,8 +7,6 @@ import { requireAdmin } from '@/lib/admin-guard';
 import { revalidatePath } from 'next/cache';
 import { logAdminAction } from '@/lib/audit-log';
 
-export const dynamic = 'force-dynamic';
-
 type ActionParam = 'approve' | 'reject';
 
 export async function POST(req: NextRequest, { params }: { params: { action: ActionParam } }) {

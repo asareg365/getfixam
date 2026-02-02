@@ -7,8 +7,6 @@ import { requireAdmin } from '@/lib/admin-guard';
 import { logAdminAction } from '@/lib/audit-log';
 import bcrypt from 'bcrypt';
 
-export const dynamic = 'force-dynamic';
-
 export async function POST(req: NextRequest) {
   try {
     const adminUser = await requireAdmin();
