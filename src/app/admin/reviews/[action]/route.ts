@@ -113,3 +113,8 @@ export async function POST(req: NextRequest, { params }: { params: { action: str
     return NextResponse.json({ success: false, error: error.message || 'An unexpected server error occurred.' }, { status: 500 });
   }
 }
+
+// GET – optional, simple status
+export async function GET() {
+  return NextResponse.json({ message: 'Review action API is live' });
+}

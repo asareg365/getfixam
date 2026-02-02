@@ -58,3 +58,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: error.message || 'An unexpected error occurred.' }, { status: 500 });
   }
 }
+
+// GET – optional, returns a simple status
+export async function GET() {
+  return NextResponse.json({ message: 'Reset PIN API is live' });
+}
