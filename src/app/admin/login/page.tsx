@@ -36,7 +36,7 @@ export default function AdminLoginPage() {
     if (state.success) {
       router.push('/admin/dashboard');
     }
-  }, [state, router]);
+  }, [state.success, router]);
 
   useEffect(() => {
     if (state.message && !state.success) {

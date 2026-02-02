@@ -52,7 +52,8 @@ export async function loginAction(prevState: any, formData: FormData) {
       body: JSON.stringify({ email, password, returnSecureToken: true }),
     });
 
-    const authData = await res.json();
+    const responseText = await res.text();
+    const authData = responseText ? JSON.parse(responseText) : null;
 
     if (!res.ok) {
       const currentCount = attemptSnap.data()?.count || 0;
@@ -75,6 +76,10 @@ export async function loginAction(prevState: any, formData: FormData) {
       return { success: false, message: 'Invalid credentials.' };
     }
     
+    if (!authData) {
+        return { success: false, message: 'Authentication server returned an empty response.' };
+    }
+
     const { localId, email: userEmail } = authData;
     const adminQuery = await adminDb.collection('admins').where('email', '==', userEmail).limit(1).get();
 
