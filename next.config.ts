@@ -1,3 +1,4 @@
+// trigger rebuild
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
