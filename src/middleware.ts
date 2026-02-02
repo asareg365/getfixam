@@ -5,7 +5,6 @@ import jwt, { type JwtPayload } from 'jsonwebtoken';
 
 const SECRET = process.env.ADMIN_JWT_SECRET || 'this-is-a-super-secret-key-that-should-be-in-an-env-file';
 
-export const runtime = 'nodejs';
 
 async function handleAdminRoutes(req: NextRequest) {
     const { pathname } = req.nextUrl;

@@ -2,7 +2,6 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
-  allowedDevOrigins: ["https://*.cloudworkstations.dev"],
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -33,7 +32,6 @@ const nextConfig: NextConfig = {
     ],
   },
   webpack: (config, { dev }) => {
-    config.experiments = { ...config.experiments, asyncWebAssembly: true };
     if (dev) {
       config.watchOptions = {
         poll: 1000, // Check for changes every second
