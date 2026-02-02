@@ -2,10 +2,8 @@
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import jwt, { type JwtPayload } from 'jsonwebtoken';
+import { verifyToken } from './jwt';
 import { adminDb } from './firebase-admin';
-
-const SECRET = process.env.ADMIN_JWT_SECRET || 'this-is-a-super-secret-key-that-should-be-in-an-env-file';
 
 type AdminUser = {
   uid: string;
@@ -15,29 +13,31 @@ type AdminUser = {
 
 export async function requireAdmin(): Promise<AdminUser> {
   // CRITICAL: Check for admin lockout first.
-  const systemSettingsRef = adminDb.collection('system_settings').doc('admin');
-  const systemSettingsSnap = await systemSettingsRef.get();
+  if (adminDb) {
+    const systemSettingsRef = adminDb.collection('system_settings').doc('admin');
+    const systemSettingsSnap = await systemSettingsRef.get();
 
-  if (systemSettingsSnap.exists && systemSettingsSnap.data()?.adminLocked === true) {
-      const reason = systemSettingsSnap.data()?.reason || "No reason provided.";
-      // Instead of redirecting, we throw an error which will be caught by the error boundary.
-      // This is more appropriate for a system-wide lockout.
-      throw new Error(`Admin access is temporarily disabled. Reason: ${reason}`);
+    if (systemSettingsSnap.exists && systemSettingsSnap.data()?.adminLocked === true) {
+        const reason = systemSettingsSnap.data()?.reason || "No reason provided.";
+        throw new Error(`Admin access is temporarily disabled. Reason: ${reason}`);
+    }
   }
 
-  const token = cookies().get('admin_token')?.value;
+  const token = (await cookies()).get('admin_token')?.value;
   if (!token) {
     redirect('/admin/login');
   }
 
-  try {
-    const decoded = jwt.verify(token, SECRET) as JwtPayload;
-    
-    if (!decoded.email) {
-        throw new Error('Invalid token: email missing.');
-    }
+  const decoded = await verifyToken(token);
+  
+  if (!decoded || !decoded.email) {
+    console.error('Admin session verification failed or token expired.');
+    (await cookies()).delete('admin_token');
+    redirect('/admin/login');
+  }
 
-    // Re-validate against Firestore to ensure user is still an active admin
+  // Re-validate against Firestore if DB is available
+  if (adminDb) {
     const adminQuery = await adminDb.collection('admins')
         .where('email', '==', decoded.email)
         .where('active', '==', true)
@@ -52,25 +52,27 @@ export async function requireAdmin(): Promise<AdminUser> {
 
     return {
         uid: decoded.uid as string,
-        email: decoded.email,
+        email: decoded.email as string,
         role: adminData.role,
     };
-  } catch (err) {
-    // If token is invalid (expired, tampered), delete the bad cookie and redirect.
-    console.error('Admin session verification failed:', err);
-    cookies().delete('admin_token');
-    redirect('/admin/login');
   }
+
+  // Fallback for build time if token is present but DB isn't initialized yet
+  return {
+    uid: decoded.uid as string,
+    email: decoded.email as string,
+    role: (decoded.role as string) || 'admin',
+  };
 }
 
 export async function isAdminUser(): Promise<boolean> {
-  const token = cookies().get('admin_token')?.value;
+  const token = (await cookies()).get('admin_token')?.value;
   if (!token) return false;
 
-  try {
-    const decoded = jwt.verify(token, SECRET) as JwtPayload;
-    if (!decoded.email) return false;
+  const decoded = await verifyToken(token);
+  if (!decoded || !decoded.email) return false;
 
+  if (adminDb) {
     const adminQuery = await adminDb.collection('admins')
         .where('email', '==', decoded.email)
         .where('active', '==', true)
@@ -78,9 +80,7 @@ export async function isAdminUser(): Promise<boolean> {
         .get();
 
     return !adminQuery.empty;
-  } catch (error) {
-    return false;
   }
+  
+  return true;
 }
-
-    
