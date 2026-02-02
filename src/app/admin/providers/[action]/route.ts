@@ -88,6 +88,6 @@ export async function POST(req: NextRequest, { params }: { params: { action: Act
      if (error.message.includes('Invalid admin session')) {
         return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
-    return NextResponse.json({ success: false, error: error.message || 'Unexpected error' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'An unexpected server error occurred.' }, { status: 500 });
   }
 }

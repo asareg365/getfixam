@@ -91,6 +91,6 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('PIN Login API error:', error);
-    return NextResponse.json({ message: 'An unexpected server error occurred.' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'An unexpected server error occurred.' }, { status: 500 });
   }
 }

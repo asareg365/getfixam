@@ -41,7 +41,12 @@ export async function POST(req: NextRequest) {
  * Logs the user out by clearing the session cookie.
  */
 export async function DELETE(req: NextRequest) {
-    const response = NextResponse.json({ success: true });
-    response.cookies.delete('__session');
-    return response;
+    try {
+        const response = NextResponse.json({ success: true });
+        response.cookies.delete('__session');
+        return response;
+    } catch (error) {
+        console.error('Session Logout Error:', error);
+        return NextResponse.json({ success: false, error: 'Failed to log out.' }, { status: 500 });
+    }
 }
