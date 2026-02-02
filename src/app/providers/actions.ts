@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { addReview as dbAddReview } from '@/lib/services';
+import { adminDb } from '@/lib/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
 const reviewSchema = z.object({
   providerId: z.string(),
@@ -24,7 +25,12 @@ export async function addReviewAction(prevState: any, formData: FormData) {
   const randomUserImageId = `user${Math.floor(Math.random() * 6) + 1}`;
 
   try {
-    await dbAddReview({ ...validatedFields.data, userImageId: randomUserImageId });
+    await adminDb.collection('reviews').add({
+      ...validatedFields.data,
+      userImageId: randomUserImageId,
+      status: 'pending',
+      createdAt: FieldValue.serverTimestamp()
+    });
     revalidatePath(`/providers/${validatedFields.data.providerId}`);
     return { success: true, message: 'Thank you! Your review has been submitted for moderation.' };
   } catch (error: any) {

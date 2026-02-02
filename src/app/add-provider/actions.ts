@@ -2,7 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { addProvider as dbAddProvider, getCategories } from '@/lib/services';
+import { adminDb } from '@/lib/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
+import { getCategories } from '@/lib/services';
 
 const providerSchema = z.object({
   name: z.string().min(3, 'Business name must be at least 3 characters.'),
@@ -61,7 +63,7 @@ export async function addProviderAction(prevState: any, formData: FormData) {
     }
 
     try {
-        await dbAddProvider({
+        await adminDb.collection('providers').add({
             name,
             serviceId,
             phone,
@@ -72,10 +74,15 @@ export async function addProviderAction(prevState: any, formData: FormData) {
                 zone: zone,
             },
             digitalAddress,
+            imageId,
+            status: "pending",
             verified: false,
-            status: 'pending',
-            imageId: imageId,
+            isFeatured: false,
+            rating: 0,
+            reviewCount: 0,
+            createdAt: FieldValue.serverTimestamp()
         });
+
 
         revalidatePath('/');
         return { success: true, message: 'Your business has been submitted for review!' };
