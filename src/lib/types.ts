@@ -63,6 +63,7 @@ export type Provider = {
 
 export type Review = {
   id: string;
+  jobId: string;
   providerId: string;
   userName: string;
   rating: number;
@@ -102,15 +103,17 @@ export type StandbyPrediction = {
 
 export type Job = {
   id: string;
-  serviceType: string;
-  area: string;
-  status: 'pending' | 'accepted' | 'rejected' | 'expired' | 'reassigned' | 'completed' | 'unassigned';
-  assignedTo: string; // artisanId
-  attemptedArtisans: string[]; // array of artisanIds
-  createdAt: string;
-  expiresAt: string;
+  customerId: string;
+  providerId: string;
+  categoryId: string;
+  description: string;
+  location: string;
+  estimatedCost?: number;
   price?: number;
   surgeMultiplier?: number;
+  status: 'REQUESTED' | 'QUOTED' | 'AWAITING_DEPOSIT' | 'IN_PROGRESS' | 'AWAITING_FINAL_PAYMENT' | 'COMPLETED' | 'CLOSED' | 'DISPUTED' | 'CANCELLED';
+  createdAt: string;
+  expiresAt?: string;
 };
 
 export type ReassignmentLog = {
@@ -150,9 +153,59 @@ export type Transaction = {
     createdAt: string;
 }
     
+export type Payment = {
+    id: string;
+    jobId: string;
+    type: 'DEPOSIT' | 'FINAL';
+    amount: number;
+    method: 'MoMo' | 'Cash' | 'WhatsApp';
+    paidBy: 'customer';
+    status: 'CONFIRMED' | 'PENDING';
+    createdAt: string;
+};
 
+export type Subscription = {
+    id: string;
+    providerId: string;
+    plan: 'FREE' | 'BASIC' | 'PRO' | 'ENTERPRISE';
+    expiresAt: string;
+    status: 'ACTIVE' | 'INACTIVE' | 'CANCELLED';
+};
 
-    
+export type Dispute = {
+    id: string;
+    jobId: string;
+    openedBy: 'customer' | 'provider';
+    reason: string;
+    description: string;
+    status: 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED' | 'CLOSED';
+    evidence: {
+        type: 'image' | 'video' | 'text';
+        url: string;
+    }[];
+    createdAt: string;
+};
 
+export type Wallet = {
+    id: string; // Corresponds to a userId (provider or customer)
+    balance: number;
+    pending: number;
+};
 
+export type WalletTransaction = {
+    id: string;
+    walletId: string;
+    jobId: string;
+    type: 'ESCROW_HOLD' | 'ESCROW_RELEASE' | 'PAYOUT' | 'TOPUP';
+    amount: number;
+    status: 'LOCKED' | 'COMPLETED' | 'FAILED' | 'PENDING';
+};
 
+export type JobProof = {
+    id: string;
+    jobId: string;
+    stage: 'BEFORE' | 'DURING' | 'AFTER';
+    uploadedBy: 'provider' | 'customer';
+    images: string[];
+    timestamp: string;
+};
