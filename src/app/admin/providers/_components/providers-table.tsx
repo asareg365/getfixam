@@ -32,12 +32,10 @@ export function ProvidersTable({
     const handleAction = async (providerId: string, action: 'approve' | 'reject' | 'suspend') => {
         setLoadingIds(prev => [...prev, providerId]);
         try {
-            const formData = new FormData();
-            formData.set('providerId', providerId);
-
             const res = await fetch(`/admin/providers/${action}`, {
                 method: 'POST',
-                body: formData,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ providerId }),
             });
 
             let result;
@@ -68,12 +66,10 @@ export function ProvidersTable({
      const handleResetPin = async (providerId: string) => {
         setLoadingIds(prev => [...prev, providerId]);
         try {
-            const formData = new FormData();
-            formData.set('providerId', providerId);
-            
             const res = await fetch(`/api/admin/providers/reset-pin`, {
                 method: 'POST',
-                body: formData,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ providerId }),
             });
             
             let result;

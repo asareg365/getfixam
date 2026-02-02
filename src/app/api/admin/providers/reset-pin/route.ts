@@ -11,8 +11,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const adminUser = await requireAdmin();
-    const body = await req.formData();
-    const providerId = body.get('providerId') as string;
+    const { providerId } = await req.json();
 
     if (!providerId) {
       return NextResponse.json({ success: false, error: 'Provider ID missing' }, { status: 400 });

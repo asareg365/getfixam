@@ -8,13 +8,15 @@ import { logAdminAction } from '@/lib/audit-log';
 
 export const dynamic = 'force-dynamic';
 
-type ActionParam = 'approve' | 'reject';
+export async function POST(req: NextRequest, { params }: { params: { action: string } }) {
+  const action = params.action;
+  if (!['approve', 'reject'].includes(action)) {
+    return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
+  }
 
-export async function POST(req: NextRequest, { params }: { params: { action: ActionParam } }) {
   try {
     const adminUser = await requireAdmin();
-    const body = await req.formData();
-    const reviewId = body.get('reviewId') as string;
+    const { reviewId } = await req.json();
 
     if (!reviewId) {
       return NextResponse.json({ success: false, error: 'Review ID missing' }, { status: 400 });
@@ -24,22 +26,19 @@ export async function POST(req: NextRequest, { params }: { params: { action: Act
     const userAgent = req.headers.get('user-agent') || 'unknown';
     const reviewRef = adminDb.collection('reviews').doc(reviewId);
     
-    if (params.action === 'approve') {
-      let reviewData: DocumentData;
-      let providerData: DocumentData;
-
+    if (action === 'approve') {
       await adminDb.runTransaction(async (transaction) => {
         const reviewSnap = await transaction.get(reviewRef);
         if (!reviewSnap.exists) throw new Error('Review not found.');
         
-        reviewData = reviewSnap.data()!;
+        const reviewData = reviewSnap.data()!;
         if (reviewData.status === 'approved') return;
 
         const providerRef = adminDb.collection('providers').doc(reviewData.providerId);
         const providerSnap = await transaction.get(providerRef);
         if (!providerSnap.exists) throw new Error('Associated provider not found.');
 
-        providerData = providerSnap.data()!;
+        const providerData = providerSnap.data()!;
         const currentRating = providerData.rating || 0;
         const currentReviewCount = providerData.reviewCount || 0;
         const newReviewCount = currentReviewCount + 1;
@@ -67,7 +66,7 @@ export async function POST(req: NextRequest, { params }: { params: { action: Act
         userAgent,
       });
 
-    } else if (params.action === 'reject') {
+    } else if (action === 'reject') {
       const reviewSnap = await reviewRef.get();
       if (!reviewSnap.exists) throw new Error('Review not found.');
       const reviewData = reviewSnap.data()!;
@@ -91,8 +90,6 @@ export async function POST(req: NextRequest, { params }: { params: { action: Act
         userAgent,
       });
 
-    } else {
-      return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
     }
     
     // Revalidate relevant pages
@@ -109,7 +106,7 @@ export async function POST(req: NextRequest, { params }: { params: { action: Act
     return NextResponse.json({ success: true });
 
   } catch (error: any) {
-    console.error(`Error processing review action: ${params.action}`, error);
+    console.error(`Error processing review action: ${action}`, error);
     if (error.message.includes('Invalid admin session')) {
         return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }

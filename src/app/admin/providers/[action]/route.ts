@@ -8,13 +8,15 @@ import bcrypt from 'bcrypt';
 
 export const dynamic = 'force-dynamic';
 
-type ActionParam = 'approve' | 'reject' | 'suspend';
+export async function POST(req: NextRequest, { params }: { params: { action: string } }) {
+  const action = params.action;
+  if (!['approve', 'reject', 'suspend'].includes(action)) {
+    return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
+  }
 
-export async function POST(req: NextRequest, { params }: { params: { action: ActionParam } }) {
   try {
     const adminUser = await requireAdmin(); // Secure the route
-    const body = await req.formData();
-    const providerId = body.get('providerId') as string;
+    const { providerId } = await req.json();
     
     if (!providerId) {
       return NextResponse.json({ success: false, error: 'Provider ID missing' }, { status: 400 });
@@ -33,8 +35,7 @@ export async function POST(req: NextRequest, { params }: { params: { action: Act
     const adminEmail = adminUser.email;
     let actionLog: string;
 
-    if (params.action === 'approve') {
-      // Only generate a PIN if the provider is not already approved.
+    if (action === 'approve') {
       if (providerData.status !== 'approved') {
         pin = Math.floor(100000 + Math.random() * 900000).toString();
         const saltRounds = 10;
@@ -50,25 +51,25 @@ export async function POST(req: NextRequest, { params }: { params: { action: Act
       updateData.approvedBy = adminEmail;
       actionLog = 'PROVIDER_APPROVED';
 
-    } else if (params.action === 'reject') {
+    } else if (action === 'reject') {
       updateData.status = 'rejected';
       updateData.verified = false;
       updateData.rejectedAt = FieldValue.serverTimestamp();
       updateData.rejectedBy = adminEmail;
       actionLog = 'PROVIDER_REJECTED';
-    } else if (params.action === 'suspend') {
+    } else if (action === 'suspend') {
         updateData.status = 'suspended';
         updateData.verified = false;
         updateData.suspendedAt = FieldValue.serverTimestamp();
         updateData.suspendedBy = adminEmail;
         actionLog = 'PROVIDER_SUSPENDED';
     } else {
+        // This case is already handled above, but as a safeguard.
         return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
     }
 
     await providerRef.update(updateData);
 
-    // Use the centralized audit log helper
     const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || req.ip || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest, { params }: { params: { action: Act
 
     return NextResponse.json({ success: true, pin });
   } catch (error: any) {
-    console.error(`Error processing action: ${params.action}`, error);
+    console.error(`Error processing action: ${action}`, error);
      if (error.message.includes('Invalid admin session')) {
         return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }

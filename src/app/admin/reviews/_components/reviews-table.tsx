@@ -28,12 +28,10 @@ export function ReviewsTable({ reviews }: ReviewsTableProps) {
     const handleAction = async (reviewId: string, action: 'approve' | 'reject') => {
         setLoadingIds(prev => [...prev, reviewId]);
         try {
-            const formData = new FormData();
-            formData.set('reviewId', reviewId);
-
             const res = await fetch(`/admin/reviews/${action}`, {
                 method: 'POST',
-                body: formData,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reviewId }),
             });
 
             let result;
