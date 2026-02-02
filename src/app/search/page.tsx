@@ -9,6 +9,8 @@ type SearchPageProps = {
   searchParams: { q?: string };
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const query = (searchParams.q || '').toLowerCase().trim();
 

@@ -3,6 +3,8 @@ import AddProviderForm from './form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import PublicLayout from '@/components/layout/PublicLayout';
 
+export const dynamic = "force-dynamic";
+
 export default async function AddProviderPage() {
   // Fetch dynamic data for the form from Firestore
   const categoriesData = await getCategories();

@@ -12,6 +12,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import PublicLayout from '@/components/layout/PublicLayout';
 import { searchAction } from './actions';
 
+export const dynamic = "force-dynamic";
 
 export default async function BrowsePage() {
   const categories: Category[] = await getCategories();
