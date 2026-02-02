@@ -32,8 +32,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  webpack: (config) => {
+  webpack: (config, { dev }) => {
     config.experiments = { ...config.experiments, asyncWebAssembly: true };
+    if (dev) {
+      config.watchOptions = {
+        poll: 1000, // Check for changes every second
+        aggregateTimeout: 300, // Delay before rebuilding
+      };
+    }
     return config;
   },
 };
