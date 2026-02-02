@@ -29,7 +29,12 @@ export async function addProviderAction(prevState: any, formData: FormData) {
     // Fetch categories to find the slug for the selected serviceId
     const categories = await getCategories();
     const category = categories.find(cat => cat.id === serviceId);
-    const slug = category?.slug;
+
+    if (!category) {
+      return { success: false, message: 'Invalid service category selected.' };
+    }
+    
+    const slug = category.slug;
 
     // Map service slugs to relevant placeholder image IDs
     const serviceToImageMap: { [key: string]: string[] } = {
