@@ -1,17 +1,7 @@
 import { collection, getDocs, query, where, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Category, Provider, Review } from './types';
-import { cache } from 'react';
-import { BEREKUM_ZONES, CATEGORIES } from './data';
-
-/**
- * Fetches all active categories from Firestore using the client SDK.
- * This function is cached to ensure data consistency across server components.
- */
-export const getCategories = cache(async (): Promise<Category[]> => {
-    // NOTE: Returning static data for now to ensure dropdowns are populated.
-    return CATEGORIES.sort((a, b) => a.name.localeCompare(b.name));
-});
+import { getCategories } from './data';
 
 /**
  * Fetches a category by its slug from the cached list of categories.
@@ -163,12 +153,4 @@ export async function getReviewsByProviderId(providerId: string): Promise<Review
             status: data.status,
         } as Review;
     });
-}
-
-/**
- * Fetches the list of zones for Berekum from Firestore using the client SDK.
- */
-export async function getBerekumZones(): Promise<string[]> {
-    // NOTE: Returning static data to ensure dropdown is populated.
-    return BEREKUM_ZONES;
 }

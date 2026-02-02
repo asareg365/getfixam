@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getCategories } from '@/lib/services';
+import { getCategories } from '@/lib/data';
 
 const providerSchema = z.object({
   name: z.string().min(3, 'Business name must be at least 3 characters.'),

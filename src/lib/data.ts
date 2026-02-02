@@ -1,4 +1,5 @@
 import type { Category, Provider, Review, Request } from './types';
+import { cache } from 'react';
 
 export const CATEGORIES: Category[] = [
   { id: 'aluminum-fabricator', name: 'Aluminum Fabricator', slug: 'aluminum-fabricator', icon: 'Hammer' },
@@ -256,3 +257,20 @@ export const REQUESTS: Request[] = [
     { id: '7', userPhone: '024xxxxxxx', serviceType: 'Electrician', location: 'Zongo', status: 'completed', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString() },
     { id: '8', userPhone: '055xxxxxxx', serviceType: 'Carpenter', location: 'Presby', status: 'pending', createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
 ];
+
+/**
+ * Fetches all active categories.
+ * This function is cached to ensure data consistency across server components.
+ */
+export const getCategories = cache(async (): Promise<Category[]> => {
+    // NOTE: Returning static data for now to ensure dropdowns are populated.
+    return CATEGORIES.sort((a, b) => a.name.localeCompare(b.name));
+});
+
+/**
+ * Fetches the list of zones for Berekum.
+ */
+export async function getBerekumZones(): Promise<string[]> {
+    // NOTE: Returning static data to ensure dropdown is populated.
+    return BEREKUM_ZONES;
+}

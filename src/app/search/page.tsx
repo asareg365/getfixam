@@ -1,4 +1,5 @@
-import { getCategories, getProviders } from '@/lib/services';
+import { getCategories } from '@/lib/data';
+import { getProviders } from '@/lib/services';
 import PublicLayout from '@/components/layout/PublicLayout';
 import CategoryCard from '@/components/CategoryCard';
 import ProviderCard from '@/components/ProviderCard';

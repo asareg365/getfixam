@@ -1,4 +1,4 @@
-import { getCategories, getCategoryBySlug, getProviders, getBerekumZones } from '@/lib/services';
+import { getCategoryBySlug, getProviders, getBerekumZones } from '@/lib/services';
 import { notFound } from 'next/navigation';
 import type { Provider } from '@/lib/types';
 import Link from 'next/link';

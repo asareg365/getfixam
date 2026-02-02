@@ -1,4 +1,4 @@
-import { getCategories, getBerekumZones } from '@/lib/services';
+import { getCategories, getBerekumZones } from '@/lib/data';
 import AddProviderForm from './form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import PublicLayout from '@/components/layout/PublicLayout';
