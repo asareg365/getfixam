@@ -6,7 +6,8 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 
-
+// This loader is shown while the client verifies the auth state.
+// The middleware handles the actual security check on the server.
 function FullPageLoader() {
     return (
         <div className="flex flex-col min-h-screen">
@@ -23,7 +24,8 @@ function FullPageLoader() {
                     <div className="flex items-center justify-between">
                         <Skeleton className="h-10 w-1/3" />
                     </div>
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                        <Skeleton className="h-28 w-full" />
                         <Skeleton className="h-28 w-full" />
                         <Skeleton className="h-28 w-full" />
                         <Skeleton className="h-28 w-full" />
@@ -37,27 +39,18 @@ function FullPageLoader() {
 
 
 export default function ProviderGuard({ children }: { children: React.ReactNode }) {
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
-  const pathname = usePathname();
+  const [isClient, setIsClient] = useState(false);
 
+  // This guard primarily shows a loading state. The actual security is handled
+  // by the server-side middleware. We just want to avoid a flicker of content
+  // on the initial client-side render before hydration is complete.
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, user => {
-      if (!user) {
-        // if not logged in, redirect to login page
-        router.replace(`/provider/login?redirect=${pathname}`);
-      } else {
-        // if logged in, stop loading and show the page
-        setLoading(false);
-      }
-    });
+    setIsClient(true);
+  }, []);
 
-    return () => unsub();
-  }, [router, pathname]);
-
-  if (loading) return <FullPageLoader />;
+  if (!isClient) {
+    return <FullPageLoader />;
+  }
 
   return <>{children}</>;
 }
-
-    

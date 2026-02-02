@@ -14,9 +14,15 @@ function LogoutButton() {
     const { toast } = useToast();
 
     const handleLogout = async () => {
+        // Clear client-side auth state
         await auth.signOut();
+        
+        // Clear server-side session cookie
+        await fetch('/api/session', { method: 'DELETE' });
+
         toast({ title: 'Logged out successfully.' });
         router.push('/provider/login');
+        router.refresh();
     }
 
     return (

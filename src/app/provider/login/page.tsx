@@ -57,23 +57,36 @@ export default function ProviderLoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/provider/pin-login', {
+      // 1. Verify PIN and get custom token from our API
+      const pinRes = await fetch('/api/provider/pin-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: phoneNumber, pin }),
       });
 
-      const result = await res.json();
-
-      if (!res.ok || !result.success) {
-        throw new Error(result.message || 'PIN verification failed.');
+      const pinResult = await pinRes.json();
+      if (!pinRes.ok || !pinResult.success) {
+        throw new Error(pinResult.message || 'PIN verification failed.');
       }
       
-      // Sign in with the custom token from the server
-      await signInWithCustomToken(auth, result.token);
+      // 2. Sign in on the client with the custom token to get an ID token
+      const userCredential = await signInWithCustomToken(auth, pinResult.token);
+      const idToken = await userCredential.user.getIdToken();
+
+      // 3. Send the ID token to the server to create a session cookie
+      const sessionRes = await fetch('/api/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken }),
+      });
+
+      if (!sessionRes.ok) {
+          throw new Error('Failed to create a session. Please try again.');
+      }
       
       toast({ title: 'Login Successful!', description: 'Redirecting to your dashboard...' });
       router.push('/provider/dashboard');
+      router.refresh(); // Ensure server components are re-fetched with the new session
 
     } catch (error: any) {
       console.error('PIN login error', error);
