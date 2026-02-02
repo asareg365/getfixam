@@ -4,6 +4,8 @@ import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import bcrypt from 'bcrypt';
 import { logProviderAction } from '@/lib/audit-log';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   const formatPhoneNumber = (phone: string) => {
     if (phone.startsWith('+233')) return phone;

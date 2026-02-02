@@ -1,6 +1,8 @@
 import { adminAuth } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Creates a server-side session cookie from a client-side ID token.
  */

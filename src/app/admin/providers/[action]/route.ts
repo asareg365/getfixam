@@ -6,6 +6,8 @@ import { requireAdmin } from '@/lib/admin-guard';
 import { logAdminAction } from '@/lib/audit-log';
 import bcrypt from 'bcrypt';
 
+export const dynamic = 'force-dynamic';
+
 type ActionParam = 'approve' | 'reject' | 'suspend';
 
 export async function POST(req: NextRequest, { params }: { params: { action: ActionParam } }) {
