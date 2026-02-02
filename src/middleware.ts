@@ -1,3 +1,4 @@
+// trigger rebuild
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
@@ -39,19 +40,21 @@ async function handleAdminRoutes(req: NextRequest) {
         }
         
         // Re-validate against Firestore to ensure admin is still active
-        const adminSnap = await adminDb.collection('admins').where('email', '==', decoded.email).where('active', '==', true).limit(1).get();
-        if (adminSnap.empty) {
-            throw new Error('Admin not found or inactive.');
-        }
+        if (adminDb) {
+            const adminSnap = await adminDb.collection('admins').where('email', '==', decoded.email).where('active', '==', true).limit(1).get();
+            if (adminSnap.empty) {
+                throw new Error('Admin not found or inactive.');
+            }
 
-        // Check for system lockout. This is a DB read in middleware.
-        const settingsSnap = await adminDb.collection('system_settings').doc('admin').get();
-        if (settingsSnap.exists && settingsSnap.data()?.adminLocked === true) {
-            // Allow access ONLY to the security page to disable the lock
-            if (!pathname.startsWith('/admin/settings/security')) {
-                 const url = req.nextUrl.clone();
-                 url.pathname = '/admin/settings/security';
-                 return NextResponse.redirect(url);
+            // Check for system lockout. This is a DB read in middleware.
+            const settingsSnap = await adminDb.collection('system_settings').doc('admin').get();
+            if (settingsSnap.exists && settingsSnap.data()?.adminLocked === true) {
+                // Allow access ONLY to the security page to disable the lock
+                if (!pathname.startsWith('/admin/settings/security')) {
+                    const url = req.nextUrl.clone();
+                    url.pathname = '/admin/settings/security';
+                    return NextResponse.redirect(url);
+                }
             }
         }
         
@@ -86,22 +89,24 @@ async function handleProviderRoutes(req: NextRequest) {
     }
 
     try {
-        const decoded = await adminAuth.verifySessionCookie(session, true);
-        
-        const snap = await adminDb.collection('providers').where('authUid', '==', decoded.uid).limit(1).get();
+        if (adminAuth && adminDb) {
+            const decoded = await adminAuth.verifySessionCookie(session, true);
+            
+            const snap = await adminDb.collection('providers').where('authUid', '==', decoded.uid).limit(1).get();
 
-        if (snap.empty) {
-            const response = NextResponse.redirect(new URL('/provider/login', req.url));
-            response.cookies.delete('__session');
-            return response;
-        }
+            if (snap.empty) {
+                const response = NextResponse.redirect(new URL('/provider/login', req.url));
+                response.cookies.delete('__session');
+                return response;
+            }
 
-        const provider = snap.docs[0].data();
+            const provider = snap.docs[0].data();
 
-        // If provider is not approved and they try to access anything other than the dashboard,
-        // redirect them to the dashboard where their status is displayed.
-        if (provider.status !== 'approved' && pathname !== '/provider/dashboard') {
-            return NextResponse.redirect(new URL('/provider/dashboard', req.url));
+            // If provider is not approved and they try to access anything other than the dashboard,
+            // redirect them to the dashboard where their status is displayed.
+            if (provider.status !== 'approved' && pathname !== '/provider/dashboard') {
+                return NextResponse.redirect(new URL('/provider/dashboard', req.url));
+            }
         }
 
         return NextResponse.next();
