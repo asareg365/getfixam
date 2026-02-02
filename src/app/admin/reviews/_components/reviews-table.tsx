@@ -26,9 +26,8 @@ export function ReviewsTable({ reviews }: ReviewsTableProps) {
     const { toast } = useToast();
 
     const handleAction = async (reviewId: string, action: 'approve' | 'reject') => {
+        setLoadingIds(prev => [...prev, reviewId]);
         try {
-            setLoadingIds(prev => [...prev, reviewId]);
-
             const formData = new FormData();
             formData.set('reviewId', reviewId);
 
@@ -37,16 +36,22 @@ export function ReviewsTable({ reviews }: ReviewsTableProps) {
                 body: formData,
             });
 
-            const result = await res.json();
-
-            if (result.success) {
-                toast({ title: `Review ${action}d successfully!`, variant: 'success' });
-                router.refresh();
-            } else {
-                toast({ title: `Failed to ${action} review`, description: result.error, variant: 'destructive' });
+            let result;
+            try {
+                result = await res.json();
+            } catch (e) {
+                throw new Error(`The server sent an invalid response (Status: ${res.status})`);
             }
+
+            if (!res.ok) {
+                const errorMsg = result.error || 'An unknown error occurred.';
+                throw new Error(errorMsg);
+            }
+
+            toast({ title: `Review ${action}d successfully!`, variant: 'success' });
+            router.refresh();
         } catch (error: any) {
-            toast({ title: 'Error', description: error.message || 'Unexpected error', variant: 'destructive' });
+            toast({ title: `Failed to ${action} review`, description: error.message, variant: 'destructive' });
         } finally {
             setLoadingIds(prev => prev.filter(id => id !== reviewId));
         }

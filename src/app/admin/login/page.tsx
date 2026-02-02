@@ -2,7 +2,6 @@
 
 import { useActionState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -24,7 +23,6 @@ function SubmitButton() {
 }
 
 export default function AdminLoginPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const [state, formAction] = useActionState(loginAction, {
     success: false,
@@ -33,18 +31,14 @@ export default function AdminLoginPage() {
   });
 
   useEffect(() => {
-    if (state.success) {
-      toast({ title: 'Login successful!', description: 'Redirecting to dashboard...' });
-      router.push('/admin/dashboard');
-      router.refresh();
-    } else if (state.message) {
+    if (state.message && !state.success) {
       toast({
         title: 'Login Failed',
         description: state.message,
         variant: 'destructive',
       });
     }
-  }, [state, toast, router]);
+  }, [state, toast]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-secondary/30">

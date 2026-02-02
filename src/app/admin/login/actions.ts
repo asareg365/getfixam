@@ -6,6 +6,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { logAdminAction } from '@/lib/audit-log';
 import { signToken } from '@/lib/jwt';
+import { redirect } from 'next/navigation';
 
 const MAX_ATTEMPTS = 5;
 const BLOCK_DURATION_MINUTES = 10;
@@ -107,10 +108,10 @@ export async function loginAction(prevState: any, formData: FormData) {
 
     await logAdminAction({ adminEmail: userEmail, action: 'ADMIN_LOGIN_SUCCESS', targetType: 'system', targetId: userEmail, ipAddress: ip, userAgent });
 
-    return { success: true };
-
   } catch (error: any) {
     console.error('ADMIN LOGIN ERROR:', error);
     return { success: false, message: error.message || 'An unexpected server error occurred.' };
   }
+
+  redirect('/admin/dashboard');
 }

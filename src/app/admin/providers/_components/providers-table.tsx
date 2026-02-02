@@ -30,9 +30,8 @@ export function ProvidersTable({
     const [showPinInfo, setShowPinInfo] = useState<{ providerName: string, pin: string } | null>(null);
 
     const handleAction = async (providerId: string, action: 'approve' | 'reject' | 'suspend') => {
+        setLoadingIds(prev => [...prev, providerId]);
         try {
-            setLoadingIds(prev => [...prev, providerId]);
-
             const formData = new FormData();
             formData.set('providerId', providerId);
 
@@ -41,29 +40,34 @@ export function ProvidersTable({
                 body: formData,
             });
 
-            const result = await res.json();
-
-            if (result.success) {
-                toast({ title: `Provider ${action}d successfully!`, variant: 'success' });
-                if (action === 'approve' && result.pin) {
-                    const provider = providers.find(p => p.id === providerId);
-                    setShowPinInfo({ providerName: provider?.name || 'the provider', pin: result.pin });
-                }
-                router.refresh();
-            } else {
-                toast({ title: `Failed to ${action} provider`, description: result.error, variant: 'destructive' });
+            let result;
+            try {
+                result = await res.json();
+            } catch (e) {
+                throw new Error(`The server sent an invalid response (Status: ${res.status})`);
             }
+
+            if (!res.ok) {
+                const errorMsg = result.error || 'An unknown error occurred.';
+                throw new Error(errorMsg);
+            }
+
+            toast({ title: `Provider ${action}d successfully!`, variant: 'success' });
+            if (action === 'approve' && result.pin) {
+                const provider = providers.find(p => p.id === providerId);
+                setShowPinInfo({ providerName: provider?.name || 'the provider', pin: result.pin });
+            }
+            router.refresh();
         } catch (error: any) {
-            toast({ title: 'Error', description: error.message || 'Unexpected error', variant: 'destructive' });
+            toast({ title: `Failed to ${action} provider`, description: error.message || 'Unexpected error', variant: 'destructive' });
         } finally {
             setLoadingIds(prev => prev.filter(id => id !== providerId));
         }
     };
     
      const handleResetPin = async (providerId: string) => {
+        setLoadingIds(prev => [...prev, providerId]);
         try {
-            setLoadingIds(prev => [...prev, providerId]);
-
             const formData = new FormData();
             formData.set('providerId', providerId);
             
@@ -72,18 +76,25 @@ export function ProvidersTable({
                 body: formData,
             });
             
-            const result = await res.json();
-
-            if (result.success) {
-                const provider = providers.find(p => p.id === providerId);
-                setShowPinInfo({ providerName: provider?.name || 'the provider', pin: result.pin });
-                toast({ title: "PIN has been reset!", variant: 'success' });
-                router.refresh();
-            } else {
-                 toast({ title: `Failed to reset PIN`, description: result.error, variant: 'destructive' });
+            let result;
+            try {
+                result = await res.json();
+            } catch (e) {
+                throw new Error(`The server sent an invalid response (Status: ${res.status})`);
             }
+
+            if (!res.ok) {
+                const errorMsg = result.error || 'An unknown error occurred.';
+                throw new Error(errorMsg);
+            }
+
+            const provider = providers.find(p => p.id === providerId);
+            setShowPinInfo({ providerName: provider?.name || 'the provider', pin: result.pin });
+            toast({ title: "PIN has been reset!", variant: 'success' });
+            router.refresh();
+
         } catch (error: any) {
-            toast({ title: 'Error', description: error.message || 'Unexpected error', variant: 'destructive' });
+            toast({ title: 'Failed to reset PIN', description: error.message, variant: 'destructive' });
         } finally {
              setLoadingIds(prev => prev.filter(id => id !== providerId));
         }
@@ -262,5 +273,3 @@ export function ProvidersTable({
     </>
   );
 }
-
-    
