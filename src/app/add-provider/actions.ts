@@ -16,8 +16,8 @@ const providerSchema = z.object({
 });
 
 export async function addProviderAction(prevState: any, formData: FormData) {
-  if (!process.env.FIREBASE_PROJECT_ID) {
-    throw new Error("Firebase env vars not available at runtime");
+  if (process.env.NODE_ENV === "production" && !process.env.FIREBASE_PROJECT_ID) {
+    throw new Error("Firebase env vars unavailable at runtime");
   }
 
   const validatedFields = providerSchema.safeParse(Object.fromEntries(formData.entries()));
