@@ -16,11 +16,60 @@ const providerSchema = z.object({
 });
 
 export async function addProviderAction(prevState: any, formData: FormData) {
-    try {
-        await adminDb.collection('test').add({ ok: true });
-        return { success: true, message: 'Firestore test write was successful! The credentials seem to be working.' };
-    } catch (error: any) {
-        console.error('Firestore test write FAILED:', error);
-        return { success: false, message: `Firestore test write failed: ${error.message}` };
+  const validatedFields = providerSchema.safeParse(Object.fromEntries(formData.entries()));
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      success: false,
+      message: 'Please correct the errors below.'
+    };
+  }
+  
+  const { name, serviceId, phone, whatsapp, zone, digitalAddress } = validatedFields.data;
+
+  try {
+    // Check if provider with this phone number already exists
+    const existingProviderSnap = await adminDb.collection('providers').where('phone', '==', phone).limit(1).get();
+    if (!existingProviderSnap.empty) {
+        return { success: false, message: 'A provider with this phone number already exists.' };
     }
+
+    const categories = await getCategories();
+    const category = categories.find(cat => cat.id === serviceId);
+
+    if (!category) {
+      return { success: false, message: 'Invalid service category selected.' };
+    }
+
+    const newProvider = {
+      name,
+      serviceId,
+      phone,
+      whatsapp,
+      digitalAddress,
+      location: {
+        region: 'Bono', // Hardcoded for now
+        city: 'Berekum', // Hardcoded for now
+        zone,
+      },
+      status: 'pending',
+      verified: false,
+      isFeatured: false,
+      rating: 0,
+      reviewCount: 0,
+      createdAt: FieldValue.serverTimestamp(),
+    };
+
+    await adminDb.collection('providers').add(newProvider);
+    
+    revalidatePath('/admin/providers');
+    revalidatePath('/');
+    
+    return { success: true, message: 'Your business has been submitted for review! Our team will contact you shortly.' };
+
+  } catch (error: any) {
+    console.error('Error adding provider:', error);
+    return { success: false, message: error.message || 'Failed to submit business. Please try again.' };
+  }
 }

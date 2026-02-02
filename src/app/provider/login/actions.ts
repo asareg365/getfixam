@@ -1,6 +1,6 @@
 'use server';
 
-import { admin } from '@/lib/firebase-admin';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import bcrypt from 'bcrypt';
 import { cookies } from 'next/headers';
 import { logProviderAction } from '@/lib/audit-log';
@@ -15,7 +15,7 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
   const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown';
   const userAgent = headersList.get('user-agent') || 'unknown';
 
-  const snap = await admin.firestore()
+  const snap = await adminDb
     .collection('providers')
     .where('phone', '==', phone)
     .limit(1)
@@ -52,10 +52,10 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
   let user;
 
   try {
-    user = await admin.auth().getUserByPhoneNumber(formattedPhone);
+    user = await adminAuth.getUserByPhoneNumber(formattedPhone);
   } catch (error: any) {
     if (error.code === 'auth/user-not-found') {
-      user = await admin.auth().createUser({ phoneNumber: formattedPhone });
+      user = await adminAuth.createUser({ phoneNumber: formattedPhone, displayName: provider.name });
     } else {
       console.error('Firebase Auth error during login:', error);
       return { error: 'An unexpected authentication error occurred.' };
@@ -77,7 +77,9 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
   
   // Create session cookie
   const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
-  const sessionCookie = await admin.auth().createSessionCookie(user.uid, { expiresIn });
+  const idToken = await adminAuth.createCustomToken(user.uid);
+  const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+
 
   cookies().set('__session', sessionCookie, {
     httpOnly: true,
