@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
@@ -23,12 +24,19 @@ function SubmitButton() {
 }
 
 export default function AdminLoginPage() {
+  const router = useRouter();
   const { toast } = useToast();
   const [state, formAction] = useActionState(loginAction, {
     success: false,
     message: '',
     errors: {},
   });
+
+  useEffect(() => {
+    if (state.success) {
+      router.push('/admin/dashboard');
+    }
+  }, [state, router]);
 
   useEffect(() => {
     if (state.message && !state.success) {
