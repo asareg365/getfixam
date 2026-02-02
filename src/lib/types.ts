@@ -49,6 +49,7 @@ export type Provider = {
   suspendedBy?: string;
   loginPinHash?: string;
   loginPinCreatedAt?: string;
+  updatedAt?: string;
   services?: { name: string; active: boolean; price?: number }[];
   availability?: {
       [day: string]: { from: string; to: string };
@@ -128,3 +129,4 @@ export type ProviderLog = {
 
 
     
+

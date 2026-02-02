@@ -1,13 +1,14 @@
 'use server';
 
 import { admin } from '@/lib/firebase-admin';
+import type { Provider } from '@/lib/types';
+import { logProviderAction } from '@/lib/audit-log';
+import { headers } from 'next/headers';
+import { revalidatePath } from 'next/cache';
 
-/**
- * Securely checks if a provider account is eligible for PIN login.
- * This is a server action called from the login page.
- * @param rawPhoneNumber The phone number entered by the user, expected in `0...` format.
- * @returns An object indicating if the provider can log in and an optional error message.
- */
+// Re-using getProviderData from lib/provider.ts is a good idea.
+import { getProviderData } from '@/lib/provider';
+
 export async function checkProviderForPinLogin(rawPhoneNumber: string): Promise<{ canLogin: boolean; message: string | null }> {
     if (!rawPhoneNumber || !/^0[0-9]{9}$/.test(rawPhoneNumber)) {
         return { canLogin: false, message: 'Please enter a valid 10-digit Ghanaian phone number starting with 0.' };
@@ -46,4 +47,63 @@ export async function checkProviderForPinLogin(rawPhoneNumber: string): Promise<
         console.error("Error in checkProviderForPinLogin:", e);
         return { canLogin: false, message: 'An unexpected error occurred while checking your account.' };
     }
+}
+
+
+export async function updateProviderProfile(
+    idToken: string,
+    data: { name: string; whatsapp: string; digitalAddress: string; zone: string; }
+) {
+  if (!idToken) {
+    return { success: false, error: "Authentication required." };
+  }
+  
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const uid = decodedToken.uid;
+
+    const providersRef = admin.firestore().collection('providers');
+    const snap = await providersRef.where('authUid', '==', uid).limit(1).get();
+
+    if (snap.empty) {
+      return { success: false, error: 'Provider not found.' };
+    }
+
+    const providerRef = snap.docs[0].ref;
+    const currentProviderData = snap.docs[0].data() as Provider;
+
+    // Sanitize and validate the input data
+    const updateData: any = {
+        name: data.name,
+        whatsapp: data.whatsapp,
+        digitalAddress: data.digitalAddress,
+        location: {
+            ...currentProviderData.location,
+            zone: data.zone,
+        },
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    await providerRef.update(updateData);
+    
+    // Log the action
+    const headersList = headers();
+    const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+    const userAgent = headersList.get('user-agent') || 'unknown';
+    
+    await logProviderAction({
+        providerId: providerRef.id,
+        action: 'PROVIDER_PROFILE_UPDATE',
+        ipAddress,
+        userAgent,
+    });
+    
+    revalidatePath('/provider/profile');
+    revalidatePath('/provider/dashboard');
+
+    return { success: true };
+  } catch (e: any) {
+    console.error('Error updating provider profile:', e);
+    return { success: false, error: e.message || 'An unexpected error occurred.' };
+  }
 }
