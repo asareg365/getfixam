@@ -15,13 +15,17 @@
           "description": "The role of the admin.",
           "enum": ["super_admin", "admin"]
         },
+        "active": {
+            "type": "boolean",
+            "description": "Whether the admin account is active."
+        },
         "createdAt": {
             "type": "string",
             "format": "date-time",
             "description": "The timestamp when the admin was created."
         }
       },
-      "required": ["email", "role", "createdAt"]
+      "required": ["email", "role", "createdAt", "active"]
     },
     "Service": {
         "title": "Service",
@@ -695,3 +699,5 @@
     }
   }
 }
+
+    

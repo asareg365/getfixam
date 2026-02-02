@@ -18,13 +18,24 @@ async function getAdminUserForSecurityPage(): Promise<{ uid: string; email: stri
 
     try {
         const decoded = jwt.verify(token, SECRET) as JwtPayload;
-        if (decoded.email?.toLowerCase() !== 'asareg365@gmail.com') {
+        if (!decoded.email) {
+            throw new Error('Unauthorized user: Invalid token.');
+        }
+
+        const adminQuery = await adminDb.collection('admins').where('email', '==', decoded.email).limit(1).get();
+        if (adminQuery.empty) {
             throw new Error('Unauthorized user.');
         }
+
+        const adminData = adminQuery.docs[0].data();
+        if (adminData.role !== 'super_admin') {
+            throw new Error('Insufficient permissions. Only a super admin can change lockout status.');
+        }
+
         return { uid: decoded.uid as string, email: decoded.email };
-    } catch (err) {
+    } catch (err: any) {
         console.error('Admin session verification failed for security page:', err);
-        throw new Error("Invalid admin session.");
+        throw new Error(err.message || "Invalid admin session.");
     }
 }
 
@@ -75,3 +86,5 @@ export async function updateLockoutStatus(prevState: any, formData: FormData) {
     return { success: false, message: error.message || 'Failed to update status.' };
   }
 }
+
+    

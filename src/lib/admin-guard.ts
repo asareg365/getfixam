@@ -10,6 +10,7 @@ const SECRET = process.env.ADMIN_JWT_SECRET || 'this-is-a-super-secret-key-that-
 type AdminUser = {
   uid: string;
   email: string | undefined;
+  role: string;
 }
 
 export async function requireAdmin(): Promise<AdminUser> {
@@ -32,14 +33,27 @@ export async function requireAdmin(): Promise<AdminUser> {
   try {
     const decoded = jwt.verify(token, SECRET) as JwtPayload;
     
-    // The token contains the user's email, which we verified on login.
-    // We double-check it here as an extra layer of security.
-    if (decoded.email?.toLowerCase() !== 'asareg365@gmail.com') {
-      throw new Error('Unauthorized user: Invalid email in token.');
+    if (!decoded.email) {
+        throw new Error('Invalid token: email missing.');
     }
+
+    // Re-validate against Firestore to ensure user is still an active admin
+    const adminQuery = await adminDb.collection('admins')
+        .where('email', '==', decoded.email)
+        .where('active', '==', true)
+        .limit(1)
+        .get();
+
+    if (adminQuery.empty) {
+        throw new Error('Unauthorized: Admin not found or inactive.');
+    }
+    
+    const adminData = adminQuery.docs[0].data();
+
     return {
         uid: decoded.uid as string,
-        email: decoded.email
+        email: decoded.email,
+        role: adminData.role,
     };
   } catch (err) {
     // If token is invalid (expired, tampered), delete the bad cookie and redirect.
@@ -55,8 +69,18 @@ export async function isAdminUser(): Promise<boolean> {
 
   try {
     const decoded = jwt.verify(token, SECRET) as JwtPayload;
-    return decoded.email?.toLowerCase() === 'asareg365@gmail.com';
+    if (!decoded.email) return false;
+
+    const adminQuery = await adminDb.collection('admins')
+        .where('email', '==', decoded.email)
+        .where('active', '==', true)
+        .limit(1)
+        .get();
+
+    return !adminQuery.empty;
   } catch (error) {
     return false;
   }
 }
+
+    

@@ -31,18 +31,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Email and password are required.' }, { status: 400 });
     }
     
-    // Log failed attempt if it's not the admin email, but don't give away that the email is wrong.
-    if (email.toLowerCase() !== 'asareg365@gmail.com') {
-        await logAdminAction({ adminEmail: email, action: 'ADMIN_LOGIN_FAILED', targetType: 'system', targetId: email, ipAddress: ip, userAgent });
-        return NextResponse.json({ success: false, message: 'Invalid credentials.' }, { status: 401 });
-    }
-
     const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
     if (!apiKey) {
       console.error('Server Error: NEXT_PUBLIC_FIREBASE_API_KEY is not set.');
       throw new Error('Server configuration error.');
     }
     
+    // Step 1: Authenticate with Firebase Auth
     const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -51,6 +46,7 @@ export async function POST(req: NextRequest) {
 
     const authData = await res.json();
 
+    // Handle failed Firebase Auth sign-in
     if (!res.ok) {
       const currentCount = attemptSnap.data()?.count || 0;
       const isBlocked = (currentCount + 1) >= MAX_ATTEMPTS;
@@ -72,12 +68,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Invalid credentials.' }, { status: 401 });
     }
     
+    // Step 2: Verify against Firestore 'admins' collection
+    const { localId, email: userEmail } = authData;
+    const adminQuery = await adminDb.collection('admins').where('email', '==', userEmail).limit(1).get();
+
+    if (adminQuery.empty) {
+      await logAdminAction({ adminEmail: userEmail, action: 'ADMIN_LOGIN_FAILED', targetType: 'system', targetId: userEmail, ipAddress: ip, userAgent });
+      return NextResponse.json({ success: false, message: 'Invalid credentials.' }, { status: 401 });
+    }
+
+    const adminData = adminQuery.docs[0].data();
+
+    // Step 3: Check if admin is active
+    if (adminData.active !== true) {
+        await logAdminAction({ adminEmail: userEmail, action: 'ADMIN_LOGIN_FAILED', targetType: 'system', targetId: userEmail, ipAddress: ip, userAgent });
+        return NextResponse.json({ success: false, message: 'Your administrator account is inactive.' }, { status: 403 });
+    }
+
+    // Step 4: Login successful. Create session.
     if (attemptSnap.exists) {
       await attemptRef.delete();
     }
 
-    const { localId, email: userEmail } = authData;
-    const token = await signToken({ uid: localId, email: userEmail });
+    const token = await signToken({ uid: localId, email: userEmail, role: adminData.role });
 
     const response = NextResponse.json({ success: true, message: 'Login successful' });
     
@@ -100,3 +113,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'An unexpected server error occurred.' }, { status: 500 });
   }
 }
+
+    
