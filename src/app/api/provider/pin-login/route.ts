@@ -36,13 +36,16 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, message: `Your account is currently ${providerData.status}.` }, { status: 403 });
     }
     if (!providerData.loginPinHash) {
-        return NextResponse.json({ success: false, message: 'This account is not eligible for PIN login, or the PIN has already been used.' }, { status: 403 });
+        return NextResponse.json({ success: false, message: 'This account is not eligible for PIN login. This might be because you have already used your one-time PIN.' }, { status: 403 });
     }
 
     // Verify PIN
     const pinMatch = await bcrypt.compare(pin, providerData.loginPinHash);
+    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || req.ip || 'unknown';
+    const userAgent = req.headers.get('user-agent') || 'unknown';
 
     if (!pinMatch) {
+        await logProviderAction({ providerId: providerDoc.id, action: 'PROVIDER_LOGIN_FAILED_PIN', ipAddress, userAgent });
         return NextResponse.json({ success: false, message: 'The PIN you entered is incorrect.' }, { status: 401 });
     }
     
@@ -55,31 +58,35 @@ export async function POST(req: NextRequest) {
         user = await admin.auth().getUserByPhoneNumber(formattedPhone);
     } catch (error: any) {
         if (error.code === 'auth/user-not-found') {
-            user = await admin.auth().createUser({ phoneNumber: formattedPhone });
+            user = await admin.auth().createUser({ phoneNumber: formattedPhone, displayName: providerData.name });
         } else {
             throw error; // Re-throw other errors
         }
     }
 
+    // If the authUid on the provider doc doesn't match the found user, update it.
+    if (providerData.authUid !== user.uid) {
+        await providerDoc.ref.update({ authUid: user.uid });
+    }
+    
+    // Generate an ID token. We will create a session cookie from this on the client.
     const customToken = await admin.auth().createCustomToken(user.uid);
 
-    // After successful PIN verification, nullify the PIN and link the auth UID
+    // After successful PIN verification, nullify the PIN
     await providerDoc.ref.update({
         loginPinHash: null,
-        loginPinCreatedAt: null, // Also clear the creation date
-        authUid: user.uid
+        loginPinCreatedAt: null,
     });
     
-    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || req.ip || 'unknown';
-    const userAgent = req.headers.get('user-agent') || 'unknown';
-
     await logProviderAction({
         providerId: providerDoc.id,
-        action: 'PROVIDER_LOGIN_SUCCESS',
+        action: 'PROVIDER_LOGIN_SUCCESS_PIN',
         ipAddress,
         userAgent,
     });
     
+    // Instead of setting a cookie here, we return the custom token
+    // The client will sign in with it, get an ID token, and then call /api/session
     return NextResponse.json({ success: true, token: customToken });
 
   } catch (error: any) {
@@ -87,5 +94,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'An unexpected server error occurred.' }, { status: 500 });
   }
 }
-
-    

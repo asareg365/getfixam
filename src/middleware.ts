@@ -4,15 +4,19 @@ import { admin } from '@/lib/firebase-admin';
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  
-  // Allow access to login and pending pages
+  const session = req.cookies.get('__session')?.value;
+
+  // Allow access to the login and pending pages themselves
   if (pathname.startsWith('/provider/login') || pathname.startsWith('/provider/pending')) {
+    // If user has a session but tries to go to login, redirect to dashboard
+    if (session && pathname.startsWith('/provider/login')) {
+      return NextResponse.redirect(new URL('/provider/dashboard', req.url));
+    }
     return NextResponse.next();
   }
 
-  // All other /provider routes are protected
+  // Protect all other /provider routes
   if (pathname.startsWith('/provider')) {
-    const session = req.cookies.get('__session')?.value;
     if (!session) {
       return NextResponse.redirect(new URL('/provider/login', req.url));
     }
@@ -38,7 +42,7 @@ export async function middleware(req: NextRequest) {
       const provider = snap.docs[0].data();
 
       // If the provider is not approved, redirect them to a pending page.
-      if (provider.status !== 'approved' || provider.verified !== true) {
+      if (provider.status !== 'approved') {
         return NextResponse.redirect(new URL('/provider/pending', req.url));
       }
 

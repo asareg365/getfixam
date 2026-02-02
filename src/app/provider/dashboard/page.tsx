@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import { getProviderData } from '@/lib/provider';
 import type { Provider } from '@/lib/types';
+import { getAuth, onIdTokenChanged, type User } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,36 +16,40 @@ import Loading from './loading';
 
 export default function ProviderDashboardPage() {
   const router = useRouter();
+  const [user, setUser] = useState<User | null>(auth.currentUser);
   const [provider, setProvider] = useState<Provider | null>(null);
   const [loading, setLoading] = useState(true);
   const [accountError, setAccountError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    // Use onIdTokenChanged to handle token refresh gracefully
+    const unsubscribe = onIdTokenChanged(auth, async (currentUser) => {
+      setUser(currentUser);
       if (currentUser) {
         try {
           const idToken = await currentUser.getIdToken();
           const { provider: providerData, error } = await getProviderData(idToken);
 
           if (error) {
-              setAccountError(error);
+            setAccountError(error);
           } else if (providerData) {
-              setProvider(providerData);
+            setProvider(providerData);
           } else {
-              setAccountError("An unknown error occurred while retrieving your account.");
+            setAccountError("An unknown error occurred while retrieving your account.");
           }
-        } catch(e: any) {
-            console.error("Error fetching provider data: ", e);
-            setAccountError(e.message || 'An error occurred while fetching your data.');
+        } catch (e: any) {
+          console.error("Error fetching provider data: ", e);
+          setAccountError(e.message || 'An error occurred while fetching your data.');
         }
       } else {
-        router.push('/provider/login');
+        // If no user, middleware will handle redirect, but we can stop loading.
+        setProvider(null);
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, []);
 
   if (loading) {
     return <Loading />;
@@ -54,9 +58,10 @@ export default function ProviderDashboardPage() {
   if (accountError) {
       return (
         <Alert variant="destructive" className="max-w-2xl mx-auto">
-            <AlertTitle>Account Not Found</AlertTitle>
+            <AlertTitle>Account Error</AlertTitle>
             <AlertDescription className='space-y-4'>
                 <p>{accountError}</p>
+                <p>If you have just registered, your account may still be under review.</p>
                  <Button onClick={() => router.push('/add-provider')}>Create a Business Listing</Button>
             </AlertDescription>
         </Alert>
@@ -64,6 +69,7 @@ export default function ProviderDashboardPage() {
   }
 
   if (!provider) {
+    // This state can be hit briefly during redirect or if there's an issue.
     return <Loading />;
   }
   
