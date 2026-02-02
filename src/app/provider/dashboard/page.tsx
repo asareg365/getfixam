@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { getProviderDataAndLinkAccount } from '../actions';
+import { getProviderData } from '@/lib/provider';
 import type { Provider } from '@/lib/types';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,7 +25,7 @@ export default function ProviderDashboardPage() {
       if (currentUser) {
         try {
           const idToken = await currentUser.getIdToken();
-          const { provider: providerData, error } = await getProviderDataAndLinkAccount(idToken);
+          const { provider: providerData, error } = await getProviderData(idToken);
 
           if (error) {
               setAccountError(error);

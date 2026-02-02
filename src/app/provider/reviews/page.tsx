@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { getProviderData } from '@/lib/provider';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { getProviderDataAndLinkAccount } from '../actions';
 import type { Provider } from '@/lib/types';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,7 +37,7 @@ export default function ProviderReviewsPage() {
       if (currentUser) {
         try {
           const idToken = await currentUser.getIdToken();
-          const { provider: providerData, error: providerError } = await getProviderDataAndLinkAccount(idToken);
+          const { provider: providerData, error: providerError } = await getProviderData(idToken);
           if (providerError) setError(providerError);
           else setProvider(providerData);
         } catch(e: any) {
