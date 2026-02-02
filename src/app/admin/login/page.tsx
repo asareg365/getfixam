@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useActionState, useEffect } from 'react';
+import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -10,44 +11,40 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { loginAction } from './actions';
+
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" className="w-full" disabled={pending}>
+      {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Sign In'}
+    </Button>
+  );
+}
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [state, formAction] = useActionState(loginAction, {
+    success: false,
+    message: '',
+    errors: {},
+  });
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (res.ok) {
-        toast({ title: 'Login successful!', description: 'Redirecting to dashboard...' });
-        router.push('/admin/dashboard');
-        router.refresh(); // Forces a refresh of server components
-      } else {
-        const data = await res.json();
-        throw new Error(data.message || 'Login failed');
-      }
-    } catch (error: any) {
-      console.error('Admin login error:', error);
+  useEffect(() => {
+    if (state.success) {
+      toast({ title: 'Login successful!', description: 'Redirecting to dashboard...' });
+      router.push('/admin/dashboard');
+      router.refresh();
+    } else if (state.message) {
       toast({
         title: 'Login Failed',
-        description: error.message || 'An unexpected error occurred.',
+        description: state.message,
         variant: 'destructive',
       });
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [state, toast, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-secondary/30">
@@ -63,33 +60,29 @@ export default function AdminLoginPage() {
             </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form action={formAction} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 placeholder="admin@example.com"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
               />
+              {state.errors?.email && <p className="text-sm text-destructive">{state.errors.email[0]}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
+                name="password"
                 type="password"
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
               />
+               {state.errors?.password && <p className="text-sm text-destructive">{state.errors.password[0]}</p>}
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Sign In'}
-            </Button>
+            <SubmitButton />
           </form>
         </CardContent>
       </Card>
