@@ -17,6 +17,7 @@ const loginSchema = z.object({
 });
 
 export async function loginAction(prevState: any, formData: FormData) {
+  console.log('Admin login endpoint reached'); // DEBUG LOG
   const ip = headers().get('x-forwarded-for')?.split(',')[0] || 'unknown';
   const userAgent = headers().get('user-agent') || 'unknown';
   const attemptRef = adminDb.collection('admin_login_attempts').doc(ip);
