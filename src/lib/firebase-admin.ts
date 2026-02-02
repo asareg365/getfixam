@@ -9,19 +9,17 @@ const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 const projectId = process.env.FIREBASE_PROJECT_ID;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 
-// Check for missing environment variables
+// Check for missing environment variables.
+// In a build environment (like `next build`) or other environments without full credentials,
+// we set the admin objects to null and warn the developer.
+// Data fetching functions must handle the case where adminDb is null.
 if (!privateKey || !projectId || !clientEmail) {
-  // In a production environment, this is a fatal error and the app should not start.
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error("CRITICAL: One or more Firebase Admin SDK environment variables are not set. The application cannot function in production.");
-  } else {
-    // In development or during build, we can warn but should not crash the process.
-    console.warn("Firebase Admin SDK credentials not found. This is expected during some build steps, but will cause runtime errors if Admin SDK is used on the server.");
-    adminDb = null;
-    adminAuth = null;
-  }
+  console.warn("Firebase Admin SDK credentials not found. This is expected during the build process. Admin-dependent features will be disabled or fall back to mock data at build time.");
+  adminDb = null;
+  adminAuth = null;
 } else {
-  // If credentials are present, initialize the app
+  // If credentials are present, initialize the app.
+  // This ensures we don't re-initialize on hot reloads.
   const app =
     getApps().length === 0
       ? initializeApp({
