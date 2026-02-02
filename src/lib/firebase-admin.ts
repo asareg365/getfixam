@@ -11,12 +11,11 @@ const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 
 /**
  * Robust initialization of the Firebase Admin SDK.
- * During the build process (next build), environment variables may be missing.
- * In such cases, we set the instances to null so that consuming functions can
- * gracefully fall back to mock data or skip live database operations.
+ * During the build process, environment variables are missing.
+ * We only attempt initialization if the keys are present.
  */
-try {
-  if (privateKey && projectId && clientEmail) {
+if (privateKey && projectId && clientEmail) {
+  try {
     const app =
       getApps().length === 0
         ? initializeApp({
@@ -30,16 +29,9 @@ try {
 
     adminDb = getFirestore(app);
     adminAuth = getAuth(app);
-  } else {
-    // During local build or if secrets aren't set yet, we log a warning but don't crash.
-    if (process.env.NODE_ENV === 'production') {
-        console.error("CRITICAL: Firebase Admin credentials missing in production environment.");
-    } else {
-        console.warn("Firebase Admin SDK: Credentials not found. Build will proceed using fallback data.");
-    }
+  } catch (error) {
+    console.error("Firebase Admin SDK Initialization Error:", error);
   }
-} catch (error) {
-  console.error("Firebase Admin SDK Initialization Error:", error);
 }
 
 export { adminDb, adminAuth };

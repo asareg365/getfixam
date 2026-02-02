@@ -1,20 +1,31 @@
 'use server';
 
-import jwt from 'jsonwebtoken';
+import { SignJWT, jwtVerify } from 'jose';
 
-// It's crucial to use a strong, secret key stored in an environment variable.
-const SECRET = process.env.ADMIN_JWT_SECRET || 'this-is-a-super-secret-key-that-should-be-in-an-env-file';
+const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'this-is-a-super-secret-key-that-should-be-in-an-env-file';
+const key = new TextEncoder().encode(SECRET_KEY);
 
-if (process.env.NODE_ENV === 'production' && SECRET === 'this-is-a-super-secret-key-that-should-be-in-an-env-file') {
-    console.warn('WARNING: ADMIN_JWT_SECRET is not set for production. Using a default, insecure secret.');
+/**
+ * Signs a payload to create a JWT using jose (Edge compatible).
+ */
+export async function signToken(payload: any): Promise<string> {
+  return await new SignJWT(payload)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('2h')
+    .sign(key);
 }
 
 /**
- * Signs a payload to create a JWT.
- * @param payload The data to include in the token.
- * @param expiresIn How long the token should be valid (e.g., '2h', '7d').
- * @returns The signed JWT string.
+ * Verifies a JWT using jose (Edge compatible).
  */
-export async function signToken(payload: object, expiresIn = '2h'): Promise<string> {
-  return jwt.sign(payload, SECRET, { expiresIn });
+export async function verifyToken(token: string) {
+  try {
+    const { payload } = await jwtVerify(token, key, {
+      algorithms: ['HS256'],
+    });
+    return payload;
+  } catch (error) {
+    return null;
+  }
 }

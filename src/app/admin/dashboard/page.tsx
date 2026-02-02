@@ -18,7 +18,6 @@ async function getDashboardData() {
             throw new Error("Database not connected");
         }
 
-        // Fetch live counts for the stat cards
         const [
             providersSnap,
             pendingProvidersSnap,
@@ -31,12 +30,11 @@ async function getDashboardData() {
             adminDb.collection('services').where('active', '==', true).count().get()
         ]);
 
-        const totalProviders = providersSnap.data().count;
-        const pendingProviders = pendingProvidersSnap.data().count;
-        const totalRequests = requestsSnap.data().count;
-        const activeServices = activeServicesSnap.data().count;
+        const totalProviders = providersSnap.data()?.count ?? 0;
+        const pendingProviders = pendingProvidersSnap.data()?.count ?? 0;
+        const totalRequests = requestsSnap.data()?.count ?? 0;
+        const activeServices = activeServicesSnap.data()?.count ?? 0;
         
-        // Fetch live standby and prediction data
         const predictionDoc = await adminDb.collection('predictions').doc('tomorrow').get();
         const predictionData = predictionDoc.data();
         const prediction: Prediction | null = predictionDoc.exists && predictionData ? { 
@@ -52,7 +50,6 @@ async function getDashboardData() {
             let standbyArtisans: Provider[] = [];
 
             if (artisanIds.length > 0) {
-                 // Fetch provider details in a single query
                 const providersSnap = await adminDb.collection('providers').where(FieldPath.documentId(), 'in', artisanIds).get();
                 const providersMap = new Map<string, Provider>();
                 providersSnap.forEach(doc => {
@@ -63,7 +60,7 @@ async function getDashboardData() {
                         phone: data.phone ?? '',
                     } as Provider);
                 });
-                standbyArtisans = artisanIds.map(id => providersMap.get(id)).filter(Boolean) as Provider[];
+                standbyArtisans = artisanIds.map(id => providersMap.set ? providersMap.get(id) : null).filter(Boolean) as Provider[];
             }
 
             standby = {
@@ -98,7 +95,6 @@ async function getDashboardData() {
             standby,
         };
     } catch (error) {
-        console.error('Dashboard data fallback:', error);
         return {
             totalProviders: 0,
             pendingProviders: 0,
@@ -112,10 +108,8 @@ async function getDashboardData() {
     }
 }
 
-
 export default async function AdminDashboard() {
   await requireAdmin();
-
   const data = await getDashboardData();
 
   return (
