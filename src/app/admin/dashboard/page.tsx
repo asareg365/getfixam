@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DashboardCharts } from './_components/dashboard-charts';
 import { HeatmapList } from './_components/heatmap-list';
@@ -128,22 +128,30 @@ export default async function AdminDashboard() {
       <h1 className="text-3xl font-bold font-headline">Admin Dashboard</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-              <CardHeader><CardTitle>Total Providers</CardTitle></CardHeader>
-              <CardContent><p className="text-3xl font-bold">{data.totalProviders}</p></CardContent>
-          </Card>
-           <Card>
-              <CardHeader><CardTitle>Pending</CardTitle></CardHeader>
-              <CardContent><p className="text-3xl font-bold">{data.pendingProviders}</p></CardContent>
-          </Card>
-           <Card>
-              <CardHeader><CardTitle>Total Requests</CardTitle></CardHeader>
-              <CardContent><p className="text-3xl font-bold">{data.totalRequests}</p></CardContent>
-          </Card>
-           <Card>
-              <CardHeader><CardTitle>Services</CardTitle></CardHeader>
-              <CardContent><p className="text-3xl font-bold">{data.activeServices}</p></CardContent>
-          </Card>
+          <Link href="/admin/providers?status=all">
+            <Card className="hover:bg-muted/50 transition-colors">
+                <CardHeader><CardTitle>Total Providers</CardTitle></CardHeader>
+                <CardContent><p className="text-3xl font-bold">{data.totalProviders}</p></CardContent>
+            </Card>
+          </Link>
+          <Link href="/admin/providers?status=pending">
+            <Card className="hover:bg-muted/50 transition-colors">
+                <CardHeader><CardTitle>Pending</CardTitle></CardHeader>
+                <CardContent><p className="text-3xl font-bold">{data.pendingProviders}</p></CardContent>
+            </Card>
+          </Link>
+          <Link href="/admin/jobs">
+            <Card className="hover:bg-muted/50 transition-colors">
+                <CardHeader><CardTitle>Total Requests</CardTitle></CardHeader>
+                <CardContent><p className="text-3xl font-bold">{data.totalRequests}</p></CardContent>
+            </Card>
+          </Link>
+          <Link href="/admin/services">
+            <Card className="hover:bg-muted/50 transition-colors">
+                <CardHeader><CardTitle>Services</CardTitle></CardHeader>
+                <CardContent><p className="text-3xl font-bold">{data.activeServices}</p></CardContent>
+            </Card>
+          </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
