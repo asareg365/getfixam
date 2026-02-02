@@ -11,8 +11,8 @@ const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 
 /**
  * Robust initialization of the Firebase Admin SDK.
- * During the build process, environment variables are missing.
- * We only attempt initialization if the keys are present.
+ * CRITICAL: This is only initialized if environment variables are present.
+ * During the Next.js build process, these are missing, so it safely sets them to null.
  */
 if (privateKey && projectId && clientEmail) {
   try {

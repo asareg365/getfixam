@@ -4,7 +4,7 @@ import type {NextConfig} from 'next';
 const nextConfig: NextConfig = {
   output: 'standalone',
   typescript: {
-    // We want to see build errors, so we remove the ignore property.
+    // We remove the ignore property to see build errors.
   },
   eslint: {
     ignoreDuringBuilds: true,

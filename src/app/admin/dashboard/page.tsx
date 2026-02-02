@@ -7,7 +7,7 @@ import { StandbyCard } from './_components/standby-card';
 import { requireAdmin } from '@/lib/admin-guard';
 import { adminDb } from '@/lib/firebase-admin';
 import { FieldPath } from 'firebase-admin/firestore';
-import type { Provider, Prediction, StandbyPrediction, Request } from '@/lib/types';
+import type { Provider, Prediction, StandbyPrediction } from '@/lib/types';
 import { REQUESTS } from '@/lib/data';
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +15,17 @@ export const dynamic = 'force-dynamic';
 async function getDashboardData() {
     try {
         if (!adminDb) {
-            throw new Error("Database not connected");
+            // Safe fallback for build time
+            return {
+                totalProviders: 0,
+                pendingProviders: 0,
+                activeServices: 0,
+                totalRequests: 0,
+                serviceChartData: [],
+                locationChartData: [],
+                prediction: null,
+                standby: null,
+            };
         }
 
         const [
@@ -60,7 +70,7 @@ async function getDashboardData() {
                         phone: data.phone ?? '',
                     } as Provider);
                 });
-                standbyArtisans = artisanIds.map(id => providersMap.set ? providersMap.get(id) : null).filter(Boolean) as Provider[];
+                standbyArtisans = artisanIds.map(id => providersMap.get(id)).filter(Boolean) as Provider[];
             }
 
             standby = {
@@ -95,6 +105,7 @@ async function getDashboardData() {
             standby,
         };
     } catch (error) {
+        console.error("Dashboard data fetch error:", error);
         return {
             totalProviders: 0,
             pendingProviders: 0,
@@ -117,8 +128,8 @@ export default async function AdminDashboard() {
       <h1 className="text-3xl font-bold font-headline">Admin Dashboard</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Link href="/admin/providers?status=all">
-            <Card className="hover:bg-muted/50 transition-colors cursor-pointer border-primary/20 hover:border-primary">
+          <Link href="/admin/providers?status=all" className="block">
+            <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer border-primary/20 hover:border-primary">
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Total Providers</CardTitle>
                 </CardHeader>
@@ -127,8 +138,8 @@ export default async function AdminDashboard() {
                 </CardContent>
             </Card>
           </Link>
-          <Link href="/admin/providers?status=pending">
-            <Card className="hover:bg-muted/50 transition-colors cursor-pointer border-primary/20 hover:border-primary">
+          <Link href="/admin/providers?status=pending" className="block">
+            <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer border-primary/20 hover:border-primary">
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle>
                 </CardHeader>
@@ -137,8 +148,8 @@ export default async function AdminDashboard() {
                 </CardContent>
             </Card>
           </Link>
-          <Link href="/admin/jobs">
-            <Card className="hover:bg-muted/50 transition-colors cursor-pointer border-primary/20 hover:border-primary">
+          <Link href="/admin/jobs" className="block">
+            <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer border-primary/20 hover:border-primary">
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Total Requests</CardTitle>
                 </CardHeader>
@@ -147,8 +158,8 @@ export default async function AdminDashboard() {
                 </CardContent>
             </Card>
           </Link>
-          <Link href="/admin/services">
-            <Card className="hover:bg-muted/50 transition-colors cursor-pointer border-primary/20 hover:border-primary">
+          <Link href="/admin/services" className="block">
+            <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer border-primary/20 hover:border-primary">
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Services</CardTitle>
                 </CardHeader>
