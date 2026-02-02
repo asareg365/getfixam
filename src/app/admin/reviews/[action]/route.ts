@@ -1,6 +1,7 @@
 'use server';
 
-import { admin } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { FieldValue, type DocumentData } from 'firebase-admin/firestore';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-guard';
 import { revalidatePath } from 'next/cache';
@@ -20,20 +21,20 @@ export async function POST(req: NextRequest, { params }: { params: { action: Act
 
     const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || req.ip || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
-    const reviewRef = admin.firestore().collection('reviews').doc(reviewId);
+    const reviewRef = adminDb.collection('reviews').doc(reviewId);
     
     if (params.action === 'approve') {
-      let reviewData: admin.firestore.DocumentData;
-      let providerData: admin.firestore.DocumentData;
+      let reviewData: DocumentData;
+      let providerData: DocumentData;
 
-      await admin.firestore().runTransaction(async (transaction) => {
+      await adminDb.runTransaction(async (transaction) => {
         const reviewSnap = await transaction.get(reviewRef);
         if (!reviewSnap.exists) throw new Error('Review not found.');
         
         reviewData = reviewSnap.data()!;
         if (reviewData.status === 'approved') return;
 
-        const providerRef = admin.firestore().collection('providers').doc(reviewData.providerId);
+        const providerRef = adminDb.collection('providers').doc(reviewData.providerId);
         const providerSnap = await transaction.get(providerRef);
         if (!providerSnap.exists) throw new Error('Associated provider not found.');
 
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest, { params }: { params: { action: Act
 
         transaction.update(reviewRef, {
           status: 'approved',
-          approvedAt: admin.firestore.FieldValue.serverTimestamp(),
+          approvedAt: FieldValue.serverTimestamp(),
           approvedBy: adminUser.email,
         });
       });
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest, { params }: { params: { action: Act
       
       await reviewRef.update({
         status: 'rejected',
-        rejectedAt: admin.firestore.FieldValue.serverTimestamp(),
+        rejectedAt: FieldValue.serverTimestamp(),
         rejectedBy: adminUser.email,
       });
 

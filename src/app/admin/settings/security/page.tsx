@@ -1,4 +1,4 @@
-import { admin } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import SecurityForm from './form';
 import { ShieldAlert } from 'lucide-react';
@@ -10,7 +10,7 @@ async function getLockoutStatus() {
   // even when the system is locked, otherwise you can't unlock it.
   // Middleware will still protect this page from unauthenticated users.
   
-  const settingsRef = admin.firestore().collection('system_settings').doc('admin');
+  const settingsRef = adminDb.collection('system_settings').doc('admin');
   const snap = await settingsRef.get();
 
   if (!snap.exists) {

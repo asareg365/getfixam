@@ -1,6 +1,7 @@
 'use server';
 
-import { admin } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-guard';
 import { logAdminAction } from '@/lib/audit-log';
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Provider ID missing' }, { status: 400 });
     }
 
-    const providerRef = admin.firestore().collection('providers').doc(providerId);
+    const providerRef = adminDb.collection('providers').doc(providerId);
     const providerSnap = await providerRef.get();
 
     if (!providerSnap.exists || providerSnap.data()?.status !== 'approved') {
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     // Update the provider document
     await providerRef.update({
       loginPinHash: pinHash,
-      loginPinCreatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      loginPinCreatedAt: FieldValue.serverTimestamp(),
     });
 
     // Log the admin action
@@ -57,5 +58,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: error.message || 'Unexpected error' }, { status: 500 });
   }
 }
-
-    

@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { admin } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import type { Query } from 'firebase-admin/firestore';
 import { requireAdmin } from '@/lib/admin-guard';
 import AuditLogsClient from './_components/audit-logs-client';
 import { startOfDay, endOfDay } from 'date-fns';
@@ -20,7 +21,7 @@ interface AuditLog {
 
 // Helper to get unique values for filter dropdowns
 async function getUniqueLogFields() {
-    const snapshot = await admin.firestore().collection('auditLogs').select('action', 'targetType').get();
+    const snapshot = await adminDb.collection('auditLogs').select('action', 'targetType').get();
     const actions = new Set<string>();
     const targetTypes = new Set<string>();
     snapshot.forEach(doc => {
@@ -44,7 +45,7 @@ export default async function AuditLogsPage({
 
   const { action, targetType, search, from, to } = searchParams;
   
-  let query: admin.firestore.Query = admin.firestore().collection('auditLogs');
+  let query: Query = adminDb.collection('auditLogs');
 
   if (action) {
     query = query.where('action', '==', action);

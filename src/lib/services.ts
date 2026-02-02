@@ -1,9 +1,11 @@
 
 
 
+
 import { collection, getDocs, query, where, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
-import { admin } from './firebase-admin';
+import { adminDb } from './firebase-admin';
+import { FieldValue, FieldPath } from 'firebase-admin/firestore';
 import type { Category, Provider, Review, Request, Prediction, StandbyPrediction } from './types';
 import { cache } from 'react';
 import { BEREKUM_ZONES, CATEGORIES } from './data';
@@ -175,7 +177,7 @@ export async function getReviewsByProviderId(providerId: string): Promise<Review
 export async function addProvider(
     data: { name: string; serviceId: string; phone: string; whatsapp: string; location: object; imageId: string; digitalAddress: string; }
 ) {
-    await admin.firestore().collection('providers').add({
+    await adminDb.collection('providers').add({
       name: data.name,
       phone: data.phone,
       whatsapp: data.whatsapp,
@@ -188,7 +190,7 @@ export async function addProvider(
       isFeatured: false,
       rating: 0,
       reviewCount: 0,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: FieldValue.serverTimestamp()
     });
     
     return { success: true };
@@ -198,10 +200,10 @@ export async function addProvider(
  * Adds a new review to Firestore with 'pending' status for moderation. Uses Admin SDK.
  */
 export async function addReview(data: Omit<Review, 'id' | 'createdAt' | 'status'>) {
-    await admin.firestore().collection('reviews').add({
+    await adminDb.collection('reviews').add({
       ...data,
       status: 'pending',
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: FieldValue.serverTimestamp()
     });
     return { success: true };
 }
@@ -226,10 +228,10 @@ export async function getDashboardData() {
             requestsSnap,
             activeServicesSnap
         ] = await Promise.all([
-            admin.firestore().collection('providers').count().get(),
-            admin.firestore().collection('providers').where('status', '==', 'pending').count().get(),
-            admin.firestore().collection('requests').count().get(),
-            admin.firestore().collection('services').where('active', '==', true).count().get()
+            adminDb.collection('providers').count().get(),
+            adminDb.collection('providers').where('status', '==', 'pending').count().get(),
+            adminDb.collection('requests').count().get(),
+            adminDb.collection('services').where('active', '==', true).count().get()
         ]);
 
         const totalProviders = providersSnap.data().count;
@@ -238,14 +240,14 @@ export async function getDashboardData() {
         const activeServices = activeServicesSnap.data().count;
         
         // Fetch live standby and prediction data
-        const predictionDoc = await admin.firestore().collection('predictions').doc('tomorrow').get();
+        const predictionDoc = await adminDb.collection('predictions').doc('tomorrow').get();
         const predictionData = predictionDoc.data();
         const prediction: Prediction | null = predictionDoc.exists && predictionData ? { 
             ...predictionData, 
             generatedAt: predictionData.generatedAt.toDate().toISOString() 
         } as Prediction : null;
 
-        const standbyDoc = await admin.firestore().collection('standby').doc('tomorrow').get();
+        const standbyDoc = await adminDb.collection('standby').doc('tomorrow').get();
         let standby: StandbyPrediction | null = null;
         if (standbyDoc.exists) {
             const standbyData = standbyDoc.data()!;
@@ -254,7 +256,7 @@ export async function getDashboardData() {
 
             if (artisanIds.length > 0) {
                  // Fetch provider details in a single query
-                const providersSnap = await admin.firestore().collection('providers').where(admin.firestore.FieldPath.documentId(), 'in', artisanIds).get();
+                const providersSnap = await adminDb.collection('providers').where(FieldPath.documentId(), 'in', artisanIds).get();
                 const providersMap = new Map<string, Provider>();
                 providersSnap.forEach(doc => {
                     const data = doc.data();

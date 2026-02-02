@@ -1,7 +1,7 @@
 'use server';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { admin } from '@/lib/firebase-admin';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import bcrypt from 'bcrypt';
 import { logProviderAction } from '@/lib/audit-log';
 
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     }
     
     // Find provider by phone number
-    const providersRef = admin.firestore().collection('providers');
+    const providersRef = adminDb.collection('providers');
     const q = providersRef.where('phone', '==', rawPhone).limit(1);
     const providerSnap = await q.get();
 
@@ -55,10 +55,10 @@ export async function POST(req: NextRequest) {
 
     // Get or create the Firebase Auth user associated with this phone number.
     try {
-        user = await admin.auth().getUserByPhoneNumber(formattedPhone);
+        user = await adminAuth.getUserByPhoneNumber(formattedPhone);
     } catch (error: any) {
         if (error.code === 'auth/user-not-found') {
-            user = await admin.auth().createUser({ phoneNumber: formattedPhone, displayName: providerData.name });
+            user = await adminAuth.createUser({ phoneNumber: formattedPhone, displayName: providerData.name });
         } else {
             throw error; // Re-throw other errors
         }
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     }
     
     // Generate an ID token. We will create a session cookie from this on the client.
-    const customToken = await admin.auth().createCustomToken(user.uid);
+    const customToken = await adminAuth.createCustomToken(user.uid);
 
     // After successful PIN verification, nullify the PIN
     await providerDoc.ref.update({

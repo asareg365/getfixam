@@ -6,6 +6,10 @@ import { HeatmapList } from './_components/heatmap-list';
 import { PredictionCard } from './_components/prediction-card';
 import { StandbyCard } from './_components/standby-card';
 import { requireAdmin } from '@/lib/admin-guard';
+import { adminDb } from '@/lib/firebase-admin';
+import { FieldPath } from 'firebase-admin/firestore';
+import type { Provider, StandbyPrediction } from '@/lib/types';
+
 
 export const dynamic = 'force-dynamic';
 

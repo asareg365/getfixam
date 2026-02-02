@@ -1,6 +1,6 @@
 
 import { requireAdmin } from '@/lib/admin-guard';
-import { admin } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal } from "lucide-react";
@@ -12,7 +12,7 @@ import type { Service } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 async function getServices(): Promise<Service[]> {
-  const snapshot = await admin.firestore().collection('services').orderBy('name').get();
+  const snapshot = await adminDb.collection('services').orderBy('name').get();
   if (snapshot.empty) return [];
   
   return snapshot.docs.map(doc => {

@@ -1,6 +1,7 @@
 'use server';
 
-import { admin } from '@/lib/firebase-admin';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import type { Provider } from '@/lib/types';
 import { logProviderAction } from '@/lib/audit-log';
 import { headers } from 'next/headers';
@@ -15,7 +16,7 @@ export async function checkProviderForPinLogin(rawPhoneNumber: string): Promise<
     }
 
     try {
-        const providersRef = admin.firestore().collection('providers');
+        const providersRef = adminDb.collection('providers');
         const q = providersRef.where('phone', '==', rawPhoneNumber).limit(1);
         const providerSnap = await q.get();
 
@@ -59,10 +60,10 @@ export async function updateProviderProfile(
   }
   
   try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
     const uid = decodedToken.uid;
 
-    const providersRef = admin.firestore().collection('providers');
+    const providersRef = adminDb.collection('providers');
     const snap = await providersRef.where('authUid', '==', uid).limit(1).get();
 
     if (snap.empty) {
@@ -81,7 +82,7 @@ export async function updateProviderProfile(
             ...currentProviderData.location,
             zone: data.zone,
         },
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
     };
 
     await providerRef.update(updateData);

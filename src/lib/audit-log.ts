@@ -1,6 +1,7 @@
 'use server';
 
-import { admin } from './firebase-admin';
+import { adminDb } from './firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
 type LogAdminActionParams = {
   adminEmail: string;
@@ -19,14 +20,14 @@ export async function logAdminAction(params: LogAdminActionParams) {
   const { adminEmail, action, targetType, targetId, ipAddress, userAgent } = params;
   
   try {
-    await admin.firestore().collection('auditLogs').add({
+    await adminDb.collection('auditLogs').add({
       adminEmail,
       action,
       targetType,
       targetId,
       ipAddress,
       userAgent,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
     });
   } catch (error) {
     console.error("Failed to write to admin audit log:", error);
@@ -50,19 +51,14 @@ export async function logProviderAction(params: LogProviderActionParams) {
   const { providerId, action, ipAddress, userAgent } = params;
 
   try {
-    await admin.firestore().collection('provider_logs').add({
+    await adminDb.collection('provider_logs').add({
       providerId,
       action,
       ipAddress,
       userAgent,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
     });
   } catch (error) {
     console.error("Failed to write to provider log:", error);
   }
 }
-
-    
-
-
-    

@@ -1,7 +1,8 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { admin } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
@@ -39,17 +40,17 @@ export async function addServiceAction(prevState: any, formData: FormData) {
         const { name, icon, basePrice, maxSurge, minSurge, active } = validatedFields.data;
         const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
 
-        const existingService = await admin.firestore().collection('services').where('slug', '==', slug).get();
+        const existingService = await adminDb.collection('services').where('slug', '==', slug).get();
         if (!existingService.empty) {
             return { success: false, message: 'A service with this name already exists.' };
         }
 
         const serviceData = {
             name, slug, icon, basePrice, maxSurge, minSurge, active, currency: 'GHS',
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
         };
 
-        const newServiceRef = await admin.firestore().collection('services').add(serviceData);
+        const newServiceRef = await adminDb.collection('services').add(serviceData);
         
         // Log the admin action
         const headersList = headers();
@@ -78,13 +79,13 @@ export async function getSwappableArtisans(serviceType: string, excludedArtisanI
         await requireAdmin();
 
         // Find serviceId from serviceType (which is the name)
-        const servicesSnap = await admin.firestore().collection('services').where('name', '==', serviceType).limit(1).get();
+        const servicesSnap = await adminDb.collection('services').where('name', '==', serviceType).limit(1).get();
         if (servicesSnap.empty) {
             return { success: false, message: `Service '${serviceType}' not found.` };
         }
         const serviceId = servicesSnap.docs[0].id;
 
-        const q = admin.firestore().collection('providers')
+        const q = adminDb.collection('providers')
             .where('status', '==', 'approved')
             .where('serviceId', '==', serviceId);
         
@@ -109,9 +110,9 @@ export async function getSwappableArtisans(serviceType: string, excludedArtisanI
 export async function swapStandbyArtisan(artisanToRemoveId: string, artisanToAddId: string): Promise<{ success: boolean; message?: string; }> {
      try {
         await requireAdmin();
-        const standbyRef = admin.firestore().collection('standby').doc('tomorrow');
+        const standbyRef = adminDb.collection('standby').doc('tomorrow');
         
-        await admin.firestore().runTransaction(async (transaction) => {
+        await adminDb.runTransaction(async (transaction) => {
             const standbyDoc = await transaction.get(standbyRef);
             if (!standbyDoc.exists) {
                 throw new Error("Standby document not found.");
@@ -142,7 +143,7 @@ export async function swapStandbyArtisan(artisanToRemoveId: string, artisanToAdd
 export async function overrideStandbyPool(): Promise<{ success: boolean; message?: string; }> {
     try {
         await requireAdmin();
-        await admin.firestore().collection('standby').doc('tomorrow').delete();
+        await adminDb.collection('standby').doc('tomorrow').delete();
         revalidatePath('/admin/dashboard');
         return { success: true };
     } catch (error: any) {

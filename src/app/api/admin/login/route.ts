@@ -2,7 +2,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { signToken } from '@/lib/jwt';
-import { admin } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { logAdminAction } from '@/lib/audit-log';
 
 const MAX_ATTEMPTS = 5;
@@ -11,7 +12,7 @@ const BLOCK_DURATION_MINUTES = 10;
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || req.ip || 'unknown';
   const userAgent = req.headers.get('user-agent') || 'unknown';
-  const attemptRef = admin.firestore().collection('admin_login_attempts').doc(ip);
+  const attemptRef = adminDb.collection('admin_login_attempts').doc(ip);
   
   try {
     const attemptSnap = await attemptRef.get();
@@ -55,8 +56,8 @@ export async function POST(req: NextRequest) {
       const isBlocked = (currentCount + 1) >= MAX_ATTEMPTS;
 
       const updateData: { [key: string]: any } = {
-        count: admin.firestore.FieldValue.increment(1),
-        lastAttempt: admin.firestore.FieldValue.serverTimestamp(),
+        count: FieldValue.increment(1),
+        lastAttempt: FieldValue.serverTimestamp(),
       };
 
       if (isBlocked) {

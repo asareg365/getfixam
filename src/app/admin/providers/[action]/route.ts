@@ -1,6 +1,7 @@
 'use server';
 
-import { admin } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-guard';
 import { logAdminAction } from '@/lib/audit-log';
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest, { params }: { params: { action: Act
       return NextResponse.json({ success: false, error: 'Provider ID missing' }, { status: 400 });
     }
 
-    const providerRef = admin.firestore().collection('providers').doc(providerId);
+    const providerRef = adminDb.collection('providers').doc(providerId);
     const providerSnap = await providerRef.get();
     const providerData = providerSnap.data();
 
@@ -39,25 +40,25 @@ export async function POST(req: NextRequest, { params }: { params: { action: Act
         const pinHash = await bcrypt.hash(pin, saltRounds);
 
         updateData.loginPinHash = pinHash;
-        updateData.loginPinCreatedAt = admin.firestore.FieldValue.serverTimestamp();
+        updateData.loginPinCreatedAt = FieldValue.serverTimestamp();
       }
 
       updateData.status = 'approved';
       updateData.verified = true;
-      updateData.approvedAt = admin.firestore.FieldValue.serverTimestamp();
+      updateData.approvedAt = FieldValue.serverTimestamp();
       updateData.approvedBy = adminEmail;
       actionLog = 'PROVIDER_APPROVED';
 
     } else if (params.action === 'reject') {
       updateData.status = 'rejected';
       updateData.verified = false;
-      updateData.rejectedAt = admin.firestore.FieldValue.serverTimestamp();
+      updateData.rejectedAt = FieldValue.serverTimestamp();
       updateData.rejectedBy = adminEmail;
       actionLog = 'PROVIDER_REJECTED';
     } else if (params.action === 'suspend') {
         updateData.status = 'suspended';
         updateData.verified = false;
-        updateData.suspendedAt = admin.firestore.FieldValue.serverTimestamp();
+        updateData.suspendedAt = FieldValue.serverTimestamp();
         updateData.suspendedBy = adminEmail;
         actionLog = 'PROVIDER_SUSPENDED';
     } else {

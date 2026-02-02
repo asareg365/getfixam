@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { admin } from '@/lib/firebase-admin';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
 
 export const runtime = 'nodejs';
 
@@ -25,10 +25,10 @@ export async function middleware(req: NextRequest) {
 
     try {
       // Verify the session cookie. This checks for both validity and expiration.
-      const decoded = await admin.auth().verifySessionCookie(session, true);
+      const decoded = await adminAuth.verifySessionCookie(session, true);
       
       // Check the provider's status in Firestore to ensure they are still active.
-      const snap = await admin.firestore()
+      const snap = await adminDb
         .collection('providers')
         .where('authUid', '==', decoded.uid)
         .limit(1)

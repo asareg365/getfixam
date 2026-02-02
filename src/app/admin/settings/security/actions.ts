@@ -2,7 +2,8 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { admin } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { logAdminAction } from '@/lib/audit-log';
 import { headers } from 'next/headers';
 import { cookies } from 'next/headers';
@@ -45,13 +46,13 @@ export async function updateLockoutStatus(prevState: any, formData: FormData) {
 
     const { adminLocked, reason } = validatedFields.data;
     
-    const settingsRef = admin.firestore().collection('system_settings').doc('admin');
+    const settingsRef = adminDb.collection('system_settings').doc('admin');
     
     await settingsRef.set({
       adminLocked,
       reason,
       updatedBy: adminUser.email,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
     
     const headersList = headers();

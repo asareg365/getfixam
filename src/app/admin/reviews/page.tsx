@@ -1,5 +1,7 @@
 import { requireAdmin } from '@/lib/admin-guard';
-import { admin } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import type { Query } from 'firebase-admin/firestore';
+import { FieldPath } from 'firebase-admin/firestore';
 import type { Review, Provider } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ReviewsTable } from './_components/reviews-table';
@@ -16,13 +18,13 @@ async function getReviewCounts() {
   let total = 0;
 
   for (const status of statuses) {
-    const snapshot = await admin.firestore().collection('reviews').where('status', '==', status).count().get();
+    const snapshot = await adminDb.collection('reviews').where('status', '==', status).count().get();
     counts[status] = snapshot.data().count;
     total += counts[status];
   }
   
   // Get the total count more efficiently
-  const totalSnapshot = await admin.firestore().collection('reviews').count().get();
+  const totalSnapshot = await adminDb.collection('reviews').count().get();
   counts['all'] = totalSnapshot.data().count;
   
   return counts;
@@ -31,7 +33,7 @@ async function getReviewCounts() {
 /** ----- Fetch Reviews with Provider Names ----- */
 async function getReviews(status?: string): Promise<ReviewWithProvider[]> {
   // 1. Fetch reviews
-  let reviewsQuery: admin.firestore.Query = admin.firestore().collection('reviews');
+  let reviewsQuery: Query = adminDb.collection('reviews');
   if (status && status !== 'all') {
     reviewsQuery = reviewsQuery.where('status', '==', status);
   }
@@ -69,7 +71,7 @@ async function getReviews(status?: string): Promise<ReviewWithProvider[]> {
       for (let i = 0; i < providerIds.length; i += MAX_IN_CLAUSE_SIZE) {
           const batchIds = providerIds.slice(i, i + MAX_IN_CLAUSE_SIZE);
           providerPromises.push(
-              admin.firestore().collection('providers').where(admin.firestore.FieldPath.documentId(), 'in', batchIds).get()
+              adminDb.collection('providers').where(FieldPath.documentId(), 'in', batchIds).get()
           );
       }
 

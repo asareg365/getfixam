@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import jwt, { type JwtPayload } from 'jsonwebtoken';
-import { admin } from './firebase-admin';
+import { adminDb } from './firebase-admin';
 
 const SECRET = process.env.ADMIN_JWT_SECRET || 'this-is-a-super-secret-key-that-should-be-in-an-env-file';
 
@@ -14,7 +14,7 @@ type AdminUser = {
 
 export async function requireAdmin(): Promise<AdminUser> {
   // CRITICAL: Check for admin lockout first.
-  const systemSettingsRef = admin.firestore().collection('system_settings').doc('admin');
+  const systemSettingsRef = adminDb.collection('system_settings').doc('admin');
   const systemSettingsSnap = await systemSettingsRef.get();
 
   if (systemSettingsSnap.exists && systemSettingsSnap.data()?.adminLocked === true) {
