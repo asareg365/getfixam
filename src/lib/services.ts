@@ -1,5 +1,5 @@
-import { collection, getDocs, query, where, orderBy, limit, doc, getDoc } from 'firebase/firestore';
-import { db } from './firebase';
+
+import { adminDb } from './firebase-admin';
 import type { Category, Provider, Review } from './types';
 import { getCategories } from './data';
 
@@ -17,12 +17,11 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
 }
 
 /**
- * Fetches approved providers from Firestore, optionally filtering by category slug, using the client SDK.
+ * Fetches approved providers from Firestore, optionally filtering by category slug, using the Admin SDK.
  * Featured providers are always listed first.
  */
 export async function getProviders(categorySlug?: string): Promise<Provider[]> {
-    const servicesRef = collection(db, 'services');
-    const servicesSnap = await getDocs(servicesRef);
+    const servicesSnap = await adminDb.collection('services').get();
     const servicesMap = new Map<string, { name: string, slug: string }>();
     let serviceIdForSlug: string | null = null;
     servicesSnap.forEach(doc => {
@@ -37,19 +36,13 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
         return [];
     }
     
-    const providersRef = collection(db, 'providers');
-    
-    const queryConstraints = [
-        where('status', '==', 'approved')
-    ];
+    let providersQuery = adminDb.collection('providers').where('status', '==', 'approved');
 
     if (serviceIdForSlug) {
-        queryConstraints.push(where('serviceId', '==', serviceIdForSlug));
+        providersQuery = providersQuery.where('serviceId', '==', serviceIdForSlug);
     }
     
-    const q = query(providersRef, ...queryConstraints);
-    
-    const providersSnap = await getDocs(q);
+    const providersSnap = await providersQuery.get();
 
     let providers = providersSnap.docs.map(doc => {
         const data = doc.data();
@@ -74,18 +67,17 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
             imageId: data.imageId,
         } as Provider;
     })
-    // We still filter for city client-side to avoid needing another composite index.
     .filter(p => p.location?.city === 'Berekum');
 
     return providers.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
 }
 
 /**
- * Fetches a single approved provider by its ID from Firestore using the client SDK.
+ * Fetches a single approved provider by its ID from Firestore using the Admin SDK.
  */
 export async function getProviderById(id: string): Promise<Provider | undefined> {
-    const providerRef = doc(db, 'providers', id);
-    const providerDoc = await getDoc(providerRef);
+    const providerRef = adminDb.collection('providers').doc(id);
+    const providerDoc = await providerRef.get();
     if (!providerDoc.exists()) {
         return undefined;
     }
@@ -97,7 +89,7 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
 
     let categoryName = 'N/A';
     if (data.serviceId) {
-        const serviceDoc = await getDoc(doc(db, 'services', data.serviceId));
+        const serviceDoc = await adminDb.collection('services').doc(data.serviceId).get();
         if (serviceDoc.exists()) {
             categoryName = serviceDoc.data()!.name;
         }
@@ -125,16 +117,15 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
 }
 
 /**
- * Fetches all approved reviews for a specific provider from Firestore using the client SDK.
+ * Fetches all approved reviews for a specific provider from Firestore using the Admin SDK.
  */
 export async function getReviewsByProviderId(providerId: string): Promise<Review[]> {
-    const reviewsRef = collection(db, 'reviews');
-    const q = query(reviewsRef,
-        where('providerId', '==', providerId),
-        where('status', '==', 'approved'),
-        orderBy('createdAt', 'desc')
-    );
-    const reviewsSnap = await getDocs(q);
+    const reviewsQuery = adminDb.collection('reviews')
+        .where('providerId', '==', providerId)
+        .where('status', '==', 'approved')
+        .orderBy('createdAt', 'desc');
+        
+    const reviewsSnap = await reviewsQuery.get();
     
     if (reviewsSnap.empty) {
         return [];
