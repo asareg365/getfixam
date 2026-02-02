@@ -1,17 +1,16 @@
-'use server';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import bcrypt from 'bcrypt';
 import { logProviderAction } from '@/lib/audit-log';
 
-const formatPhoneNumber = (phone: string) => {
-  if (phone.startsWith('+233')) return phone;
-  if (phone.startsWith('0')) return `+233${phone.substring(1)}`;
-  return `+233${phone}`;
-};
-
 export async function POST(req: NextRequest) {
+  const formatPhoneNumber = (phone: string) => {
+    if (phone.startsWith('+233')) return phone;
+    if (phone.startsWith('0')) return `+233${phone.substring(1)}`;
+    return `+233${phone}`;
+  };
+
   try {
     const { phone: rawPhone, pin } = await req.json();
 
