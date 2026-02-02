@@ -1,7 +1,7 @@
 
 import { adminDb } from './firebase-admin';
 import type { Category, Provider, Review } from './types';
-import { getCategories } from './data';
+import { getCategories, PROVIDERS, REVIEWS } from './data';
 
 /**
  * Fetches a category by its slug from the cached list of categories.
@@ -21,6 +21,16 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
  * Featured providers are always listed first.
  */
 export async function getProviders(categorySlug?: string): Promise<Provider[]> {
+    if (!adminDb) {
+        console.warn('Firebase Admin SDK not available. Falling back to mock provider data.');
+        let providers = PROVIDERS.filter(p => p.status === 'approved');
+        if (categorySlug && categorySlug !== 'all') {
+            // In mock data, serviceId is the slug
+            providers = providers.filter(p => p.serviceId === categorySlug);
+        }
+        return providers.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
+    }
+
     const servicesSnap = await adminDb.collection('services').get();
     const servicesMap = new Map<string, { name: string, slug: string }>();
     let serviceIdForSlug: string | null = null;
@@ -76,6 +86,11 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
  * Fetches a single approved provider by its ID from Firestore using the Admin SDK.
  */
 export async function getProviderById(id: string): Promise<Provider | undefined> {
+    if (!adminDb) {
+        console.warn('Firebase Admin SDK not available. Falling back to mock provider data.');
+        return PROVIDERS.find(p => p.id === id && p.status === 'approved');
+    }
+
     const providerRef = adminDb.collection('providers').doc(id);
     const providerDoc = await providerRef.get();
     if (!providerDoc.exists()) {
@@ -120,6 +135,11 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
  * Fetches all approved reviews for a specific provider from Firestore using the Admin SDK.
  */
 export async function getReviewsByProviderId(providerId: string): Promise<Review[]> {
+    if (!adminDb) {
+        console.warn('Firebase Admin SDK not available. Falling back to mock review data.');
+        return REVIEWS.filter(r => r.providerId === providerId && r.status === 'approved');
+    }
+
     const reviewsQuery = adminDb.collection('reviews')
         .where('providerId', '==', providerId)
         .where('status', '==', 'approved')
