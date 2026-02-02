@@ -16,83 +16,11 @@ const providerSchema = z.object({
 });
 
 export async function addProviderAction(prevState: any, formData: FormData) {
-    const validatedFields = providerSchema.safeParse(Object.fromEntries(formData.entries()));
-
-    if (!validatedFields.success) {
-        return {
-            errors: validatedFields.error.flatten().fieldErrors,
-        };
-    }
-    
-    const { name, serviceId, phone, whatsapp, zone, digitalAddress } = validatedFields.data;
-
-    // Fetch categories to find the slug for the selected serviceId
-    const categories = await getCategories();
-    const category = categories.find(cat => cat.id === serviceId);
-
-    if (!category) {
-      return { success: false, message: 'Invalid service category selected.' };
-    }
-    
-    const slug = category.slug;
-
-    // Map service slugs to relevant placeholder image IDs
-    const serviceToImageMap: { [key: string]: string[] } = {
-        'plumber': ['provider2', 'provider8'],
-        'electrician': ['provider1', 'provider7'],
-        'phone-repair': ['provider3', 'provider9'],
-        'mechanic': ['provider4', 'provider10'],
-        'carpenter': ['provider6', 'provider11'],
-        'hairdresser': ['provider5', 'provider12'],
-        'beautician': ['provider5'],
-        'fashion-designer': ['provider5', 'provider12'],
-        'tv-repair': ['provider1', 'provider7'],
-        'metal-fabricator': ['provider4', 'provider6'],
-        'masonry': ['provider6', 'provider11'],
-        'tiller': ['provider6', 'provider11'],
-        'aluminum-fabricator': ['provider4', 'provider6'],
-    };
-
-    const allProviderImageIds = [
-        'provider1', 'provider2', 'provider3', 'provider4', 'provider5', 'provider6', 
-        'provider7', 'provider8', 'provider9', 'provider10', 'provider11', 'provider12'
-    ];
-
-    let imageId;
-    if (slug && serviceToImageMap[slug]) {
-        const possibleImages = serviceToImageMap[slug];
-        imageId = possibleImages[Math.floor(Math.random() * possibleImages.length)];
-    } else {
-        // Fallback for services without specific images or if slug not found
-        imageId = allProviderImageIds[Math.floor(Math.random() * allProviderImageIds.length)];
-    }
-
     try {
-        await adminDb.collection('providers').add({
-            name,
-            serviceId,
-            phone,
-            whatsapp,
-            location: {
-                region: 'Bono',
-                city: 'Berekum',
-                zone: zone,
-            },
-            digitalAddress,
-            imageId,
-            status: "pending",
-            verified: false,
-            isFeatured: false,
-            rating: 0,
-            reviewCount: 0,
-            createdAt: FieldValue.serverTimestamp()
-        });
-
-
-        revalidatePath('/');
-        return { success: true, message: 'Your business has been submitted for review!' };
+        await adminDb.collection('test').add({ ok: true });
+        return { success: true, message: 'Firestore test write was successful! The credentials seem to be working.' };
     } catch (error: any) {
-        console.error('Error adding provider:', error);
-        return { success: false, message: error.message || 'Failed to submit your business. Please try again.' };
+        console.error('Firestore test write FAILED:', error);
+        return { success: false, message: `Firestore test write failed: ${error.message}` };
     }
 }
