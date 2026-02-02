@@ -54,6 +54,11 @@ export type Provider = {
   availability?: {
       [day: string]: { from: string; to: string };
   };
+  performanceScore?: number;
+  jobsCompleted?: number;
+  jobsCancelled?: number;
+  avgResponseTime?: number;
+  failedLogins?: number;
 };
 
 export type Review = {
@@ -125,9 +130,29 @@ export type ProviderLog = {
   userAgent?: string;
   createdAt: string;
 }
+
+export type WhatsAppEvent = {
+    id: string;
+    phone: string;
+    role: 'provider' | 'customer';
+    event: 'JOB_REQUEST' | 'PROVIDER_LOGIN' | 'HELP' | 'PIN_RESET';
+    message: string;
+    createdAt: string;
+}
+
+export type Transaction = {
+    id: string;
+    jobId: string;
+    providerId: string;
+    jobAmount: number;
+    commission: number;
+    status: 'paid' | 'unpaid' | 'pending';
+    createdAt: string;
+}
     
 
 
     
+
 
 

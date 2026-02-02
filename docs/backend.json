@@ -194,6 +194,26 @@
             "availability": {
                 "type": "object",
                 "description": "The provider's weekly availability schedule."
+            },
+            "performanceScore": {
+                "type": "number",
+                "description": "A calculated score from 0-100 indicating provider performance."
+            },
+            "jobsCompleted": {
+                "type": "number",
+                "description": "Total number of jobs successfully completed."
+            },
+            "jobsCancelled": {
+                "type": "number",
+                "description": "Total number of jobs cancelled by the provider."
+            },
+            "avgResponseTime": {
+                "type": "number",
+                "description": "Average time in minutes for the provider to respond to a job offer."
+            },
+            "failedLogins": {
+                "type": "number",
+                "description": "A counter for consecutive failed login attempts."
             }
         },
         "required": ["name", "phone", "serviceId", "location", "status", "verified", "createdAt", "digitalAddress"]
@@ -540,6 +560,33 @@
             "action",
             "createdAt"
         ]
+    },
+    "WhatsAppEvent": {
+      "title": "WhatsApp Event",
+      "description": "A log of an interaction with the WhatsApp bot.",
+      "type": "object",
+      "properties": {
+        "phone": { "type": "string" },
+        "role": { "type": "string", "enum": ["provider", "customer"] },
+        "event": { "type": "string", "enum": ["JOB_REQUEST", "PROVIDER_LOGIN", "HELP", "PIN_RESET"] },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["phone", "role", "event", "createdAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Represents a financial transaction for a job, including commission.",
+      "type": "object",
+      "properties": {
+        "jobId": { "type": "string" },
+        "providerId": { "type": "string" },
+        "jobAmount": { "type": "number" },
+        "commission": { "type": "number" },
+        "status": { "type": "string", "enum": ["paid", "unpaid", "pending"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["jobId", "providerId", "jobAmount", "commission", "status", "createdAt"]
     }
   },
   "auth": {
@@ -633,6 +680,18 @@
             "$ref": "#/entities/ProviderLog"
         },
         "description": "Stores a log of provider actions for auditing."
+    },
+    "/whatsapp_events/{eventId}": {
+        "schema": {
+            "$ref": "#/entities/WhatsAppEvent"
+        },
+        "description": "Logs all interactions from the WhatsApp bot for analytics."
+    },
+    "/transactions/{transactionId}": {
+        "schema": {
+            "$ref": "#/entities/Transaction"
+        },
+        "description": "Stores all financial transactions related to jobs and commissions."
     }
   }
 }
