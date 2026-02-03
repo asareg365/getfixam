@@ -31,7 +31,13 @@ if (privateKey && projectId && clientEmail) {
     adminAuth = getAuth(app);
   } catch (error) {
     console.error("Firebase Admin SDK Initialization Error:", error);
+    adminDb = null;
+    adminAuth = null;
   }
+} else {
+    // Explicitly set to null if environment variables are missing (e.g. during build)
+    adminDb = null;
+    adminAuth = null;
 }
 
 export { adminDb, adminAuth };

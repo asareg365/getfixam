@@ -14,8 +14,8 @@ export const dynamic = 'force-dynamic';
 
 async function getDashboardData() {
     try {
-        if (!adminDb) {
-            // Safe fallback for build time
+        // Robust check for adminDb existence and valid Firestore instance
+        if (!adminDb || typeof adminDb.collection !== 'function') {
             return {
                 totalProviders: 0,
                 pendingProviders: 0,
@@ -128,40 +128,40 @@ export default async function AdminDashboard() {
       <h1 className="text-3xl font-bold font-headline">Admin Dashboard</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Link href="/admin/providers?status=all" className="block">
-            <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer border-primary/20 hover:border-primary">
+          <Link href="/admin/providers?status=all" className="block group">
+            <Card className="h-full group-hover:bg-muted/50 transition-all cursor-pointer border-primary/20 group-hover:border-primary shadow-sm hover:shadow-md">
                 <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Providers</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">Total Providers</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <p className="text-3xl font-bold">{data.totalProviders}</p>
                 </CardContent>
             </Card>
           </Link>
-          <Link href="/admin/providers?status=pending" className="block">
-            <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer border-primary/20 hover:border-primary">
+          <Link href="/admin/providers?status=pending" className="block group">
+            <Card className="h-full group-hover:bg-muted/50 transition-all cursor-pointer border-primary/20 group-hover:border-primary shadow-sm hover:shadow-md">
                 <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground group-hover:text-orange-500 transition-colors">Pending</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <p className="text-3xl font-bold text-orange-500">{data.pendingProviders}</p>
                 </CardContent>
             </Card>
           </Link>
-          <Link href="/admin/jobs" className="block">
-            <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer border-primary/20 hover:border-primary">
+          <Link href="/admin/jobs" className="block group">
+            <Card className="h-full group-hover:bg-muted/50 transition-all cursor-pointer border-primary/20 group-hover:border-primary shadow-sm hover:shadow-md">
                 <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Requests</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">Total Requests</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <p className="text-3xl font-bold">{data.totalRequests}</p>
                 </CardContent>
             </Card>
           </Link>
-          <Link href="/admin/services" className="block">
-            <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer border-primary/20 hover:border-primary">
+          <Link href="/admin/services" className="block group">
+            <Card className="h-full group-hover:bg-muted/50 transition-all cursor-pointer border-primary/20 group-hover:border-primary shadow-sm hover:shadow-md">
                 <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Services</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">Services</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <p className="text-3xl font-bold">{data.activeServices}</p>

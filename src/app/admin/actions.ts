@@ -14,7 +14,7 @@ import { headers } from 'next/headers';
 
 /** ----- AUTH ACTIONS ----- */
 export async function logoutAction() {
-  cookies().delete('admin_token');
+  (await cookies()).delete('admin_token');
   redirect('/admin/login');
 }
 
@@ -37,6 +37,10 @@ export async function addServiceAction(prevState: any, formData: FormData) {
   
     try {
         const adminContext = await requireAdmin();
+        if (!adminDb || typeof adminDb.collection !== 'function') {
+            throw new Error('Database connection not available.');
+        }
+
         const { name, icon, basePrice, maxSurge, minSurge, active } = validatedFields.data;
         const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
 
@@ -59,8 +63,8 @@ export async function addServiceAction(prevState: any, formData: FormData) {
             action: 'SERVICE_CREATED',
             targetType: 'service',
             targetId: newServiceRef.id,
-            ipAddress: headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown',
-            userAgent: headersList.get('user-agent') || 'unknown',
+            ipAddress: (await headersList).get('x-forwarded-for')?.split(',')[0] || 'unknown',
+            userAgent: (await headersList).get('user-agent') || 'unknown',
         });
         
         revalidatePath('/admin/services');
@@ -77,6 +81,9 @@ export async function addServiceAction(prevState: any, formData: FormData) {
 export async function getSwappableArtisans(serviceType: string, excludedArtisanIds: string[]): Promise<{ success: boolean; artisans?: Provider[]; message?: string; }> {
     try {
         await requireAdmin();
+        if (!adminDb || typeof adminDb.collection !== 'function') {
+            throw new Error('Database connection not available.');
+        }
 
         // Find serviceId from serviceType (which is the name)
         const servicesSnap = await adminDb.collection('services').where('name', '==', serviceType).limit(1).get();
@@ -110,6 +117,10 @@ export async function getSwappableArtisans(serviceType: string, excludedArtisanI
 export async function swapStandbyArtisan(artisanToRemoveId: string, artisanToAddId: string): Promise<{ success: boolean; message?: string; }> {
      try {
         await requireAdmin();
+        if (!adminDb || typeof adminDb.runTransaction !== 'function') {
+            throw new Error('Database connection not available.');
+        }
+
         const standbyRef = adminDb.collection('standby').doc('tomorrow');
         
         await adminDb.runTransaction(async (transaction) => {
@@ -143,6 +154,9 @@ export async function swapStandbyArtisan(artisanToRemoveId: string, artisanToAdd
 export async function overrideStandbyPool(): Promise<{ success: boolean; message?: string; }> {
     try {
         await requireAdmin();
+        if (!adminDb || typeof adminDb.collection !== 'function') {
+            throw new Error('Database connection not available.');
+        }
         await adminDb.collection('standby').doc('tomorrow').delete();
         revalidatePath('/admin/dashboard');
         return { success: true };

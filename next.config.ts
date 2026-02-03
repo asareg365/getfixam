@@ -1,10 +1,10 @@
 // trigger rebuild
 import type {NextConfig} from 'next';
 
-const nextConfig: NextConfig = {
+const nextConfig:NextConfig = {
   output: 'standalone',
   typescript: {
-    // We remove the ignore property to see build errors.
+    // Ensuring build errors are caught
   },
   eslint: {
     ignoreDuringBuilds: true,
