@@ -16,7 +16,7 @@ export default function AdminDashboard() {
     <div className="space-y-10">
       <div>
         <h1 className="text-3xl font-bold text-primary">Dashboard Overview</h1>
-        <p className="text-muted-foreground">Monitor platform activity in Berekum.</p>
+        <p className="text-muted-foreground">Monitor platform activity and growth metrics.</p>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -43,10 +43,16 @@ export default function AdminDashboard() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="h-80 flex items-center justify-center border-dashed">
-          <p className="italic text-muted-foreground">Demand Analytics Chart Placeholder</p>
+          <div className="text-center">
+            <TrendingUp className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="italic text-muted-foreground">Demand Analytics Chart Placeholder</p>
+          </div>
         </Card>
         <Card className="h-80 flex items-center justify-center border-dashed">
-          <p className="italic text-muted-foreground">Recent Activity Feed Placeholder</p>
+          <div className="text-center">
+            <MessageSquare className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="italic text-muted-foreground">Recent Activity Feed Placeholder</p>
+          </div>
         </Card>
       </div>
     </div>

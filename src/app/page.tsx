@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { Wrench, ArrowRight, ShieldCheck, Smartphone } from 'lucide-react';
+import { Wrench, ArrowRight, ShieldCheck, Smartphone, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function LandingPage() {
   return (
@@ -26,13 +27,24 @@ export default function LandingPage() {
         <section className="w-full py-20 md:py-32 lg:py-48 bg-gradient-to-b from-primary/10 to-transparent">
           <div className="container px-4 md:px-6 mx-auto text-center space-y-8">
             <h1 className="text-5xl font-extrabold tracking-tighter sm:text-6xl md:text-7xl text-primary">
-              Find Trusted Artisans <br className="hidden md:inline" /> in Berekum
+              Find Trusted Artisans <br className="hidden md:inline" /> Near You
             </h1>
             <p className="mx-auto max-w-[700px] text-muted-foreground text-lg md:text-2xl">
-              Verified plumbers, electricians, and mechanics at your fingertips.
+              Verified professionals at your fingertips. Get your repairs done by the best in the business.
             </p>
-            <div className="flex justify-center gap-4">
-              <Button asChild size="lg" className="rounded-full h-14 px-8 text-lg font-bold shadow-xl shadow-primary/20">
+            
+            <div className="max-w-md mx-auto flex gap-2 p-2 bg-white rounded-full shadow-xl border border-primary/20">
+              <Input 
+                className="border-none bg-transparent focus-visible:ring-0 text-lg h-12" 
+                placeholder="What service do you need?" 
+              />
+              <Button size="icon" className="rounded-full h-12 w-12 shrink-0">
+                <Search className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="flex justify-center gap-4 pt-4">
+              <Button asChild size="lg" className="rounded-full h-14 px-8 text-lg font-bold shadow-lg shadow-primary/20">
                 <Link href="/browse">
                   Browse All Artisans
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -44,33 +56,33 @@ export default function LandingPage() {
 
         <section className="py-24 bg-white">
           <div className="container px-4 mx-auto grid gap-12 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="p-8 border rounded-3xl bg-background/50 space-y-4">
+            <div className="p-8 border rounded-3xl bg-background/50 space-y-4 transition-all hover:shadow-md">
               <div className="p-3 bg-secondary/20 rounded-2xl w-fit text-secondary">
                 <ShieldCheck className="h-8 w-8" />
               </div>
               <h3 className="text-2xl font-bold">Verified Pros</h3>
-              <p className="text-muted-foreground">Every artisan is manually verified by our team for your peace of mind.</p>
+              <p className="text-muted-foreground">Every artisan is manually verified by our team for your peace of mind and quality assurance.</p>
             </div>
-            <div className="p-8 border rounded-3xl bg-background/50 space-y-4">
+            <div className="p-8 border rounded-3xl bg-background/50 space-y-4 transition-all hover:shadow-md">
               <div className="p-3 bg-secondary/20 rounded-2xl w-fit text-secondary">
                 <Smartphone className="h-8 w-8" />
               </div>
               <h3 className="text-2xl font-bold">Direct Contact</h3>
-              <p className="text-muted-foreground">Call or WhatsApp artisans directly. No middlemen, no hidden fees.</p>
+              <p className="text-muted-foreground">Call or WhatsApp artisans directly. We remove the middleman to save you time and money.</p>
             </div>
-            <div className="p-8 border rounded-3xl bg-background/50 space-y-4">
+            <div className="p-8 border rounded-3xl bg-background/50 space-y-4 transition-all hover:shadow-md">
               <div className="p-3 bg-secondary/20 rounded-2xl w-fit text-secondary">
                 <Wrench className="h-8 w-8" />
               </div>
               <h3 className="text-2xl font-bold">Local Experts</h3>
-              <p className="text-muted-foreground">Focused exclusively on Berekum to ensure local knowledge and speed.</p>
+              <p className="text-muted-foreground">Connecting you with the best skill in your neighborhood for faster response times.</p>
             </div>
           </div>
         </section>
       </main>
 
       <footer className="py-12 border-t bg-white text-center">
-        <p className="text-sm text-muted-foreground">© 2024 FixAm Ghana. Built for Berekum.</p>
+        <p className="text-sm text-muted-foreground">© 2024 FixAm Ghana. All rights reserved.</p>
       </footer>
     </div>
   );
