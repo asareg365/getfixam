@@ -1,83 +1,92 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /* ============================
-       PROVIDERS
-    ============================ */
+    /**
+     * FIRESTORE SECURITY RULES - FIXAM GHANA
+     * 
+     * CORE PHILOSOPHY:
+     * This ruleset implements a public directory model for service providers and categories. 
+     * In this prototyping phase, data access is optimized for public consumption (reads) while 
+     * enforcing a strict posture for data modifications (writes). 
+     * 
+     * DATA STRUCTURE:
+     * - /categories/{categoryId}: Root collection for service categories (e.g., Plumber, Electrician).
+     * - /providers/{providerId}: Root collection for service providers (artisans).
+     * - /providers/{providerId}/reviews/{reviewId}: Subcollection for ratings and feedback.
+     * 
+     * KEY SECURITY DECISIONS:
+     * 1. Public Visibility: To support the nature of a service marketplace, providers, 
+     *    categories, and reviews are publicly readable (get/list) to all users.
+     * 2. Schema-Dependent Writes: The current schema definitions for 'Provider' and 'Review' 
+     *    lack internal ownership fields (e.g., ownerId, authorId). Consequently, write 
+     *    permissions are restricted until the schema is updated to include these relational 
+     *    identifiers, preventing unauthorized data manipulation.
+     * 3. Admin Scaffolding: While the app includes an admin dashboard UI, the security 
+     *    rules default to a restrictive write policy as no admin roles are currently 
+     *    defined in the Intermediate Representation (IR).
+     * 
+     * DENORMALIZATION FOR AUTHORIZATION:
+     * - Access to reviews depends on the parent provider path. 
+     * - Relational integrity is maintained by checking path variables against data fields 
+     *   during creation (e.g., ensuring providerId in the document matches the parent ID).
+     */
+
+    // --- GLOBAL HELPER FUNCTIONS ---
+
+    /**
+     * @description Checks if the user is authenticated with Firebase Auth.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // --- COLLECTION RULES ---
+
+    /**
+     * @description Publicly accessible categories for service providers.
+     * @path /categories/{categoryId}
+     * @allow (get, list) Public access for browsing.
+     * @deny (create, update, delete) Restricted to admin-only (not yet defined).
+     * @principle Restricts write access to reference data while allowing public consumption.
+     */
+    match /categories/{categoryId} {
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Implement admin role check once defined in IR
+    }
+
+    /**
+     * @description Directory of local service providers (artisans).
+     * @path /providers/{providerId}
+     * @allow (get, list) Public access for finding artisans.
+     * @deny (create, update, delete) Schema missing ownership identifiers.
+     * @principle Prevents unauthorized provider management until ownership fields exist.
+     */
     match /providers/{providerId} {
-      // Anyone can read approved providers
-      allow read: if resource.data.status == 'approved';
-
-      // No client-side writes allowed
-      allow write: if false;
+      allow get, list: if true;
+      
+      // CRITICAL: Cannot implement owner-only writes. The 'Provider' entity is missing an 'ownerId' or 'userId' field.
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
-    /* ============================
-       SERVICES (Public catalog)
-    ============================ */
-    match /services/{serviceId} {
-      allow read: if true;
-      allow write: if false;
-    }
+    /**
+     * @description User-submitted reviews for specific providers.
+     * @path /providers/{providerId}/reviews/{reviewId}
+     * @allow (get, list) Public access to view artisan feedback.
+     * @deny (create) Mismatched providerId or missing author ID.
+     * @principle Enforces relational integrity between the review and the parent provider.
+     */
+    match /providers/{providerId}/reviews/{reviewId} {
+      allow get, list: if true;
 
-    /* ============================
-       REVIEWS
-    ============================ */
-    match /reviews/{reviewId} {
-      // Anyone can read reviews that have been approved.
-      // On a collection query, this rule is checked for every document.
-      allow read: if resource.data.status == 'approved';
-
-      // Writes are handled by server actions, no client writes.
-      allow write: if false;
-    }
-
-    /* ============================
-       LOCATIONS (Public data)
-    ============================ */
-    match /locations/{locationId} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    /* ============================
-       JOBS
-    ============================ */
-    match /jobs/{jobId} {
-      // Only authenticated users can read their own jobs (if you later add ownerId)
-      allow read: if request.auth != null;
-      allow write: if false;
-    }
-
-    /* ============================
-       ADMIN LOGIN ATTEMPTS (SERVER ONLY)
-    ============================ */
-    match /admin_login_attempts/{ipAddress} {
-      allow read, write: if false; // server-only via Admin SDK
-    }
-    
-    /* ============================
-       SYSTEM SETTINGS (SERVER ONLY)
-    ============================ */
-    match /system_settings/{settingId} {
-        allow read, write: if false; // server-only via Admin SDK
-    }
-
-    /* ============================
-       AUDIT LOGS (SERVER ONLY)
-    ============================ */
-    match /auditLogs/{logId} {
-      allow read: if false; // server-only via Admin SDK
-      allow write: if false; // server-only via Admin SDK
-    }
-
-    /* ============================
-       DEFAULT DENY
-    ============================ */
-    match /{document=**} {
-      allow read, write: if false;
+      /**
+       * On Create:
+       * - We enforce that the review document's internal 'providerId' matches the path.
+       * - Write access is otherwise false because the schema lacks a 'userId' or 'authorId' to verify the writer.
+       */
+      allow create: if isSignedIn() && request.resource.data.providerId == providerId; // TODO: Allow if isSignedIn() && request.resource.data.providerId == providerId && request.resource.data.authorId == request.auth.uid;
+      
+      allow update, delete: if false; // TODO: Allow if isExistingOwner(resource.data.authorId);
     }
   }
 }

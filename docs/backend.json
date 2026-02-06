@@ -1,830 +1,194 @@
 {
   "entities": {
-    "Admin": {
-      "title": "Admin",
-      "description": "An administrator user with special privileges.",
-      "type": "object",
-      "properties": {
-        "email": {
-          "type": "string",
-          "format": "email",
-          "description": "The admin's email address."
-        },
-        "role": {
-          "type": "string",
-          "description": "The role of the admin.",
-          "enum": ["super_admin", "admin"]
-        },
-        "active": {
-            "type": "boolean",
-            "description": "Whether the admin account is active."
-        },
-        "createdAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "The timestamp when the admin was created."
-        }
-      },
-      "required": ["email", "role", "createdAt", "active"]
-    },
-    "Service": {
-        "title": "Service",
-        "description": "A service category offered by providers.",
-        "type": "object",
-        "properties": {
-            "name": {
-                "type": "string",
-                "description": "The name of the service (e.g., Plumber)."
-            },
-            "slug": {
-                "type": "string",
-                "description": "A URL-friendly version of the service name."
-            },
-            "icon": {
-                "type": "string",
-                "description": "The name of the lucide-react icon for the service."
-            },
-            "active": {
-                "type": "boolean",
-                "description": "Whether the service is currently active and shown to users."
-            },
-            "basePrice": {
-                "type": "number",
-                "description": "The base price for the service in GHS."
-            },
-            "currency": {
-                "type": "string",
-                "description": "The currency for the price.",
-                "enum": ["GHS"]
-            },
-            "maxSurge": {
-                "type": "number",
-                "description": "The maximum surge multiplier for this service (e.g., 1.5)."
-            },
-            "minSurge": {
-                "type": "number",
-                "description": "The minimum surge multiplier for this service (e.g., 1.0)."
-            }
-        },
-        "required": ["name", "slug", "active", "basePrice", "currency"]
-    },
     "Provider": {
-        "title": "Provider",
-        "description": "A service provider or artisan.",
-        "type": "object",
-        "properties": {
-            "authUid": {
-              "type": "string",
-              "description": "The Firebase Authentication UID of the provider."
-            },
-            "name": {
-                "type": "string",
-                "description": "The full name of the provider or business."
-            },
-            "phone": {
-                "type": "string",
-                "description": "The contact phone number."
-            },
-            "whatsapp": {
-                "type": "string",
-                "description": "The contact WhatsApp number."
-            },
-            "digitalAddress": {
-                "type": "string",
-                "description": "The GhanaPost GPS digital address of the provider."
-            },
-            "serviceId": {
-                "type": "string",
-                "description": "The ID of the service they provide, linking to the 'services' collection."
-            },
-            "location": {
-                "type": "object",
-                "properties": {
-                    "region": {
-                      "type": "string",
-                      "description": "The region where the provider is located."
-                    },
-                    "city": {
-                        "type": "string",
-                        "description": "The city where the provider is located."
-                    },
-                    "zone": {
-                        "type": "string",
-                        "description": "The specific area or neighborhood within the city."
-                    }
-                },
-                "required": ["region", "city", "zone"]
-            },
-            "status": {
-              "type": "string",
-              "description": "The approval status of the provider.",
-              "enum": ["pending", "approved", "rejected", "suspended"]
-            },
-            "verified": {
-                "type": "boolean",
-                "description": "Whether the provider has been verified by an admin."
-            },
-            "isFeatured": {
-                "type": "boolean",
-                "description": "Whether the provider is a featured listing."
-            },
-            "featuredUntil": {
-                "type": "string",
-                "format": "date-time",
-                "description": "The timestamp when the featured status expires."
-            },
-            "rating": {
-                "type": "number",
-                "description": "The average rating from user reviews."
-            },
-            "reviewCount": {
-                "type": "number",
-                "description": "The total number of reviews."
-            },
-            "createdAt": {
-                "type": "string",
-                "format": "date-time",
-                "description": "The timestamp when the provider was added."
-            },
-            "approvedAt": {
-              "type": "string",
-              "format": "date-time",
-              "description": "The timestamp when the provider was approved."
-            },
-            "approvedBy": {
-                "type": "string",
-                "description": "Email of the admin who approved the provider."
-            },
-            "rejectedAt": {
-                "type": "string",
-                "format": "date-time",
-                "description": "Timestamp when the provider was rejected."
-            },
-            "rejectedBy": {
-                "type": "string",
-                "description": "Email of the admin who rejected the provider."
-            },
-            "suspendedAt": {
-                "type": "string",
-                "format": "date-time",
-                "description": "Timestamp when the provider was suspended."
-            },
-            "suspendedBy": {
-                "type": "string",
-                "description": "Email of the admin who suspended the provider."
-            },
-            "loginPinHash": {
-              "type": "string",
-              "description": "The hashed one-time login PIN for the provider's first login."
-            },
-            "loginPinCreatedAt": {
-              "type": "string",
-              "format": "date-time",
-              "description": "The timestamp when the login PIN was generated."
-            },
-            "services": {
-              "type": "array",
-              "description": "A list of specific services offered by the provider.",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "name": { "type": "string" },
-                  "active": { "type": "boolean" },
-                  "price": { "type": "number" }
-                },
-                "required": ["name", "active"]
-              }
-            },
-            "availability": {
-                "type": "object",
-                "description": "The provider's weekly availability schedule."
-            },
-            "performanceScore": {
-                "type": "number",
-                "description": "A calculated score from 0-100 indicating provider performance."
-            },
-            "jobsCompleted": {
-                "type": "number",
-                "description": "Total number of jobs successfully completed."
-            },
-            "jobsCancelled": {
-                "type": "number",
-                "description": "Total number of jobs cancelled by the provider."
-            },
-            "avgResponseTime": {
-                "type": "number",
-                "description": "Average time in minutes for the provider to respond to a job offer."
-            },
-            "failedLogins": {
-                "type": "number",
-                "description": "A counter for consecutive failed login attempts."
-            }
-        },
-        "required": ["name", "phone", "serviceId", "location", "status", "verified", "createdAt", "digitalAddress"]
-    },
-    "Location": {
-      "title": "Location",
-      "description": "Defines predefined zones for a city.",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Provider",
       "type": "object",
+      "description": "Represents a local service provider (artisan).",
       "properties": {
-        "city": {
+        "id": {
           "type": "string",
-          "description": "The name of the city."
+          "description": "Unique identifier for the provider entity."
         },
-        "zones": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "A list of zones or areas within the city."
-        }
-      },
-      "required": ["city", "zones"]
-    },
-    "Review": {
-      "title": "Review",
-      "description": "A user review for a service provider.",
-      "type": "object",
-      "properties": {
-        "jobId": {
+        "name": {
           "type": "string",
-          "description": "The ID of the job this review is associated with."
+          "description": "The name of the service provider (e.g., Kwame Electric Works)."
         },
-        "providerId": {
+        "category": {
           "type": "string",
-          "description": "The ID of the provider being reviewed."
+          "description": "The category of service the provider offers (e.g., Electrician)."
         },
-        "userName": {
+        "phone": {
           "type": "string",
-          "description": "The name of the user leaving the review."
+          "description": "The provider's phone number."
+        },
+        "whatsapp": {
+          "type": "string",
+          "description": "The provider's WhatsApp number."
+        },
+        "area": {
+          "type": "string",
+          "description": "The area/neighborhood where the provider is located (e.g., Berekum Zongo)."
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "Indicates whether the provider has been verified by the platform."
         },
         "rating": {
           "type": "number",
-          "description": "The star rating from 1 to 5."
+          "description": "The average rating of the provider (e.g., 4.5).",
+          "format": "float"
         },
-        "comment": {
-          "type": "string",
-          "description": "The text content of the review."
-        },
-        "userImageId": {
-          "type": "string",
-          "description": "An ID for a placeholder user image."
-        },
-        "status": {
-          "type": "string",
-          "description": "The moderation status of the review.",
-          "enum": ["pending", "approved", "rejected"]
+        "reviewCount": {
+          "type": "number",
+          "description": "The number of reviews the provider has received."
         },
         "createdAt": {
           "type": "string",
-          "format": "date-time",
-          "description": "The timestamp when the review was submitted."
-        },
-        "approvedBy": {
-            "type": "string",
-            "description": "Email of the admin who approved the review."
-        },
-        "approvedAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Timestamp when the review was approved."
-        },
-        "rejectedBy": {
-            "type": "string",
-            "description": "Email of the admin who rejected the review."
-        },
-        "rejectedAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Timestamp when the review was rejected."
-        }
-      },
-      "required": ["providerId", "userName", "rating", "comment", "status", "createdAt", "jobId"]
-    },
-    "Request": {
-      "title": "Request",
-      "description": "A service request from a user, likely via the WhatsApp bot.",
-      "type": "object",
-      "properties": {
-        "userPhone": {
-          "type": "string",
-          "description": "The phone number of the user who made the request."
-        },
-        "serviceType": {
-          "type": "string",
-          "description": "The type of service requested (e.g., 'Plumber')."
-        },
-        "location": {
-          "type": "string",
-          "description": "The location for the service (e.g., 'Kato')."
-        },
-        "status": {
-          "type": "string",
-          "description": "The status of the service request.",
-          "enum": ["pending", "assigned", "completed", "cancelled"]
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The timestamp when the request was created."
-        }
-      },
-      "required": ["userPhone", "serviceType", "location", "status", "createdAt"]
-    },
-    "DailyStats": {
-      "title": "Daily Stats",
-      "description": "Aggregated daily statistics for the dashboard.",
-      "type": "object",
-      "properties": {
-        "totalRequests": { "type": "number" },
-        "whatsappMessages": { "type": "number" },
-        "failedMessages": { "type": "number" },
-        "services": {
-          "type": "object",
-          "description": "Key-value pairs of service name and request count."
-        },
-        "locations": {
-          "type": "object",
-          "description": "Key-value pairs of location name and request count."
-        },
-        "peakHour": { "type": "string" },
-        "generatedAt": { "type": "string", "format": "date-time" }
-      }
-    },
-    "BotLog": {
-      "title": "Bot Log",
-      "description": "A log of a message received by the WhatsApp bot.",
-      "type": "object",
-      "properties": {
-        "phone": { "type": "string" },
-        "message": { "type": "string" },
-        "intent": { "type": "string" },
-        "location": { "type": "string" },
-        "status": { "type": "string", "enum": ["success", "failed", "help"] },
-        "timestamp": { "type": "string", "format": "date-time" }
-      },
-      "required": ["phone", "message", "status", "timestamp"]
-    },
-    "Prediction": {
-        "title": "Demand Prediction",
-        "description": "Daily demand prediction based on historical data.",
-        "type": "object",
-        "properties": {
-            "topService": {
-                "type": "array",
-                "items": [
-                    { "type": "string" },
-                    { "type": "number" }
-                ],
-                "description": "The predicted top service and its count."
-            },
-            "topArea": {
-                "type": "array",
-                "items": [
-                    { "type": "string" },
-                    { "type": "number" }
-                ],
-                "description": "The predicted top area and its count."
-            },
-            "confidence": {
-                "type": "string",
-                "description": "The confidence level of the prediction."
-            },
-            "basedOnDays": {
-                "type": "number",
-                "description": "Number of days the prediction is based on."
-            },
-            "generatedAt": {
-                "type": "string",
-                "format": "date-time"
-            }
-        },
-        "required": ["topService", "topArea", "basedOnDays", "generatedAt"]
-    },
-    "Standby": {
-        "title": "Standby Pool",
-        "description": "A pool of pre-assigned artisans for predicted high-demand services.",
-        "type": "object",
-        "properties": {
-            "serviceType": { "type": "string" },
-            "area": { "type": "string" },
-            "artisans": {
-                "type": "array",
-                "items": { "type": "string" },
-                "description": "List of artisan IDs on standby."
-            },
-            "generatedAt": { "type": "string", "format": "date-time" }
-        },
-        "required": ["serviceType", "area", "artisans", "generatedAt"]
-    },
-    "Job": {
-      "title": "Job",
-      "description": "A service job requested by a user, with its assignment lifecycle.",
-      "type": "object",
-      "properties": {
-        "customerId": { "type": "string", "description": "ID of the customer who requested the job." },
-        "providerId": { "type": "string", "description": "ID of the provider assigned to the job." },
-        "categoryId": { "type": "string", "description": "ID of the service category." },
-        "description": { "type": "string", "description": "A description of the work to be done." },
-        "location": { "type": "string", "description": "The location of the job." },
-        "estimatedCost": { "type": "number", "description": "The estimated cost of the job." },
-        "status": {
-          "type": "string",
-          "enum": ["REQUESTED", "QUOTED", "AWAITING_DEPOSIT", "IN_PROGRESS", "AWAITING_FINAL_PAYMENT", "COMPLETED", "CLOSED", "DISPUTED", "CANCELLED"]
-        },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "expiresAt": { "type": "string", "format": "date-time", "description": "Timestamp for when the current assignment expires." },
-        "price": { "type": "number", "description": "The final calculated price for the job." },
-        "surgeMultiplier": { "type": "number", "description": "The surge multiplier applied to this job." }
-      },
-      "required": ["customerId", "providerId", "categoryId", "status", "createdAt"]
-    },
-    "ReassignmentLog": {
-      "title": "Reassignment Log",
-      "description": "A log entry for when a job is reassigned from one artisan to another.",
-      "type": "object",
-      "properties": {
-        "jobId": { "type": "string" },
-        "fromArtisan": { "type": "string" },
-        "toArtisan": { "type": "string" },
-        "reason": { "type": "string", "enum": ["timeout", "rejected"] },
-        "timestamp": { "type": "string", "format": "date-time" }
-      },
-      "required": ["jobId", "reason", "timestamp"]
-    },
-    "AuditLog": {
-      "title": "Audit Log",
-      "description": "A log of administrative actions performed in the system for accountability.",
-      "type": "object",
-      "properties": {
-        "adminEmail": {
-          "type": "string"
-        },
-        "action": {
-          "type": "string"
-        },
-        "targetType": {
-          "type": "string",
-          "enum": [
-            "provider",
-            "review",
-            "service",
-            "system"
-          ]
-        },
-        "targetId": {
-          "type": "string"
-        },
-        "ipAddress": {
-          "type": "string",
-          "description": "The IP address of the admin who performed the action."
-        },
-        "userAgent": {
-          "type": "string",
-          "description": "The user agent of the admin's browser."
-        },
-        "createdAt": {
-          "type": "string",
+          "description": "Timestamp indicating when the provider was added to the platform.",
           "format": "date-time"
         }
       },
       "required": [
-        "adminEmail",
-        "action",
-        "targetType",
-        "targetId",
+        "id",
+        "name",
+        "category",
+        "phone",
+        "area",
+        "verified",
+        "rating",
+        "reviewCount",
         "createdAt"
       ]
     },
-    "AdminLoginAttempt": {
-      "title": "Admin Login Attempt",
-      "description": "Tracks failed login attempts for an IP address to prevent brute-force attacks.",
+    "Review": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Review",
       "type": "object",
+      "description": "Represents a review for a service provider.",
       "properties": {
-        "count": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the review entity."
+        },
+        "providerId": {
+          "type": "string",
+          "description": "Reference to Provider. (Relationship: Provider 1:N Review)"
+        },
+        "userName": {
+          "type": "string",
+          "description": "The name of the user who wrote the review."
+        },
+        "rating": {
           "type": "number",
-          "description": "The number of failed attempts from this IP."
+          "description": "The star rating given by the user (e.g., 5)."
         },
-        "lastAttempt": {
+        "comment": {
           "type": "string",
-          "format": "date-time",
-          "description": "Timestamp of the last failed attempt."
+          "description": "The user's written review."
         },
-        "blockedUntil": {
+        "createdAt": {
           "type": "string",
-          "format": "date-time",
-          "description": "Timestamp until which this IP is blocked from attempting to log in."
-        }
-      },
-      "required": ["count", "lastAttempt"]
-    },
-    "SystemSettings": {
-      "title": "System Settings",
-      "description": "Global settings for the application, like admin lockout.",
-      "type": "object",
-      "properties": {
-        "adminLocked": {
-          "type": "boolean",
-          "description": "If true, all admin access is disabled."
-        },
-        "reason": {
-          "type": "string",
-          "description": "The reason for the current setting state."
-        },
-        "updatedAt": {
-          "type": "string",
+          "description": "Timestamp indicating when the review was submitted.",
           "format": "date-time"
-        },
-        "updatedBy": {
-          "type": "string",
-          "description": "Email of the admin who made the change."
         }
       },
-      "required": ["adminLocked", "updatedAt", "updatedBy"]
+      "required": [
+        "id",
+        "providerId",
+        "userName",
+        "rating",
+        "comment",
+        "createdAt"
+      ]
     },
-    "ProviderLog": {
-        "title": "Provider Log",
-        "description": "A log of actions performed by providers.",
-        "type": "object",
-        "properties": {
-            "providerId": {
-                "type": "string"
-            },
-            "action": {
-                "type": "string"
-            },
-            "ipAddress": {
-                "type": "string"
-            },
-            "userAgent": {
-                "type": "string"
-            },
-            "createdAt": {
-                "type": "string",
-                "format": "date-time"
-            }
+    "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a category of service providers (e.g., Plumber, Electrician).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the category entity."
         },
-        "required": [
-            "providerId",
-            "action",
-            "createdAt"
-        ]
-    },
-    "WhatsAppEvent": {
-      "title": "WhatsApp Event",
-      "description": "A log of an interaction with the WhatsApp bot.",
-      "type": "object",
-      "properties": {
-        "phone": { "type": "string" },
-        "role": { "type": "string", "enum": ["provider", "customer"] },
-        "event": { "type": "string", "enum": ["JOB_REQUEST", "PROVIDER_LOGIN", "HELP", "PIN_RESET"] },
-        "message": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["phone", "role", "event", "createdAt"]
-    },
-    "Transaction": {
-      "title": "Transaction",
-      "description": "Represents a financial transaction for a job, including commission.",
-      "type": "object",
-      "properties": {
-        "jobId": { "type": "string" },
-        "providerId": { "type": "string" },
-        "jobAmount": { "type": "number" },
-        "commission": { "type": "number" },
-        "status": { "type": "string", "enum": ["paid", "unpaid", "pending"] },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["jobId", "providerId", "jobAmount", "commission", "status", "createdAt"]
-    },
-    "Payment": {
-      "title": "Payment",
-      "description": "A payment made for a job, either a deposit or final payment.",
-      "type": "object",
-      "properties": {
-        "jobId": { "type": "string" },
-        "type": { "type": "string", "enum": ["DEPOSIT", "FINAL"] },
-        "amount": { "type": "number" },
-        "method": { "type": "string", "enum": ["MoMo", "Cash", "WhatsApp"] },
-        "paidBy": { "type": "string", "enum": ["customer"] },
-        "status": { "type": "string", "enum": ["CONFIRMED", "PENDING"] },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["jobId", "type", "amount", "method", "paidBy", "status", "createdAt"]
-    },
-    "Subscription": {
-      "title": "Subscription",
-      "description": "A provider's subscription plan.",
-      "type": "object",
-      "properties": {
-        "providerId": { "type": "string" },
-        "plan": { "type": "string", "enum": ["FREE", "BASIC", "PRO", "ENTERPRISE"] },
-        "expiresAt": { "type": "string", "format": "date-time" },
-        "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE", "CANCELLED"] }
-      },
-      "required": ["providerId", "plan", "status"]
-    },
-    "Dispute": {
-      "title": "Dispute",
-      "description": "A dispute raised for a job by a customer or provider.",
-      "type": "object",
-      "properties": {
-        "jobId": { "type": "string" },
-        "openedBy": { "type": "string", "enum": ["customer", "provider"] },
-        "reason": { "type": "string" },
-        "description": { "type": "string" },
-        "status": { "type": "string", "enum": ["OPEN", "UNDER_REVIEW", "RESOLVED", "CLOSED"] },
-        "evidence": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "type": { "type": "string", "enum": ["image", "video", "text"] },
-              "url": { "type": "string" }
-            },
-            "required": ["type", "url"]
-          }
+        "name": {
+          "type": "string",
+          "description": "The name of the category (e.g., Plumber)."
         },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "icon": {
+          "type": "string",
+          "description": "An icon representing the category (e.g., 🚿)."
+        }
       },
-      "required": ["jobId", "openedBy", "reason", "status", "createdAt"]
-    },
-    "Wallet": {
-      "title": "Wallet",
-      "description": "A user's (provider or customer) wallet.",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "balance": { "type": "number" },
-        "pending": { "type": "number" }
-      },
-      "required": ["userId", "balance", "pending"]
-    },
-    "WalletTransaction": {
-      "title": "Wallet Transaction",
-      "description": "A transaction in a user's wallet.",
-      "type": "object",
-      "properties": {
-        "jobId": { "type": "string" },
-        "type": { "type": "string", "enum": ["ESCROW_HOLD", "ESCROW_RELEASE", "PAYOUT", "TOPUP"] },
-        "amount": { "type": "number" },
-        "status": { "type": "string", "enum": ["LOCKED", "COMPLETED", "FAILED"] }
-      },
-      "required": ["jobId", "type", "amount", "status"]
-    },
-    "JobProof": {
-      "title": "Job Proof",
-      "description": "Photographic proof of work for a job.",
-      "type": "object",
-      "properties": {
-        "jobId": { "type": "string" },
-        "stage": { "type": "string", "enum": ["BEFORE", "DURING", "AFTER"] },
-        "uploadedBy": { "type": "string", "enum": ["provider", "customer"] },
-        "images": { "type": "array", "items": { "type": "string" } },
-        "timestamp": { "type": "string", "format": "date-time" }
-      },
-      "required": ["jobId", "stage", "uploadedBy", "images", "timestamp"]
+      "required": [
+        "id",
+        "name",
+        "icon"
+      ]
     }
   },
   "auth": {
-    "providers": ["email", "phone"]
+    "providers": [
+      "password",
+      "anonymous"
+    ]
   },
   "firestore": {
-    "/admins/{adminId}": {
-      "schema": {
-        "$ref": "#/entities/Admin"
+    "structure": [
+      {
+        "path": "/providers/{providerId}",
+        "definition": {
+          "entityName": "Provider",
+          "schema": {
+            "$ref": "#/backend/entities/Provider"
+          },
+          "description": "Stores information about service providers (artisans).",
+          "params": [
+            {
+              "name": "providerId",
+              "description": "The unique identifier of the provider."
+            }
+          ]
+        }
       },
-      "description": "Stores admin user information and roles."
-    },
-    "/services/{serviceId}": {
-        "schema": {
-            "$ref": "#/entities/Service"
-        },
-        "description": "Stores the categories of services offered."
-    },
-    "/providers/{providerId}": {
-        "schema": {
-            "$ref": "#/entities/Provider"
-        },
-        "description": "Stores the profiles of service providers."
-    },
-    "/locations/{locationId}": {
-      "schema": {
-        "$ref": "#/entities/Location"
+      {
+        "path": "/providers/{providerId}/reviews/{reviewId}",
+        "definition": {
+          "entityName": "Review",
+          "schema": {
+            "$ref": "#/backend/entities/Review"
+          },
+          "description": "Stores reviews for individual service providers. Includes denormalized `providerId` for relationship.",
+          "params": [
+            {
+              "name": "providerId",
+              "description": "The unique identifier of the provider."
+            },
+            {
+              "name": "reviewId",
+              "description": "The unique identifier of the review."
+            }
+          ]
+        }
       },
-      "description": "Stores location data, like zones for a city. The document ID would typically be the city name, e.g., 'berekum'."
-    },
-    "/reviews/{reviewId}": {
-      "schema": {
-        "$ref": "#/entities/Review"
-      },
-      "description": "Stores user-submitted reviews for providers."
-    },
-    "/requests/{requestId}": {
-      "schema": {
-        "$ref": "#/entities/Request"
-      },
-      "description": "Stores user service requests, often initiated via the WhatsApp bot."
-    },
-    "/daily_stats/{date}": {
-      "schema": { "$ref": "#/entities/DailyStats" },
-      "description": "Stores pre-computed daily analytics. Document ID is the date in YYYY-MM-DD format."
-    },
-    "/bot_logs/{logId}": {
-      "schema": { "$ref": "#/entities/BotLog" },
-      "description": "Stores logs of messages from the WhatsApp bot for analytics."
-    },
-    "/predictions/{predictionId}": {
-      "schema": {
-        "$ref": "#/entities/Prediction"
-      },
-      "description": "Stores generated demand predictions. Document ID is usually 'tomorrow'."
-    },
-    "/standby/{standbyId}": {
-      "schema": { "$ref": "#/entities/Standby" },
-      "description": "Stores the daily standby pool of artisans. Document ID is usually 'tomorrow'."
-    },
-    "/jobs/{jobId}": {
-      "schema": {
-        "$ref": "#/entities/Job"
-      },
-      "description": "Stores live service jobs and their assignment status."
-    },
-    "/reassignments/{reassignmentId}": {
-      "schema": {
-        "$ref": "#/entities/ReassignmentLog"
-      },
-      "description": "Stores a log of all job reassignments."
-    },
-    "/auditLogs/{logId}": {
-      "schema": { "$ref": "#/entities/AuditLog" },
-      "description": "Stores a log of all administrative actions for accountability."
-    },
-    "/admin_login_attempts/{ipAddress}": {
-      "schema": {
-        "$ref": "#/entities/AdminLoginAttempt"
-      },
-      "description": "Stores records of failed admin login attempts by IP address for rate limiting."
-    },
-    "/system_settings/{settingId}": {
-      "schema": {
-        "$ref": "#/entities/SystemSettings"
-      },
-      "description": "Stores global system settings. Document ID is typically 'admin'."
-    },
-    "/provider_logs/{logId}": {
-        "schema": {
-            "$ref": "#/entities/ProviderLog"
-        },
-        "description": "Stores a log of provider actions for auditing."
-    },
-    "/whatsapp_events/{eventId}": {
-        "schema": {
-            "$ref": "#/entities/WhatsAppEvent"
-        },
-        "description": "Logs all interactions from the WhatsApp bot for analytics."
-    },
-    "/transactions/{transactionId}": {
-        "schema": {
-            "$ref": "#/entities/Transaction"
-        },
-        "description": "Stores all financial transactions related to jobs and commissions."
-    },
-    "/payments/{paymentId}": {
-        "schema": {
-            "$ref": "#/entities/Payment"
-        },
-        "description": "Stores deposit and final payments for jobs."
-    },
-    "/subscriptions/{subscriptionId}": {
-        "schema": {
-            "$ref": "#/entities/Subscription"
-        },
-        "description": "Stores provider subscription details."
-    },
-    "/disputes/{disputeId}": {
-        "schema": {
-            "$ref": "#/entities/Dispute"
-        },
-        "description": "Stores information about job disputes."
-    },
-    "/wallets/{userId}": {
-        "schema": {
-            "$ref": "#/entities/Wallet"
-        },
-        "description": "Stores user wallet information."
-    },
-    "/wallet_transactions/{transactionId}": {
-        "schema": {
-            "$ref": "#/entities/WalletTransaction"
-        },
-        "description": "Stores all wallet transactions, including escrow."
-    },
-    "/job_proofs/{jobProofId}": {
-        "schema": {
-            "$ref": "#/entities/JobProof"
-        },
-        "description": "Stores photographic proof of work for jobs."
-    }
+      {
+        "path": "/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "Stores categories for service providers.",
+          "params": [
+            {
+              "name": "categoryId",
+              "description": "The unique identifier of the category."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support the FixAm Ghana application, focusing on listing local artisans, enabling contact, displaying location, and managing ratings and reviews. It prioritizes simplicity and scalability for an MVP.  \n\n**Authorization Independence (CRITICAL):** There's no explicit authorization beyond potential admin roles, so authorization independence isn't a primary concern at this stage. However, if provider verification becomes permissioned, the `providers` documents could include denormalized admin role data (e.g., an `adminApproverId`) to avoid `get()` calls in security rules.  For example, `providers/{providerId}` would include `adminApproverId: String`. If approval from any admin is ok, a `approved:boolean` flag is sufficient. This approach becomes critical as the application scales and more granular access control is required.\n\n**Clarity of Intent (Debuggability):** The structure uses clear and descriptive collection and field names to enhance debuggability.  Relationships between entities (e.g., Providers and Reviews) are maintained through `providerId` fields, providing a straightforward way to query related data.\n\n**DBAC (No Custom Claims):** The application does not explicitly require role-based access control beyond the potential admin verification, so custom claims are not necessary at this stage.\n\n**QAPs (Rules are not Filters):** The structure is designed to support secure `list` operations by segregating data into collections with homogeneous security postures. For example, all documents in the `providers` collection share the same access requirements. As the application evolves, consider segregating verified and unverified providers into separate collections to enforce different security rules during listing.\n\n**Invariants:** The structure supports data integrity by enforcing required fields in the schema and using timestamps for creation dates. Denormalization of data (if admin roles are added) will require careful management to maintain consistency."
   }
 }
