@@ -1,7 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import { Wrench, ArrowRight, ShieldCheck, Smartphone, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 
 export default function LandingPage() {
   return (
@@ -19,7 +20,7 @@ export default function LandingPage() {
             Admin
           </Link>
           <Button asChild size="sm">
-            <Link href="/register">List Business</Link>
+            <Link href="/add-provider">List Business</Link>
           </Button>
         </nav>
       </header>
@@ -37,16 +38,6 @@ export default function LandingPage() {
                 </p>
               </div>
               
-              <div className="w-full max-w-md flex items-center space-x-2 bg-white p-2 rounded-full shadow-lg border border-primary/20">
-                <Input 
-                  className="border-none focus-visible:ring-0 rounded-full" 
-                  placeholder="What service do you need?" 
-                />
-                <Button size="icon" className="rounded-full shrink-0">
-                  <Search className="h-4 w-4" />
-                </Button>
-              </div>
-
               <div className="flex flex-wrap justify-center gap-4">
                 <Button asChild size="lg" className="rounded-full px-8">
                   <Link href="/browse">
@@ -94,24 +85,10 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="py-12 w-full shrink-0 border-t bg-white px-4 md:px-6">
-        <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex flex-col gap-2">
-            <Link className="flex items-center" href="/">
-              <Wrench className="h-5 w-5 text-primary" />
-              <span className="ml-2 font-bold text-lg font-headline">FixAm Ghana</span>
-            </Link>
-            <p className="text-sm text-muted-foreground">Connecting Berekum to quality craftsmanship.</p>
-          </div>
-          <div className="flex gap-8">
-            <Link className="text-sm text-muted-foreground hover:underline underline-offset-4" href="/terms">Terms</Link>
-            <Link className="text-sm text-muted-foreground hover:underline underline-offset-4" href="/privacy">Privacy</Link>
-            <Link className="text-sm text-muted-foreground hover:underline underline-offset-4" href="/admin/login">Admin Login</Link>
-          </div>
-        </div>
-        <div className="container mx-auto mt-8 pt-8 border-t text-center text-xs text-muted-foreground">
+      <footer className="py-12 w-full shrink-0 border-t bg-white px-4 md:px-6 text-center">
+        <p className="text-xs text-muted-foreground">
           © 2024 FixAm Ghana. All rights reserved.
-        </div>
+        </p>
       </footer>
     </div>
   );

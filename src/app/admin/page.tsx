@@ -1,5 +1,7 @@
-import { Users, UserCheck, MessageSquare, TrendingUp, ArrowUpRight, Clock, Shield } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+'use client';
+
+import { Users, UserCheck, MessageSquare, TrendingUp, ArrowUpRight } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function AdminDashboard() {
   const stats = [
@@ -12,7 +14,7 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-10">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-foreground font-headline">Dashboard Overview</h1>
+        <h1 className="text-3xl font-bold text-foreground font-headline text-primary">Dashboard Overview</h1>
         <p className="text-muted-foreground">Monitor provider performance and platform activity in Berekum.</p>
       </div>
 
@@ -36,52 +38,12 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2 border-none shadow-sm">
-          <CardHeader>
-            <CardTitle className="font-headline">Recent Activity</CardTitle>
-            <CardDescription>Live updates from the WhatsApp matching bot.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="flex items-start gap-4 p-3 rounded-xl hover:bg-muted/50 transition-colors">
-                  <div className="bg-primary/10 p-2 rounded-full mt-1">
-                    <MessageSquare className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium leading-none">Job Request: Electrician</p>
-                    <p className="text-xs text-muted-foreground">New request received from Biadan area.</p>
-                  </div>
-                  <div className="text-xs text-muted-foreground flex items-center">
-                    <Clock className="h-3 w-3 mr-1" /> {i * 5}m ago
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="border-none shadow-sm h-64 flex items-center justify-center bg-white">
+          <p className="text-muted-foreground italic">Platform activity chart placeholder</p>
         </Card>
-
-        <Card className="border-none shadow-sm">
-          <CardHeader>
-            <CardTitle className="font-headline">Security Logs</CardTitle>
-            <CardDescription>Recent administrative actions.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-start gap-4">
-                  <div className="bg-secondary/10 p-2 rounded-full mt-1">
-                    <Shield className="h-4 w-4 text-secondary" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium">Provider Verified</p>
-                    <p className="text-[10px] text-muted-foreground">Admin verified Kwame Electric Works</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
+        <Card className="border-none shadow-sm h-64 flex items-center justify-center bg-white">
+          <p className="text-muted-foreground italic">Matching success rate chart placeholder</p>
         </Card>
       </div>
     </div>
