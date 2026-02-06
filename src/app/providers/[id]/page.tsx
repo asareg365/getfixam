@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -118,7 +119,6 @@ export default async function ProviderDetailPage(props: { params: Promise<{ id: 
         </div>
         </div>
 
-        {/* Sticky Bottom Bar for Mobile */}
         <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background p-3 md:hidden">
             <div className="container mx-auto flex items-center gap-3">
             <Button asChild className="flex-1" variant="outline">

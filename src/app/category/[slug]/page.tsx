@@ -1,3 +1,4 @@
+
 import { getCategoryBySlug, getProviders } from '@/lib/services';
 import { getBerekumZones } from '@/lib/data';
 import { notFound } from 'next/navigation';
@@ -17,7 +18,7 @@ export default async function CategoryPage(props: { params: Promise<{ slug: stri
 
   try {
     if (params.slug === 'all') {
-      providers = await getProviders(); // Fetch all providers
+      providers = await getProviders();
     } else {
       const category = await getCategoryBySlug(params.slug);
       if (!category) notFound();
@@ -33,7 +34,6 @@ export default async function CategoryPage(props: { params: Promise<{ slug: stri
     <PublicLayout>
       <div className="bg-secondary/20 min-h-[calc(100vh-4rem)]">
         <div className="container mx-auto px-4 md:px-6 py-12 md:py-16">
-          {/* Breadcrumb */}
           <div className="mb-12">
             <div className="flex items-center text-sm text-muted-foreground mb-4">
               <Link href="/" className="hover:text-primary transition-colors flex items-center">
@@ -48,9 +48,7 @@ export default async function CategoryPage(props: { params: Promise<{ slug: stri
               Browse artisans and filter by location and verification status.
             </p>
           </div>
-
           <ProviderList initialProviders={providers} zones={zones} />
-
         </div>
       </div>
     </PublicLayout>

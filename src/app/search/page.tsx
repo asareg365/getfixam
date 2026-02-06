@@ -1,3 +1,4 @@
+
 import { getCategories } from '@/lib/data';
 import { getProviders } from '@/lib/services';
 import PublicLayout from '@/components/layout/PublicLayout';
@@ -41,8 +42,6 @@ export default async function SearchPage(props: {
   return (
     <PublicLayout>
       <div className="container mx-auto px-4 py-12 space-y-12">
-        
-        {/* Header */}
         <div>
           <h1 className="text-3xl font-bold font-headline">
             Results for <span className="text-primary">“{query}”</span>
@@ -52,7 +51,6 @@ export default async function SearchPage(props: {
           </p>
         </div>
 
-        {/* Categories */}
         {matchedCategories.length > 0 && (
           <section>
             <h2 className="text-2xl font-semibold mb-6 font-headline">Matching Categories</h2>
@@ -64,7 +62,6 @@ export default async function SearchPage(props: {
           </section>
         )}
 
-        {/* Providers */}
         {matchedProviders.length > 0 && (
           <section>
             <h2 className="text-2xl font-semibold mb-6 font-headline">Matching Service Providers</h2>
@@ -76,7 +73,6 @@ export default async function SearchPage(props: {
           </section>
         )}
 
-        {/* Empty state */}
         {matchedCategories.length === 0 && matchedProviders.length === 0 && (
           <div className="text-center py-20 border-2 border-dashed rounded-lg bg-muted/30">
             <h3 className="text-xl font-semibold">No results found for “{query}”</h3>
@@ -85,7 +81,6 @@ export default async function SearchPage(props: {
             </p>
           </div>
         )}
-
       </div>
     </PublicLayout>
   );
