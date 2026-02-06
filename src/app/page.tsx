@@ -1,7 +1,5 @@
-'use client';
-
 import Link from 'next/link';
-import { Wrench, ArrowRight, ShieldCheck, Smartphone, Search, Menu } from 'lucide-react';
+import { Wrench, ShieldCheck, Smartphone, Search, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -18,7 +16,7 @@ export default function LandingPage() {
             Admin Access
           </Link>
           <Button asChild className="rounded-full font-bold">
-            <Link href="/add-provider">List Business</Link>
+            <Link href="/add-provider">List Your Business</Link>
           </Button>
         </nav>
       </header>
@@ -45,7 +43,7 @@ export default function LandingPage() {
 
             <div className="flex justify-center gap-4 pt-4">
               <Button asChild size="lg" className="rounded-full h-14 px-8 text-lg font-bold shadow-lg shadow-primary/20">
-                <Link href="/category/all">
+                <Link href="/browse">
                   Browse All Artisans
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
@@ -61,21 +59,21 @@ export default function LandingPage() {
                 <ShieldCheck className="h-8 w-8" />
               </div>
               <h3 className="text-2xl font-bold font-headline">Verified Pros</h3>
-              <p className="text-muted-foreground">Every artisan is manually vetted by our platform for your peace of mind and quality guarantee.</p>
+              <p className="text-muted-foreground">Every artisan is vetted for your peace of mind and quality guarantee.</p>
             </div>
             <div className="p-8 border rounded-3xl bg-background/50 space-y-4 transition-all hover:shadow-md">
               <div className="p-3 bg-secondary/20 rounded-2xl w-fit text-secondary">
                 <Smartphone className="h-8 w-8" />
               </div>
               <h3 className="text-2xl font-bold font-headline">Direct Contact</h3>
-              <p className="text-muted-foreground">Call or WhatsApp artisans directly. We remove the middleman to save you both time and money.</p>
+              <p className="text-muted-foreground">Call or WhatsApp artisans directly. We remove the middleman to save you time.</p>
             </div>
             <div className="p-8 border rounded-3xl bg-background/50 space-y-4 transition-all hover:shadow-md">
               <div className="p-3 bg-secondary/20 rounded-2xl w-fit text-secondary">
                 <Wrench className="h-8 w-8" />
               </div>
               <h3 className="text-2xl font-bold font-headline">Local Experts</h3>
-              <p className="text-muted-foreground">Connecting you with specialized skills right in your local area for the fastest response times.</p>
+              <p className="text-muted-foreground">Connecting you with specialized skills in your local area for the fastest response.</p>
             </div>
           </div>
         </section>

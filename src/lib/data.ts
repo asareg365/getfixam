@@ -1,5 +1,11 @@
-import type { Category, Provider, Review, Request } from './types';
 import { cache } from 'react';
+
+export type Category = {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string;
+};
 
 export const CATEGORIES: Category[] = [
   { id: 'aluminum-fabricator', name: 'Aluminum Fabricator', slug: 'aluminum-fabricator', icon: 'Hammer' },
@@ -17,274 +23,19 @@ export const CATEGORIES: Category[] = [
   { id: 'tv-repair', name: 'TV Repair', slug: 'tv-repair', icon: 'Tv2' },
 ];
 
-export const BEREKUM_ZONES = [
-  "Ahenbronoso",
-  "Alawa",
-  "Amangoase",
-  "Amomaso",
-  "Ayakorase",
-  "Benkasa",
-  "Berlin",
-  "Biadan",
-  "Brenyekwa",
-  "Brotherhood",
-  "Continental",
-  "Domfete",
-  "Downtown",
-  "Jamdede",
-  "Jinijini Road",
-  "Kato",
-  "Kutre no 2",
-  "Kutre No.1",
-  "Kyeritwedie",
-  "Kyiribaa",
-  "Magazine",
-  "Market Area",
-  "Mpatasie",
-  "Nanasuano",
-  "Nsapor",
-  "Nyamebekyere",
-  "Nyamenae",
-  "Nyametease",
-  "Presby",
-  "Senase",
-  "Sofo Kyere",
-  "Yawoadadwom",
-  "Zongo",
-];
-
-export const PROVIDERS: Provider[] = [
-  {
-    id: '1',
-    name: 'Kwame Electric Works',
-    category: 'Electrician',
-    serviceId: 'electrician',
-    phone: '0241234567',
-    whatsapp: '0241234567',
-    digitalAddress: 'BK-012-3456',
-    location: { region: 'Bono', city: 'Berekum', zone: 'Zongo' },
-    status: 'approved',
-    verified: true,
-    isFeatured: false,
-    rating: 4.8,
-    reviewCount: 28,
-    createdAt: '2023-01-15T09:30:00Z',
-    imageId: 'provider1'
-  },
-  {
-    id: '2',
-    name: 'Adjoa Plumbing Solutions',
-    category: 'Plumber',
-    serviceId: 'plumber',
-    phone: '0557654321',
-    whatsapp: '0557654321',
-    digitalAddress: 'BK-023-4567',
-    location: { region: 'Bono', city: 'Berekum', zone: 'Biadan' },
-    status: 'approved',
-    verified: true,
-    isFeatured: false,
-    rating: 4.5,
-    reviewCount: 12,
-    createdAt: '2023-02-20T14:00:00Z',
-    imageId: 'provider2'
-  },
-  {
-    id: '3',
-    name: 'Gadget Masters Phone Repair',
-    category: 'Phone Repair',
-    serviceId: 'phone-repair',
-    phone: '0209876543',
-    whatsapp: '0209876543',
-    digitalAddress: 'BK-034-5678',
-    location: { region: 'Bono', city: 'Berekum', zone: 'Kato' },
-    status: 'pending',
-    verified: false,
-    isFeatured: false,
-    rating: 4.2,
-    reviewCount: 15,
-    createdAt: '2023-03-10T11:45:00Z',
-    imageId: 'provider3'
-  },
-  {
-    id: '4',
-    name: 'Kofi & Sons Auto',
-    category: 'Mechanic',
-    serviceId: 'mechanic',
-    phone: '0275556677',
-    whatsapp: '0275556677',
-    digitalAddress: 'BK-045-6789',
-    location: { region: 'Bono', city: 'Berekum', zone: 'Senase' },
-    status: 'approved',
-    verified: true,
-    isFeatured: false,
-    rating: 4.9,
-    reviewCount: 45,
-    createdAt: '2022-11-05T08:00:00Z',
-    imageId: 'provider4'
-  },
-  {
-    id: '5',
-    name: 'Esi\'s Chic Salon',
-    category: 'Hairdresser',
-    serviceId: 'hairdresser',
-    phone: '0501112233',
-    whatsapp: '0501112233',
-    digitalAddress: 'BK-056-7890',
-    location: { region: 'Bono', city: 'Berekum', zone: 'Zongo' },
-    status: 'approved',
-    verified: true,
-    isFeatured: false,
-    rating: 4.6,
-    reviewCount: 32,
-    createdAt: '2023-05-01T18:00:00Z',
-    imageId: 'provider5'
-  },
-  {
-    id: '6',
-    name: 'Nsoroma Carpentry',
-    category: 'Carpenter',
-    serviceId: 'carpenter',
-    phone: '0263334455',
-    whatsapp: '0263334455',
-    digitalAddress: 'BK-067-8901',
-    location: { region: 'Bono', city: 'Berekum', zone: 'Biadan' },
-    status: 'rejected',
-    verified: false,
-    isFeatured: false,
-    rating: 4.0,
-    reviewCount: 8,
-    createdAt: '2023-04-12T13:20:00Z',
-    imageId: 'provider6'
-  },
-  {
-    id: '7',
-    name: 'Sparky Electricals',
-    category: 'Electrician',
-    serviceId: 'electrician',
-    phone: '0247890123',
-    whatsapp: '0247890123',
-    digitalAddress: 'BK-078-9012',
-    location: { region: 'Bono', city: 'Berekum', zone: 'Kato' },
-    status: 'approved',
-    verified: true,
-    isFeatured: false,
-    rating: 4.7,
-    reviewCount: 19,
-    createdAt: '2023-06-01T10:00:00Z',
-    imageId: 'provider7'
-  },
-  {
-    id: '8',
-    name: 'Flow-Right Plumbers',
-    category: 'Plumber',
-    serviceId: 'plumber',
-    phone: '0552345678',
-    whatsapp: '0552345678',
-    digitalAddress: 'BK-089-0123',
-    location: { region: 'Bono', city: 'Berekum', zone: 'Senase' },
-    status: 'pending',
-    verified: false,
-    isFeatured: false,
-    rating: 3.9,
-    reviewCount: 5,
-    createdAt: '2023-08-11T16:00:00Z',
-    imageId: 'provider8'
-  },
-];
-
-export const REVIEWS: Review[] = [
-  {
-    id: '1',
-    jobId: 'job-1',
-    providerId: '1',
-    userName: 'Ama K.',
-    rating: 5,
-    comment: 'Very neat work, came on time and fixed my faulty socket. Highly recommended!',
-    createdAt: '2023-10-05T10:00:00Z',
-    userImageId: 'user1',
-    status: 'approved'
-  },
-  {
-    id: '2',
-    jobId: 'job-2',
-    providerId: '1',
-    userName: 'John O.',
-    rating: 4,
-    comment: 'Good service, but was a bit late. The work itself was professional.',
-    createdAt: '2023-09-28T15:20:00Z',
-    userImageId: 'user2',
-    status: 'approved'
-  },
-  {
-    id: '3',
-    jobId: 'job-3',
-    providerId: '2',
-    userName: 'Yaw B.',
-    rating: 5,
-    comment: 'Adjoa is the best plumber in Berekum! Fixed my leaking pipe in no time.',
-    createdAt: '2023-11-01T12:00:00Z',
-    userImageId: 'user3',
-    status: 'approved'
-  },
-  {
-    id: '4',
-    jobId: 'job-4',
-    providerId: '9',
-    userName: 'Fatima I.',
-    rating: 5,
-    comment: 'My phone screen was shattered. iFix made it look brand new. Fast and affordable.',
-    createdAt: '2023-10-20T18:00:00Z',
-    userImageId: 'user4',
-    status: 'approved'
-  },
-  {
-    id: '5',
-    jobId: 'job-5',
-    providerId: '9',
-    userName: 'David A.',
-    rating: 5,
-    comment: 'Best phone repair shop in town. Trustworthy and skilled.',
-    createdAt: '2023-11-10T11:30:00Z',
-    userImageId: 'user5',
-    status: 'approved'
-  },
-  {
-    id: '6',
-    jobId: 'job-6',
-    providerId: '4',
-    userName: 'Michael S.',
-    rating: 5,
-    comment: 'Honest and reliable mechanic. Kofi knows his stuff.',
-    createdAt: '2023-08-15T14:45:00Z',
-    userImageId: 'user6',
-    status: 'approved'
-  }
-];
-
-export const REQUESTS: Request[] = [
-    { id: '1', userPhone: '024xxxxxxx', serviceType: 'Electrician', location: 'Kato', status: 'completed', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString() },
-    { id: '2', userPhone: '055xxxxxxx', serviceType: 'Plumber', location: 'Zongo', status: 'pending', createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
-    { id: '3', userPhone: '020xxxxxxx', serviceType: 'Electrician', location: 'Biadan', status: 'assigned', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString() },
-    { id: '4', userPhone: '027xxxxxxx', serviceType: 'Mechanic', location: 'Senase', status: 'completed', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString() },
-    { id: '5', userPhone: '050xxxxxxx', serviceType: 'Phone Repair', location: 'Market Area', status: 'pending', createdAt: new Date(Date.now() - 1000 * 60 * 10).toISOString() },
-    { id: '6', userPhone: '026xxxxxxx', serviceType: 'Plumber', location: 'Kato', status: 'cancelled', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString() },
-    { id: '7', userPhone: '024xxxxxxx', serviceType: 'Electrician', location: 'Zongo', status: 'completed', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString() },
-    { id: '8', userPhone: '055xxxxxxx', serviceType: 'Carpenter', location: 'Presby', status: 'pending', createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
-];
-
-/**
- * Fetches all active categories.
- * This function is cached to ensure data consistency across server components.
- */
 export const getCategories = cache(async (): Promise<Category[]> => {
-    // NOTE: Returning static data for now to ensure dropdowns are populated.
     return CATEGORIES.sort((a, b) => a.name.localeCompare(b.name));
 });
 
-/**
- * Fetches the list of zones for Berekum.
- */
-export async function getBerekumZones(): Promise<string[]> {
-    // NOTE: Returning static data to ensure dropdown is populated.
-    return BEREKUM_ZONES;
+export async function getZones(): Promise<string[]> {
+    return [
+      "Zone A",
+      "Zone B",
+      "Zone C",
+      "Zone D",
+      "Zongo",
+      "Central",
+      "Suburb North",
+      "Suburb South"
+    ];
 }
