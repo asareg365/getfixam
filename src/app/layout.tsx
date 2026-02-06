@@ -1,13 +1,11 @@
 import './globals.css';
-import { Inter, Space_Grotesk } from 'next/font/google';
-import { Toaster } from '@/components/ui/toaster';
+import { Inter } from 'next/font/google';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space' });
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'FixAm Ghana | Local Artisan Directory',
-  description: 'Find trusted local artisans in Berekum, fast.',
+  title: 'FixAm Ghana | Trusted Local Artisans',
+  description: 'Find verified plumbers, electricians, and mechanics in Berekum.',
 };
 
 export default function RootLayout({
@@ -16,11 +14,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
-      <body className="antialiased">
-        {children}
-        <Toaster />
-      </body>
+    <html lang="en">
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }

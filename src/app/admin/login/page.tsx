@@ -1,87 +1,88 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, Wrench } from 'lucide-react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
+import { Wrench, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const router = useRouter();
-  const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      toast({ title: "Welcome back!", description: "Accessing admin dashboard..." });
       router.push('/admin');
-    } catch (error: any) {
-      toast({ 
-        title: "Login Failed", 
-        description: error.message || "Please check your credentials.", 
-        variant: "destructive" 
-      });
+    } catch (err: any) {
+      setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-lg border-primary/20">
-        <CardHeader className="space-y-1 text-center">
-          <div className="flex justify-center mb-4">
-            <Wrench className="h-10 w-10 text-primary" />
+    <div className="min-h-screen flex items-center justify-center bg-secondary/20 p-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border p-8">
+        <div className="flex flex-col items-center mb-8">
+          <div className="bg-primary/10 p-3 rounded-full mb-4">
+            <Wrench className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-space">Admin Access</CardTitle>
-          <CardDescription>Enter your credentials to manage FixAm Ghana.</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleLogin}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="admin@fixam.com" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required 
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required 
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sign In"}
-            </Button>
-            <Link href="/" className="text-sm text-muted-foreground hover:text-primary text-center w-full">
-              Back to Website
-            </Link>
-          </CardFooter>
+          <h1 className="text-2xl font-bold">Admin Access</h1>
+          <p className="text-muted-foreground text-sm">Enter your credentials to manage FixAm.</p>
+        </div>
+
+        {error && (
+          <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md mb-6 border border-destructive/20">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Email</label>
+            <input
+              type="email"
+              required
+              className="w-full h-10 px-3 rounded-md border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@fixam.com"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Password</label>
+            <input
+              type="password"
+              required
+              className="w-full h-10 px-3 rounded-md border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full h-11 bg-primary text-white rounded-md font-medium hover:bg-primary/90 transition-colors flex items-center justify-center disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Sign In'}
+          </button>
         </form>
-      </Card>
+
+        <div className="mt-6 text-center">
+          <Link href="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+            Back to Website
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

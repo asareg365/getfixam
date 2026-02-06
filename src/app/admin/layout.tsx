@@ -1,56 +1,41 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Settings, 
-  LogOut, 
-  Menu, 
-  Wrench, 
-  MessageSquare,
-  BarChart3
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { LayoutDashboard, Users, BarChart3, MessageSquare, Settings, LogOut, Menu, X, Wrench } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (!currentUser) {
+      if (!currentUser && pathname !== '/admin/login') {
         router.push('/admin/login');
       } else {
         setUser(currentUser);
       }
       setLoading(false);
     });
-
     return () => unsubscribe();
-  }, [router]);
+  }, [router, pathname]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse flex flex-col items-center">
-          <Wrench className="h-12 w-12 text-primary animate-bounce" />
-          <p className="mt-4 text-muted-foreground font-space">Securing session...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader className="animate-spin text-primary h-8 w-8" />
       </div>
     );
   }
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    router.push('/admin/login');
-  };
+  if (!user && pathname !== '/admin/login') return null;
+  if (pathname === '/admin/login') return <>{children}</>;
 
   const navItems = [
     { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -60,67 +45,76 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full py-4 px-3">
-      <div className="flex items-center px-3 mb-8">
-        <Wrench className="h-6 w-6 text-primary" />
-        <span className="ml-2 font-bold text-lg font-space">Admin Panel</span>
-      </div>
-      <nav className="flex-1 space-y-1">
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-primary/10 hover:text-primary transition-colors"
-          >
-            <item.icon className="mr-3 h-5 w-5" />
-            {item.label}
-          </Link>
-        ))}
-      </nav>
-      <div className="mt-auto pt-4 border-t">
-        <Button 
-          variant="ghost" 
-          className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/5"
-          onClick={handleLogout}
-        >
-          <LogOut className="mr-3 h-5 w-5" />
-          Log Out
-        </Button>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="min-h-screen flex bg-background">
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r bg-white">
-        <SidebarContent />
-      </aside>
+    <div className="min-h-screen bg-muted/30">
+      {/* Mobile Header */}
+      <header className="md:hidden h-16 bg-white border-b flex items-center px-4 justify-between sticky top-0 z-40">
+        <div className="flex items-center">
+          <Wrench className="h-6 w-6 text-primary" />
+          <span className="ml-2 font-bold">FixAm Admin</span>
+        </div>
+        <button onClick={() => setSidebarOpen(true)}>
+          <Menu className="h-6 w-6" />
+        </button>
+      </header>
 
-      {/* Mobile Nav */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="md:hidden h-16 flex items-center px-4 border-b bg-white">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-64">
-              <SidebarContent />
-            </SheetContent>
-          </Sheet>
-          <div className="ml-4 flex items-center">
-            <Wrench className="h-5 w-5 text-primary" />
-            <span className="ml-2 font-bold font-space">FixAm Admin</span>
+      <div className="flex">
+        {/* Desktop Sidebar */}
+        <aside className={`
+          fixed inset-y-0 left-0 z-50 w-64 bg-white border-r transform transition-transform duration-200 ease-in-out md:relative md:translate-x-0
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}>
+          <div className="flex flex-col h-full">
+            <div className="h-16 flex items-center px-6 justify-between md:justify-start">
+              <div className="flex items-center">
+                <Wrench className="h-6 w-6 text-primary" />
+                <span className="ml-2 font-bold text-lg">FixAm Panel</span>
+              </div>
+              <button className="md:hidden" onClick={() => setSidebarOpen(false)}>
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <nav className="flex-1 px-4 py-4 space-y-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`
+                    flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors
+                    ${pathname === item.href ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}
+                  `}
+                >
+                  <item.icon className="mr-3 h-5 w-5" />
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+
+            <div className="p-4 border-t">
+              <button
+                onClick={() => signOut(auth)}
+                className="flex items-center w-full px-3 py-2 text-sm font-medium text-destructive rounded-lg hover:bg-destructive/5 transition-colors"
+              >
+                <LogOut className="mr-3 h-5 w-5" />
+                Log Out
+              </button>
+            </div>
           </div>
-        </header>
+        </aside>
 
-        <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none p-4 md:p-8">
+        {/* Main Content */}
+        <main className="flex-1 p-4 md:p-8">
           {children}
         </main>
       </div>
     </div>
+  );
+}
+
+function Loader({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
   );
 }
