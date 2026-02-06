@@ -14,8 +14,9 @@ export const dynamic = 'force-dynamic';
 
 async function getDashboardData() {
     try {
+        const db = adminDb;
         // Robust check for adminDb existence and valid Firestore instance
-        if (!adminDb || typeof adminDb.collection !== 'function') {
+        if (!db || typeof db.collection !== 'function') {
             return {
                 totalProviders: 0,
                 pendingProviders: 0,
@@ -34,10 +35,10 @@ async function getDashboardData() {
             requestsSnap,
             activeServicesSnap
         ] = await Promise.all([
-            adminDb.collection('providers').count().get(),
-            adminDb.collection('providers').where('status', '==', 'pending').count().get(),
-            adminDb.collection('requests').count().get(),
-            adminDb.collection('services').where('active', '==', true).count().get()
+            db.collection('providers').count().get(),
+            db.collection('providers').where('status', '==', 'pending').count().get(),
+            db.collection('requests').count().get(),
+            db.collection('services').where('active', '==', true).count().get()
         ]);
 
         const totalProviders = providersSnap.data()?.count ?? 0;
@@ -45,14 +46,14 @@ async function getDashboardData() {
         const totalRequests = requestsSnap.data()?.count ?? 0;
         const activeServices = activeServicesSnap.data()?.count ?? 0;
         
-        const predictionDoc = await adminDb.collection('predictions').doc('tomorrow').get();
+        const predictionDoc = await db.collection('predictions').doc('tomorrow').get();
         const predictionData = predictionDoc.data();
         const prediction: Prediction | null = predictionDoc.exists && predictionData ? { 
             ...predictionData, 
             generatedAt: predictionData.generatedAt.toDate().toISOString() 
         } as Prediction : null;
 
-        const standbyDoc = await adminDb.collection('standby').doc('tomorrow').get();
+        const standbyDoc = await db.collection('standby').doc('tomorrow').get();
         let standby: StandbyPrediction | null = null;
         if (standbyDoc.exists) {
             const standbyData = standbyDoc.data()!;
@@ -60,7 +61,7 @@ async function getDashboardData() {
             let standbyArtisans: Provider[] = [];
 
             if (artisanIds.length > 0) {
-                const providersSnap = await adminDb.collection('providers').where(FieldPath.documentId(), 'in', artisanIds).get();
+                const providersSnap = await db.collection('providers').where(FieldPath.documentId(), 'in', artisanIds).get();
                 const providersMap = new Map<string, Provider>();
                 providersSnap.forEach(doc => {
                     const data = doc.data();
