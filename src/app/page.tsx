@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Wrench, ArrowRight, ShieldCheck, Smartphone, Search, Users } from 'lucide-react';
+import { Wrench, ArrowRight, ShieldCheck, Smartphone, Search, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -14,8 +14,8 @@ export default function LandingPage() {
           <span className="ml-2 font-bold text-xl tracking-tight text-primary font-headline">FixAm Ghana</span>
         </Link>
         <nav className="ml-auto flex gap-4 items-center">
-          <Link className="text-sm font-medium hover:text-primary transition-colors" href="/admin/login">
-            Admin
+          <Link className="text-sm font-medium hover:text-primary transition-colors hidden sm:inline-block" href="/admin/login">
+            Admin Access
           </Link>
           <Button asChild className="rounded-full font-bold">
             <Link href="/add-provider">List Business</Link>
@@ -27,10 +27,10 @@ export default function LandingPage() {
         <section className="w-full py-20 md:py-32 lg:py-48 bg-gradient-to-b from-primary/10 to-transparent">
           <div className="container px-4 md:px-6 mx-auto text-center space-y-8">
             <h1 className="text-5xl font-extrabold tracking-tighter sm:text-6xl md:text-7xl text-primary font-headline">
-              Find Trusted Artisans <br className="hidden md:inline" /> Near You
+              Find Trusted Artisans <br className="hidden md:inline" /> Fast & Reliable
             </h1>
             <p className="mx-auto max-w-[700px] text-muted-foreground text-lg md:text-2xl">
-              Verified professionals at your fingertips. Get your repairs done by the best in the business.
+              Verified professionals for every repair. Connect directly with the best skills in your neighborhood.
             </p>
             
             <div className="max-w-md mx-auto flex gap-2 p-2 bg-white rounded-full shadow-xl border border-primary/20">
@@ -61,28 +61,28 @@ export default function LandingPage() {
                 <ShieldCheck className="h-8 w-8" />
               </div>
               <h3 className="text-2xl font-bold font-headline">Verified Pros</h3>
-              <p className="text-muted-foreground">Every artisan is manually verified by our team for your peace of mind and quality assurance.</p>
+              <p className="text-muted-foreground">Every artisan is manually vetted by our platform for your peace of mind and quality guarantee.</p>
             </div>
             <div className="p-8 border rounded-3xl bg-background/50 space-y-4 transition-all hover:shadow-md">
               <div className="p-3 bg-secondary/20 rounded-2xl w-fit text-secondary">
                 <Smartphone className="h-8 w-8" />
               </div>
               <h3 className="text-2xl font-bold font-headline">Direct Contact</h3>
-              <p className="text-muted-foreground">Call or WhatsApp artisans directly. We remove the middleman to save you time and money.</p>
+              <p className="text-muted-foreground">Call or WhatsApp artisans directly. We remove the middleman to save you both time and money.</p>
             </div>
             <div className="p-8 border rounded-3xl bg-background/50 space-y-4 transition-all hover:shadow-md">
               <div className="p-3 bg-secondary/20 rounded-2xl w-fit text-secondary">
                 <Wrench className="h-8 w-8" />
               </div>
               <h3 className="text-2xl font-bold font-headline">Local Experts</h3>
-              <p className="text-muted-foreground">Connecting you with the best skill in your neighborhood for faster response times.</p>
+              <p className="text-muted-foreground">Connecting you with specialized skills right in your local area for the fastest response times.</p>
             </div>
           </div>
         </section>
       </main>
 
       <footer className="py-12 border-t bg-white text-center">
-        <p className="text-sm text-muted-foreground">© 2024 FixAm Ghana. All rights reserved.</p>
+        <p className="text-sm text-muted-foreground">© 2024 FixAm Ghana. Built for community reliance.</p>
       </footer>
     </div>
   );
