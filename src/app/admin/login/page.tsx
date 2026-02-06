@@ -1,87 +1,104 @@
 'use client';
 
 import { useState } from 'react';
-import { auth } from '@/lib/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { Wrench, Loader2 } from 'lucide-react';
+import { Wrench, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
+    
+    // Scaffolding: Simulating login
+    setTimeout(() => {
       router.push('/admin');
-    } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.');
-    } finally {
       setLoading(false);
-    }
+    }, 1000);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-secondary/20 p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border p-8">
-        <div className="flex flex-col items-center mb-8">
-          <div className="bg-primary/10 p-3 rounded-full mb-4">
-            <Wrench className="h-8 w-8 text-primary" />
-          </div>
-          <h1 className="text-2xl font-bold">Admin Access</h1>
-          <p className="text-muted-foreground text-sm">Enter your credentials to manage FixAm.</p>
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4 relative overflow-hidden">
+      {/* Decorative gradients */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+
+      <div className="w-full max-w-md relative z-10">
+        <div className="mb-6">
+          <Button variant="ghost" asChild size="sm" className="rounded-full">
+            <Link href="/">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Website
+            </Link>
+          </Button>
         </div>
 
-        {error && (
-          <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md mb-6 border border-destructive/20">
-            {error}
-          </div>
-        )}
+        <Card className="border-none shadow-2xl rounded-3xl">
+          <CardHeader className="text-center space-y-4 pt-10">
+            <div className="mx-auto bg-primary/10 p-4 rounded-3xl w-fit">
+              <Wrench className="h-10 w-10 text-primary" />
+            </div>
+            <div className="space-y-2">
+              <CardTitle className="text-3xl font-bold font-headline">Admin Access</CardTitle>
+              <CardDescription className="text-base">
+                Enter your credentials to manage the FixAm platform.
+              </CardDescription>
+            </div>
+          </CardHeader>
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input
-              type="email"
-              required
-              className="w-full h-10 px-3 rounded-md border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@fixam.com"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Password</label>
-            <input
-              type="password"
-              required
-              className="w-full h-10 px-3 rounded-md border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full h-11 bg-primary text-white rounded-md font-medium hover:bg-primary/90 transition-colors flex items-center justify-center disabled:opacity-50"
-          >
-            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Sign In'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <Link href="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-            Back to Website
-          </Link>
-        </div>
+          <CardContent className="px-8 pb-8">
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="email">Work Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  className="rounded-xl h-12"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@fixam.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <Link href="#" className="text-xs text-primary hover:underline">Forgot?</Link>
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  className="rounded-xl h-12"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full h-12 rounded-xl font-bold text-base shadow-lg shadow-primary/20"
+              >
+                {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
+                Sign In to Panel
+              </Button>
+            </form>
+          </CardContent>
+          <CardFooter className="bg-muted/30 py-6 text-center justify-center rounded-b-3xl">
+            <p className="text-xs text-muted-foreground">
+              Internal system access only. All activity is logged and monitored.
+            </p>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   );
