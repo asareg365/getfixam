@@ -1,13 +1,15 @@
 'use client';
 
 import { Users, UserCheck, MessageSquare, TrendingUp, ArrowUpRight } from 'lucide-react';
+import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function AdminDashboard() {
   const stats = [
-    { title: 'Total Artisans', value: '128', icon: Users, trend: '+12%', color: 'text-primary' },
-    { title: 'Verified Pros', value: '94', icon: UserCheck, trend: '73%', color: 'text-green-600' },
-    { title: 'Bot Requests', value: '452', icon: MessageSquare, trend: '+18%', color: 'text-blue-600' },
-    { title: 'Success Rate', value: '92%', icon: TrendingUp, trend: '+5%', color: 'text-orange-600' },
+    { title: 'Total Artisans', value: '128', icon: Users, trend: '+12%', color: 'text-primary', href: '/admin/artisans' },
+    { title: 'Verified Pros', value: '94', icon: UserCheck, trend: '73%', color: 'text-green-600', href: '/admin/artisans?verified=true' },
+    { title: 'Bot Requests', value: '452', icon: MessageSquare, trend: '+18%', color: 'text-blue-600', href: '/admin/bot' },
+    { title: 'Success Rate', value: '92%', icon: TrendingUp, trend: '+5%', color: 'text-orange-600', href: '/admin/analytics' },
   ];
 
   return (
@@ -19,29 +21,33 @@ export default function AdminDashboard() {
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <div key={stat.title} className="bg-white p-6 rounded-2xl shadow-sm border border-transparent hover:border-primary/20 transition-all group">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium text-muted-foreground">{stat.title}</span>
-              <div className="p-2 rounded-lg bg-muted group-hover:scale-110 transition-transform">
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
-              </div>
-            </div>
-            <div className="text-3xl font-bold">{stat.value}</div>
-            <div className="flex items-center mt-2 text-xs font-medium text-green-600">
-              <ArrowUpRight className="mr-1 h-3 w-3" />
-              {stat.trend} <span className="ml-1 text-muted-foreground font-normal">from last month</span>
-            </div>
-          </div>
+          <Link key={stat.title} href={stat.href} className="block transition-transform hover:scale-[1.02] active:scale-[0.98]">
+            <Card className="h-full border-transparent hover:border-primary/20 shadow-sm hover:shadow-md transition-all">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
+                <div className="p-2 rounded-lg bg-muted">
+                  <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{stat.value}</div>
+                <div className="flex items-center mt-2 text-xs font-medium text-green-600">
+                  <ArrowUpRight className="mr-1 h-3 w-3" />
+                  {stat.trend} <span className="ml-1 text-muted-foreground font-normal">from last month</span>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="bg-white border rounded-2xl h-64 flex items-center justify-center italic text-muted-foreground">
-          Analytics chart placeholder
-        </div>
-        <div className="bg-white border rounded-2xl h-64 flex items-center justify-center italic text-muted-foreground">
-          Recent activity placeholder
-        </div>
+        <Card className="h-80 flex items-center justify-center border-dashed">
+          <p className="italic text-muted-foreground">Demand Analytics Chart Placeholder</p>
+        </Card>
+        <Card className="h-80 flex items-center justify-center border-dashed">
+          <p className="italic text-muted-foreground">Recent Activity Feed Placeholder</p>
+        </Card>
       </div>
     </div>
   );

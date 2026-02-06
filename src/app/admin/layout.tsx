@@ -2,8 +2,12 @@
 
 import Link from 'next/link';
 import { LayoutDashboard, Users, BarChart3, MessageSquare, Settings, LogOut, Wrench } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  
   const navItems = [
     { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { label: 'Artisans', href: '/admin/artisans', icon: Users },
@@ -24,7 +28,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all text-muted-foreground hover:bg-muted hover:text-foreground"
+              className={cn(
+                "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all",
+                pathname === item.href 
+                  ? "bg-primary text-white" 
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
             >
               <item.icon className="mr-3 h-5 w-5" />
               {item.label}

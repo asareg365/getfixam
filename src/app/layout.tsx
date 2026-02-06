@@ -4,8 +4,8 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'FixAm Ghana | Trusted Local Artisans',
-  description: 'Connecting Berekum to verified service providers.',
+  title: 'FixAm Ghana | Production Ready',
+  description: 'Clean Next.js 14 project for Firebase App Hosting.',
 };
 
 export default function RootLayout({
