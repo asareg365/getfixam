@@ -1,5 +1,3 @@
-
-
 import { requireAdmin } from '@/lib/admin-guard';
 import { adminDb } from '@/lib/firebase-admin';
 import { FieldPath } from 'firebase-admin/firestore';
@@ -15,11 +13,13 @@ export const dynamic = 'force-dynamic';
 
 /** ----- Fetch Provider Counts ----- */
 async function getProviderCounts() {
+  const db = adminDb;
+  if (!db || typeof db.collection !== 'function') return {};
   const statuses = ['pending', 'approved', 'rejected', 'suspended'];
   const counts: Record<string, number> = {};
 
   for (const status of statuses) {
-    const snapshot = await adminDb
+    const snapshot = await db
       .collection('providers')
       .where('status', '==', status)
       .get();
@@ -27,7 +27,7 @@ async function getProviderCounts() {
   }
 
   // Total count
-  const totalSnapshot = await adminDb.collection('providers').get();
+  const totalSnapshot = await db.collection('providers').get();
   counts['all'] = totalSnapshot.size;
 
   return counts;
@@ -35,8 +35,11 @@ async function getProviderCounts() {
 
 /** ----- Fetch Providers with safe defaults ----- */
 async function getProvidersFromDB(status?: string): Promise<Provider[]> {
+  const db = adminDb;
+  if (!db || typeof db.collection !== 'function') return [];
+
   // Fetch all services and map them
-  const servicesSnap = await adminDb.collection('services').get();
+  const servicesSnap = await db.collection('services').get();
   const servicesMap = new Map<string, Omit<Service, 'icon'>>();
   servicesSnap.forEach((doc) => {
     const data = doc.data();
@@ -51,9 +54,9 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
   });
 
   // Query providers
-  let providersQuery = adminDb.collection('providers').orderBy('createdAt', 'desc');
+  let providersQuery = db.collection('providers').orderBy('createdAt', 'desc');
   if (status && status !== 'all') {
-    providersQuery = adminDb.collection('providers').where('status', '==', status).orderBy('createdAt', 'desc');
+    providersQuery = db.collection('providers').where('status', '==', status).orderBy('createdAt', 'desc');
   }
   const providerSnapshot = await providersQuery.get();
 
@@ -87,14 +90,13 @@ async function getProvidersFromDB(status?: string): Promise<Provider[]> {
   });
 }
 
-export default async function ProvidersPage({
-  searchParams,
-}: {
-  searchParams?: { status?: 'pending' | 'approved' | 'rejected' | 'suspended' | 'all' };
+export default async function ProvidersPage(props: {
+  searchParams: Promise<{ status?: 'pending' | 'approved' | 'rejected' | 'suspended' | 'all' }>;
 }) {
   await requireAdmin();
+  const searchParams = await props.searchParams;
 
-  const status = searchParams?.status || 'pending';
+  const status = searchParams.status || 'pending';
   const providers = await getProvidersFromDB(status);
   const counts = await getProviderCounts();
 

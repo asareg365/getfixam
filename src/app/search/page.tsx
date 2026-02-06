@@ -5,13 +5,12 @@ import CategoryCard from '@/components/CategoryCard';
 import ProviderCard from '@/components/ProviderCard';
 import type { Category, Provider } from '@/lib/types';
 
-type SearchPageProps = {
-  searchParams: { q?: string };
-};
-
 export const dynamic = "force-dynamic";
 
-export default async function SearchPage({ searchParams }: SearchPageProps) {
+export default async function SearchPage(props: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const searchParams = await props.searchParams;
   const query = (searchParams.q || '').toLowerCase().trim();
 
   if (!query) {

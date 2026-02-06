@@ -13,18 +13,18 @@ type ReviewWithProvider = Review & { providerName: string };
 
 /** ----- Fetch Counts ----- */
 async function getReviewCounts() {
+  const db = adminDb;
+  if (!db || typeof db.collection !== 'function') return {};
   const statuses = ['pending', 'approved', 'rejected'];
   const counts: Record<string, number> = {};
-  let total = 0;
 
   for (const status of statuses) {
-    const snapshot = await adminDb.collection('reviews').where('status', '==', status).count().get();
+    const snapshot = await db.collection('reviews').where('status', '==', status).count().get();
     counts[status] = snapshot.data().count;
-    total += counts[status];
   }
   
-  // Get the total count more efficiently
-  const totalSnapshot = await adminDb.collection('reviews').count().get();
+  // Get the total count
+  const totalSnapshot = await db.collection('reviews').count().get();
   counts['all'] = totalSnapshot.data().count;
   
   return counts;
@@ -32,8 +32,11 @@ async function getReviewCounts() {
 
 /** ----- Fetch Reviews with Provider Names ----- */
 async function getReviews(status?: string): Promise<ReviewWithProvider[]> {
+  const db = adminDb;
+  if (!db || typeof db.collection !== 'function') return [];
+
   // 1. Fetch reviews
-  let reviewsQuery: Query = adminDb.collection('reviews');
+  let reviewsQuery: Query = db.collection('reviews');
   if (status && status !== 'all') {
     reviewsQuery = reviewsQuery.where('status', '==', status);
   }
@@ -62,7 +65,7 @@ async function getReviews(status?: string): Promise<ReviewWithProvider[]> {
   // 2. Get unique provider IDs from reviews
   const providerIds = [...new Set(reviews.map(r => r.providerId))];
 
-  // 3. Fetch corresponding providers in batches to avoid 30-item limit
+  // 3. Fetch corresponding providers in batches
   const providersMap = new Map<string, string>();
   if (providerIds.length > 0) {
       const MAX_IN_CLAUSE_SIZE = 30;
@@ -71,7 +74,7 @@ async function getReviews(status?: string): Promise<ReviewWithProvider[]> {
       for (let i = 0; i < providerIds.length; i += MAX_IN_CLAUSE_SIZE) {
           const batchIds = providerIds.slice(i, i + MAX_IN_CLAUSE_SIZE);
           providerPromises.push(
-              adminDb.collection('providers').where(FieldPath.documentId(), 'in', batchIds).get()
+              db.collection('providers').where(FieldPath.documentId(), 'in', batchIds).get()
           );
       }
 
@@ -91,14 +94,13 @@ async function getReviews(status?: string): Promise<ReviewWithProvider[]> {
   }));
 }
 
-export default async function ReviewsPage({
-  searchParams,
-}: {
-  searchParams?: { status?: 'pending' | 'approved' | 'rejected' | 'all' };
+export default async function ReviewsPage(props: {
+  searchParams: Promise<{ status?: 'pending' | 'approved' | 'rejected' | 'all' }>;
 }) {
   await requireAdmin();
+  const searchParams = await props.searchParams;
 
-  const status = searchParams?.status || 'pending';
+  const status = searchParams.status || 'pending';
   const reviews = await getReviews(status);
   const counts = await getReviewCounts();
 

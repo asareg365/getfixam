@@ -9,33 +9,8 @@ import ProviderList from './ProviderList';
 
 export const dynamic = "force-dynamic";
 
-/*
-export async function generateStaticParams() {
-  const categories = await getCategories();
-  const slugs = categories.map((category) => ({ slug: category.slug }));
-  slugs.push({ slug: 'all' }); // Include "all" as a special category
-  return slugs;
-}
-
-export async function generateMetadata({ params }: { params: { slug: string } }) {
-  if (params.slug === 'all') {
-    return {
-      title: `All Providers | FixAm Ghana`,
-      description: `Browse all trusted service providers in Berekum.`,
-    };
-  }
-
-  const category = await getCategoryBySlug(params.slug);
-  if (!category) return { title: 'Category Not Found' };
-
-  return {
-    title: `${category.name} | FixAm Ghana`,
-    description: `Find trusted ${category.name.toLowerCase()} in Berekum.`,
-  };
-}
-*/
-
-export default async function CategoryPage({ params }: { params: { slug: string } }) {
+export default async function CategoryPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   let categoryName = 'All Providers';
   let providers: Provider[] = [];
   const zones = await getBerekumZones();

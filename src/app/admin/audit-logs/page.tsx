@@ -21,6 +21,7 @@ interface AuditLog {
 
 // Helper to get unique values for filter dropdowns
 async function getUniqueLogFields() {
+    if (!adminDb || typeof adminDb.collection !== 'function') return { uniqueActions: [], uniqueTargetTypes: [] };
     const snapshot = await adminDb.collection('auditLogs').select('action', 'targetType').get();
     const actions = new Set<string>();
     const targetTypes = new Set<string>();
@@ -36,15 +37,28 @@ async function getUniqueLogFields() {
 }
 
 
-export default async function AuditLogsPage({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | undefined };
+export default async function AuditLogsPage(props: {
+  searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
   await requireAdmin();
+  const searchParams = await props.searchParams;
 
   const { action, targetType, search, from, to } = searchParams;
   
+  if (!adminDb || typeof adminDb.collection !== 'function') {
+      return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-2xl font-headline">Admin Action Logs</CardTitle>
+                <CardDescription>Database connection unavailable during build.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <p className="text-muted-foreground text-center py-12">Logs will be available when the system is live.</p>
+            </CardContent>
+        </Card>
+      )
+  }
+
   let query: Query = adminDb.collection('auditLogs');
 
   if (action) {

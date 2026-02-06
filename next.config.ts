@@ -4,7 +4,7 @@ import type {NextConfig} from 'next';
 const nextConfig:NextConfig = {
   output: 'standalone',
   typescript: {
-    // Ensuring build errors are caught
+    // Catch real errors, but we fixed the PageProps constraint
   },
   eslint: {
     ignoreDuringBuilds: true,
