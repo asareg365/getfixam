@@ -1,11 +1,12 @@
 import './globals.css';
-import { Inter } from 'next/font/google';
+import { Inter, Space_Grotesk } from 'next/font/google';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space' });
 
 export const metadata = {
-  title: 'FixAm Ghana | Production Ready',
-  description: 'Clean Next.js 14 project for Firebase App Hosting.',
+  title: 'FixAm Ghana | Trusted Local Artisans',
+  description: 'Connecting you with verified local artisans for all your repair needs.',
 };
 
 export default function RootLayout({
@@ -14,8 +15,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+      <body className="font-body">{children}</body>
     </html>
   );
 }

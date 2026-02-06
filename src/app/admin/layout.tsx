@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { LayoutDashboard, Users, BarChart3, MessageSquare, Settings, LogOut, Wrench } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { LayoutDashboard, Users, BarChart3, MessageSquare, Settings, LogOut, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -21,7 +21,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className="w-full md:w-64 bg-white border-r flex flex-col h-auto md:h-screen sticky top-0">
         <div className="h-16 flex items-center px-6 border-b">
           <Wrench className="h-6 w-6 text-primary" />
-          <span className="ml-2 font-bold text-lg text-primary">FixAm Admin</span>
+          <span className="ml-2 font-bold text-lg text-primary font-headline">FixAm Admin</span>
         </div>
         <nav className="flex-1 px-4 py-6 space-y-1">
           {navItems.map((item) => (

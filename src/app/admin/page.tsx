@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 export default function AdminDashboard() {
   const stats = [
     { title: 'Total Artisans', value: '128', icon: Users, trend: '+12%', color: 'text-primary', href: '/admin/artisans' },
-    { title: 'Verified Pros', value: '94', icon: UserCheck, trend: '73%', color: 'text-green-600', href: '/admin/artisans?verified=true' },
+    { title: 'Verified Pros', value: '94', icon: UserCheck, trend: '73%', color: 'text-green-600', href: '/admin/artisans' },
     { title: 'Bot Requests', value: '452', icon: MessageSquare, trend: '+18%', color: 'text-blue-600', href: '/admin/bot' },
     { title: 'Success Rate', value: '92%', icon: TrendingUp, trend: '+5%', color: 'text-orange-600', href: '/admin/analytics' },
   ];
@@ -15,7 +15,7 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="text-3xl font-bold text-primary">Dashboard Overview</h1>
+        <h1 className="text-3xl font-bold text-primary font-headline">Dashboard Overview</h1>
         <p className="text-muted-foreground">Monitor platform activity and growth metrics.</p>
       </div>
 
@@ -45,7 +45,7 @@ export default function AdminDashboard() {
         <Card className="h-80 flex items-center justify-center border-dashed">
           <div className="text-center">
             <TrendingUp className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />
-            <p className="italic text-muted-foreground">Demand Analytics Chart Placeholder</p>
+            <p className="italic text-muted-foreground">Platform Demand Chart Placeholder</p>
           </div>
         </Card>
         <Card className="h-80 flex items-center justify-center border-dashed">
