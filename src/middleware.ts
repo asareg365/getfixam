@@ -22,10 +22,13 @@ export async function middleware(req: NextRequest) {
     // Admins use our custom jose-signed JWT. We try to verify it.
     const payload = await verifyToken(session);
     
-    // If it's not our JWT or the role isn't admin/super_admin, redirect
-    if (!payload || (payload.role !== 'admin' && payload.role !== 'super_admin')) {
-      // If we have a session but it's not an admin session (e.g. it's an artisan session),
-      // we clear it and redirect to admin login to prevent cross-portal confusion.
+    // If token is invalid OR not an admin token, redirect
+    if (
+      !payload ||
+      payload.portal !== 'admin' ||
+      (payload.role !== 'admin' && payload.role !== 'super_admin')
+    ) {
+      // If session is invalid or wrong portal, clear it and redirect
       const response = NextResponse.redirect(new URL('/admin/login', req.url));
       response.cookies.delete('__session');
       return response;
@@ -45,8 +48,7 @@ export async function middleware(req: NextRequest) {
     }
     
     // Note: Artisan sessions are standard Firebase Session Cookies. 
-    // In Edge middleware, we primarily check for existence. 
-    // Deep verification happens in the layout/components using the Admin SDK.
+    // They won't have the 'portal: admin' field, ensuring they can't access admin routes.
     return NextResponse.next();
   }
 

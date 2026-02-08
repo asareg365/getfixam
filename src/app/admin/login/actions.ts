@@ -9,7 +9,8 @@ import { signToken } from '@/lib/jwt';
  */
 export async function setAdminSessionAction(uid: string, email: string, role: string) {
   try {
-    const token = await signToken({ uid, email, role });
+    // Add 'portal' field to payload to distinguish from other session types
+    const token = await signToken({ uid, email, role, portal: 'admin' });
     
     const cookieStore = await cookies();
     cookieStore.set({
