@@ -2,7 +2,7 @@
 
 import { SignJWT, jwtVerify } from 'jose';
 
-// Stable secret for prototyping environments.
+// Use a stable fallback secret for the JWT handshake.
 const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'fixam-ghana-secure-stable-key-2024-v1';
 const key = new TextEncoder().encode(SECRET_KEY);
 
@@ -10,13 +10,13 @@ export type AdminJWTPayload = {
   uid: string;
   email?: string;
   role: 'admin' | 'super_admin';
-  portal: 'admin'; // REQUIRED to distinguish from provider sessions
+  portal: 'admin'; 
   exp: number;
   iat: number;
 };
 
 /**
- * Signs a payload to create a secure Admin JWT.
+ * Signs a payload to create a secure JWT.
  */
 export async function signToken(payload: Omit<AdminJWTPayload, 'iat' | 'exp'>): Promise<string> {
   return await new SignJWT(payload as any)
@@ -27,9 +27,11 @@ export async function signToken(payload: Omit<AdminJWTPayload, 'iat' | 'exp'>): 
 }
 
 /**
- * Verifies an Admin JWT and returns the typed payload or null.
+ * Verifies a JWT and returns the typed payload or null.
  */
 export async function verifyToken(token: string): Promise<AdminJWTPayload | null> {
+  if (!token) return null;
+  
   try {
     const { payload } = await jwtVerify(token, key, {
       algorithms: ['HS256'],
@@ -37,15 +39,14 @@ export async function verifyToken(token: string): Promise<AdminJWTPayload | null
 
     const adminPayload = payload as unknown as AdminJWTPayload;
     
-    // Explicitly check for the admin portal claim
+    // Strictly verify that the token belongs to the admin portal
     if (adminPayload.portal !== 'admin') {
-        console.warn('JWT Verification failed: Invalid portal claim.');
+        console.warn('[JWT] Verification failed: Portal claim mismatch.');
         return null;
     }
 
     return adminPayload;
   } catch (error) {
-    console.error('JWT Verification Error:', error);
     return null;
   }
 }

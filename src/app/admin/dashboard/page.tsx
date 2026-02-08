@@ -38,7 +38,6 @@ export default function AdminDashboardPage() {
 
       } catch (err: any) {
         console.error("Error fetching dashboard stats:", err);
-        // Fallback or non-blocking error for better UX
         setError(err.message || "Failed to sync system data.");
       } finally {
         setLoading(false);
@@ -79,7 +78,7 @@ export default function AdminDashboardPage() {
         <Alert variant="destructive" className="rounded-2xl border-2">
           <AlertCircle className="h-5 w-5" />
           <AlertTitle>Synchronization Issue</AlertTitle>
-          <AlertDescription>We had trouble fetching some data, but you can still manage the system below. Error: {error}</AlertDescription>
+          <AlertDescription>We had trouble fetching real-time data. {error}</AlertDescription>
         </Alert>
       )}
 
@@ -99,7 +98,7 @@ export default function AdminDashboardPage() {
                     <div className="bg-green-100 p-1 rounded-full mr-2">
                         <ArrowUpRight className="h-3 w-3" />
                     </div>
-                    Real-time <span className="ml-2 text-muted-foreground/60 font-medium">data source</span>
+                    Live <span className="ml-2 text-muted-foreground/60 font-medium">Firestore count</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-4 font-medium">{card.description}</p>
               </CardContent>
