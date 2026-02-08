@@ -2,8 +2,9 @@
 
 import { SignJWT, jwtVerify } from 'jose';
 
-// Use a stable fallback secret for the JWT handshake.
-const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'fixam-ghana-secure-stable-key-2024-v1';
+// Use a stable secret for the JWT handshake. 
+// In a real production app, this would be a long random string in your ENV.
+const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'fixam-ghana-secure-stable-key-2024-v1-persistent';
 const key = new TextEncoder().encode(SECRET_KEY);
 
 export type AdminJWTPayload = {
@@ -41,7 +42,6 @@ export async function verifyToken(token: string): Promise<AdminJWTPayload | null
     
     // Strictly verify that the token belongs to the admin portal
     if (adminPayload.portal !== 'admin') {
-        console.warn('[JWT] Verification failed: Portal claim mismatch.');
         return null;
     }
 

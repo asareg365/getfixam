@@ -4,7 +4,7 @@ import { verifyToken } from '@/lib/jwt';
 
 /**
  * Proxy handles route protection and session verification.
- * Standardized to distinguish between 'admin' and other portals.
+ * Strictly distinguishes between 'admin' and other portals using the 'portal' claim.
  */
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -19,21 +19,29 @@ export async function middleware(req: NextRequest) {
 
     // Authentication check
     if (!session) {
+      console.log('[Proxy] No session cookie found for /admin route. Redirecting to login.');
       return NextResponse.redirect(new URL('/admin/login', req.url));
     }
 
     // Authorization check
-    const payload = await verifyToken(session);
-    
-    if (!payload || payload.portal !== 'admin') {
+    try {
+      const payload = await verifyToken(session);
+      
+      if (!payload || payload.portal !== 'admin' || (payload.role !== 'admin' && payload.role !== 'super_admin')) {
+        console.warn('[Proxy] Invalid or unauthorized admin payload. Portal:', payload?.portal);
+        const response = NextResponse.redirect(new URL('/admin/login', req.url));
+        response.cookies.delete('__session');
+        return response;
+      }
+      
+      // Valid admin session
+      return NextResponse.next();
+    } catch (err) {
+      console.error('[Proxy] JWT verification failed:', err);
       const response = NextResponse.redirect(new URL('/admin/login', req.url));
-      // Clear invalid session to prevent infinite loops
       response.cookies.delete('__session');
       return response;
     }
-    
-    // Valid admin session
-    return NextResponse.next();
   }
 
   // 2. Protect Provider Routes

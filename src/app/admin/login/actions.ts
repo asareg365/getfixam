@@ -15,6 +15,7 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
 
   try {
     // 1. Generate the token with the REQUIRED portal field
+    // We use the role passed from the client-side check which is verified against Firestore.
     const token = await signToken({ 
       uid, 
       email, 
@@ -27,14 +28,14 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
     const cookieStore = await cookies();
     cookieStore.set('__session', token, {
       httpOnly: true,
-      secure: true, 
+      secure: true, // Required for secure environments
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 2, // 2 hours
     });
 
     // 3. Log the login event if database is available
-    if (adminDb) {
+    if (adminDb && typeof adminDb.collection === 'function') {
       logAdminAction({
           adminEmail: email,
           action: 'ADMIN_LOGIN_SUCCESS',

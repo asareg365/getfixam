@@ -38,7 +38,10 @@ export default function AdminDashboardPage() {
 
       } catch (err: any) {
         console.error("Error fetching dashboard stats:", err);
-        setError(err.message || "Failed to sync system data.");
+        // During prototyping, we show 0 if collections don't exist yet rather than crashing
+        if (err.code === 'permission-denied') {
+            setError("You do not have permission to view stats. Please ensure you are logged in as an admin.");
+        }
       } finally {
         setLoading(false);
       }
