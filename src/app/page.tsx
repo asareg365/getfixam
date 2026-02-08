@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Wrench, ShieldCheck, Smartphone, ArrowRight, Search, MapPin, CheckCircle2 } from 'lucide-react';
+import { Wrench, ShieldCheck, Smartphone, ArrowRight, Search, MapPin, CheckCircle2, Facebook, Instagram, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -119,6 +119,25 @@ export default function LandingPage() {
             <Wrench className="h-6 w-6 text-primary" />
             <span className="ml-2 font-bold text-xl text-primary font-headline">FixAm Ghana</span>
           </div>
+
+          {/* Social Media Links */}
+          <div className="flex justify-center gap-6 mb-8">
+            <a href="#" className="text-muted-foreground hover:text-primary transition-colors" aria-label="Facebook">
+              <Facebook className="h-5 w-5" />
+            </a>
+            <a href="#" className="text-muted-foreground hover:text-primary transition-colors" aria-label="Instagram">
+              <Instagram className="h-5 w-5" />
+            </a>
+            <a href="#" className="text-muted-foreground hover:text-primary transition-colors" aria-label="TikTok">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-tiktok">
+                <path d="M9 12a4 4 0 1 0 4 4V2a5 5 0 0 0 5 5"/>
+              </svg>
+            </a>
+            <a href="#" className="text-muted-foreground hover:text-primary transition-colors" aria-label="WhatsApp">
+              <MessageCircle className="h-5 w-5" />
+            </a>
+          </div>
+
           <div className="flex justify-center gap-8 text-sm font-medium text-muted-foreground mb-8">
             <Link href="/terms" className="hover:text-primary transition-colors">Terms</Link>
             <Link href="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
