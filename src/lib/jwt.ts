@@ -3,7 +3,6 @@
 import { SignJWT, jwtVerify } from 'jose';
 
 // Use a stable secret for the JWT handshake. 
-// In a real production app, this would be a long random string in your ENV.
 const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'fixam-ghana-secure-stable-key-2024-v1-persistent';
 const key = new TextEncoder().encode(SECRET_KEY);
 

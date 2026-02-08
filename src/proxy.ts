@@ -19,7 +19,6 @@ export async function middleware(req: NextRequest) {
 
     // Authentication check
     if (!session) {
-      console.log('[Proxy] No session cookie found for /admin route. Redirecting to login.');
       return NextResponse.redirect(new URL('/admin/login', req.url));
     }
 
@@ -27,8 +26,8 @@ export async function middleware(req: NextRequest) {
     try {
       const payload = await verifyToken(session);
       
+      // Strict check for portal and role
       if (!payload || payload.portal !== 'admin' || (payload.role !== 'admin' && payload.role !== 'super_admin')) {
-        console.warn('[Proxy] Invalid or unauthorized admin payload. Portal:', payload?.portal);
         const response = NextResponse.redirect(new URL('/admin/login', req.url));
         response.cookies.delete('__session');
         return response;
@@ -37,7 +36,6 @@ export async function middleware(req: NextRequest) {
       // Valid admin session
       return NextResponse.next();
     } catch (err) {
-      console.error('[Proxy] JWT verification failed:', err);
       const response = NextResponse.redirect(new URL('/admin/login', req.url));
       response.cookies.delete('__session');
       return response;
