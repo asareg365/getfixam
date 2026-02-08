@@ -65,7 +65,11 @@ export default function AdminLoginPage() {
       }
 
       // 3. Establish secure session cookie via Server Action
-      await setAdminSessionAction(user.uid, user.email!, role);
+      const sessionResult = await setAdminSessionAction(user.uid, user.email!, role);
+
+      if (!sessionResult.success) {
+          throw new Error(sessionResult.error || 'Failed to establish a secure session.');
+      }
 
       toast({ title: 'Login Successful', description: 'Redirecting to dashboard...' });
 

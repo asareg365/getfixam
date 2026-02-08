@@ -4,23 +4,36 @@ import { cookies } from 'next/headers';
 import { signToken } from '@/lib/jwt';
 
 /**
- * Sets the admin session cookie after the client has verified the user's admin status.
- * CRITICAL: Uses '__session' name required by Firebase Hosting.
+ * Creates a secure session cookie for an authenticated admin.
+ * This is called from the client-side login page after Firebase Auth succeeds.
  */
 export async function setAdminSessionAction(uid: string, email: string, role: string) {
-  const token = await signToken({ uid, email, role });
+  try {
+    const token = await signToken({ uid, email, role });
+    
+    const cookieStore = await cookies();
+    cookieStore.set({
+      name: '__session', // Required for Firebase Hosting
+      value: token,
+      httpOnly: true,
+      path: '/',
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 2, // 2 hours
+    });
 
-  const cookieStore = await cookies();
-  
-  cookieStore.set({
-    name: '__session', // Required name for Firebase Hosting compatibility
-    value: token,
-    httpOnly: true,
-    path: '/',
-    sameSite: 'lax',
-    secure: true,
-    maxAge: 60 * 60 * 2, // 2 hours
-  });
+    return { success: true };
+  } catch (error) {
+    console.error('Error setting admin session:', error);
+    return { success: false, error: 'Failed to establish session.' };
+  }
+}
 
-  return { success: true };
+/**
+ * Legacy function - kept for compatibility if needed elsewhere, 
+ * but the app now prefers client-side auth + setAdminSessionAction.
+ */
+export async function loginWithEmailAndPassword(email: string, password: string) {
+    // This is handled client-side now for better reliability in the studio environment.
+    return { error: 'Please use the standard login form.' };
 }
