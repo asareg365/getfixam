@@ -2,15 +2,15 @@
 
 import { SignJWT, jwtVerify } from 'jose';
 
-// Use a consistent secret for both middleware and server actions
-const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'fixam-ghana-secure-fallback-secret-2024';
-const key = new TextEncoder().encode(SECRET_KEY);
+// We use a stable, consistent secret for token signing. 
+// In a production environment, this should be a complex environment variable.
+const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'fixam-ghana-secure-stable-key-2024-v1';
 
 export type AdminJWTPayload = {
   uid: string;
   email?: string;
   role: 'admin' | 'super_admin';
-  portal: 'admin'; // 🔑 REQUIRED to distinguish from other session types
+  portal: 'admin';
   exp?: number;
   iat?: number;
 };
@@ -19,6 +19,7 @@ export type AdminJWTPayload = {
  * Signs a payload to create a JWT using jose (Edge compatible).
  */
 export async function signToken(payload: AdminJWTPayload): Promise<string> {
+  const key = new TextEncoder().encode(SECRET_KEY);
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -31,14 +32,14 @@ export async function signToken(payload: AdminJWTPayload): Promise<string> {
  */
 export async function verifyToken(token: string): Promise<AdminJWTPayload | null> {
   try {
+    const key = new TextEncoder().encode(SECRET_KEY);
     const { payload } = await jwtVerify(token, key, {
       algorithms: ['HS256'],
     });
 
-    console.log('JWT payload:', payload);
     return payload as unknown as AdminJWTPayload;
   } catch (error) {
-    console.error('JWT Verification Error:', error);
+    // Silently fail verification to allow middleware to handle the redirect logic
     return null;
   }
 }

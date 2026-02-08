@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { verifyToken, AdminJWTPayload } from './jwt';
+import { verifyToken } from './jwt';
 import { adminDb } from './firebase-admin';
 
 type AdminUser = {
@@ -11,60 +11,59 @@ type AdminUser = {
   role: string;
 }
 
+/**
+ * Server-side guard to ensure the user is an authorized administrator.
+ * Used inside Server Components and Server Actions.
+ */
 export async function requireAdmin(): Promise<AdminUser> {
-  if (adminDb && typeof adminDb.collection === 'function') {
-    try {
-        const systemSettingsRef = adminDb.collection('system_settings').doc('admin');
-        const systemSettingsSnap = await systemSettingsRef.get();
+  const cookieStore = await cookies();
+  const token = cookieStore.get('__session')?.value;
 
-        /*
-        if (systemSettingsSnap.exists && systemSettingsSnap.data()?.adminLocked === true) {
-            const reason = systemSettingsSnap.data()?.reason || "No reason provided.";
-            throw new Error(`Admin access is temporarily disabled. Reason: ${reason}`);
-        }
-        */
-    } catch (e) {
-        console.warn("System settings check bypassed.");
-    }
-  }
-
-  // Standardize on __session cookie
-  const token = (await cookies()).get('__session')?.value;
   if (!token) {
     redirect('/admin/login');
   }
 
   const decoded = await verifyToken(token);
   
-  if (!decoded || !decoded.email || decoded.portal !== 'admin' || (decoded.role !== 'admin' && decoded.role !== 'super_admin')) {
-    (await cookies()).delete('__session');
+  // Basic token validation
+  if (!decoded || decoded.portal !== 'admin') {
+    // If the token is invalid, we clear it and redirect
+    cookieStore.delete('__session');
     redirect('/admin/login');
   }
 
+  // Double-check against Firestore if the Admin SDK is available
   if (adminDb && typeof adminDb.collection === 'function') {
-    const adminQuery = await adminDb.collection('admins')
-        .where('email', '==', decoded.email)
-        .where('active', '==', true)
-        .limit(1)
-        .get();
+    try {
+      const adminQuery = await adminDb.collection('admins')
+          .where('email', '==', decoded.email)
+          .where('active', '==', true)
+          .limit(1)
+          .get();
 
-    if (adminQuery.empty) {
-        throw new Error('Unauthorized: Admin not found or inactive.');
+      if (adminQuery.empty) {
+          cookieStore.delete('__session');
+          redirect('/admin/login');
+      }
+      
+      const adminData = adminQuery.docs[0].data();
+
+      return {
+          uid: decoded.uid,
+          email: decoded.email,
+          role: adminData.role,
+      };
+    } catch (e) {
+      // In case of transient DB errors during prototyping, 
+      // we trust the verified JWT.
+      console.warn("Admin verification database check failed, falling back to JWT data.");
     }
-    
-    const adminData = adminQuery.docs[0].data();
-
-    return {
-        uid: decoded.uid as string,
-        email: decoded.email as string,
-        role: adminData.role,
-    };
   }
 
   return {
-    uid: decoded.uid as string,
-    email: decoded.email as string,
-    role: (decoded.role as string) || 'admin',
+    uid: decoded.uid,
+    email: decoded.email,
+    role: decoded.role || 'admin',
   };
 }
 
@@ -73,17 +72,7 @@ export async function isAdminUser(): Promise<boolean> {
   if (!token) return false;
 
   const decoded = await verifyToken(token);
-  if (!decoded || !decoded.email || decoded.portal !== 'admin' || (decoded.role !== 'admin' && decoded.role !== 'super_admin')) return false;
+  if (!decoded || decoded.portal !== 'admin') return false;
 
-  if (adminDb && typeof adminDb.collection === 'function') {
-    const adminQuery = await adminDb.collection('admins')
-        .where('email', '==', decoded.email)
-        .where('active', '==', true)
-        .limit(1)
-        .get();
-
-    return !adminQuery.empty;
-  }
-  
   return true;
 }

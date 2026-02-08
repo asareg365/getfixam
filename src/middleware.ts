@@ -16,19 +16,18 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/admin/login', req.url));
     }
 
-    // Admins use our custom jose-signed JWT. We try to verify it.
+    // Attempt to verify the admin token
     const payload = await verifyToken(session);
     
-    // DEBUG: Confirm the payload matches the expected structure
-    // console.log('Admin payload:', payload);
-
-    // If token is invalid OR not an admin token, redirect and clear session
+    // If token is invalid OR not specifically an admin portal token, 
+    // we clear the session and redirect to login.
     if (
       !payload ||
       payload.portal !== 'admin' ||
       (payload.role !== 'admin' && payload.role !== 'super_admin')
     ) {
       const response = NextResponse.redirect(new URL('/admin/login', req.url));
+      // Ensure the cookie is removed from all paths
       response.cookies.delete('__session');
       return response;
     }
@@ -47,7 +46,8 @@ export async function middleware(req: NextRequest) {
     }
     
     // Artisan sessions are standard Firebase Session Cookies. 
-    // They won't have the 'portal: admin' field, which naturally keeps them out of admin routes.
+    // They won't pass the verifyToken() check above because they aren't signed 
+    // with our local app secret, which effectively keeps them out of admin routes.
     return NextResponse.next();
   }
 
