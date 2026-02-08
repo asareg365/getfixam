@@ -1,45 +1,61 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { adminDb } from '@/lib/firebase-admin';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, where, getCountFromServer } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Clock, Workflow, Settings, ArrowUpRight } from 'lucide-react';
+import { Users, Clock, Workflow, Settings, ArrowUpRight, Loader2 } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+export default function AdminDashboardPage() {
+  const [stats, setStats] = useState({ providers: 0, pending: 0, jobs: 0, services: 0 });
+  const [loading, setLoading] = useState(true);
 
-async function getDashboardData() {
-  const db = adminDb;
-  if (!db || typeof db.collection !== 'function') {
-    return { providers: 0, pending: 0, jobs: 0, services: 0 };
-  }
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const providersRef = collection(db, 'providers');
+        const jobsRef = collection(db, 'jobs');
+        const servicesRef = collection(db, 'services');
+        const pendingQuery = query(providersRef, where('status', '==', 'pending'));
 
-  try {
-    const [providers, pending, jobs, services] = await Promise.all([
-      db.collection('providers').count().get(),
-      db.collection('providers').where('status', '==', 'pending').count().get(),
-      db.collection('jobs').count().get(),
-      db.collection('services').count().get()
-    ]);
+        const [providersCount, pendingCount, jobsCount, servicesCount] = await Promise.all([
+          getCountFromServer(providersRef),
+          getCountFromServer(pendingQuery),
+          getCountFromServer(jobsRef),
+          getCountFromServer(servicesRef)
+        ]);
 
-    return {
-      providers: providers.data().count,
-      pending: pending.data().count,
-      jobs: jobs.data().count,
-      services: services.data().count
-    };
-  } catch (e) {
-    console.error("Dashboard data fetch error:", e);
-    return { providers: 0, pending: 0, jobs: 0, services: 0 };
-  }
-}
+        setStats({
+          providers: providersCount.data().count,
+          pending: pendingCount.data().count,
+          jobs: jobsCount.data().count,
+          services: servicesCount.data().count
+        });
+      } catch (err) {
+        console.error("Error fetching dashboard stats:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
 
-export default async function AdminDashboardPage() {
-  const data = await getDashboardData();
+    fetchStats();
+  }, []);
 
   const cards = [
-    { title: 'Total Providers', value: data.providers, icon: Users, href: '/admin/providers', description: 'Manage all artisans nationwide', trend: '+12%' },
-    { title: 'Pending Review', value: data.pending, icon: Clock, href: '/admin/providers?status=pending', description: 'Review new submissions', trend: 'New' },
-    { title: 'Total Requests', value: data.jobs, icon: Workflow, href: '/admin/jobs', description: 'Monitor live service jobs', trend: '+5%' },
-    { title: 'Services', value: data.services, icon: Settings, href: '/admin/services', description: 'Update categories and pricing', trend: 'Stable' },
+    { title: 'Total Providers', value: stats.providers, icon: Users, href: '/admin/providers', description: 'Manage all artisans nationwide', trend: '+12%' },
+    { title: 'Pending Review', value: stats.pending, icon: Clock, href: '/admin/providers?status=pending', description: 'Review new submissions', trend: 'New' },
+    { title: 'Total Requests', value: stats.jobs, icon: Workflow, href: '/admin/jobs', description: 'Monitor live service jobs', trend: '+5%' },
+    { title: 'Services', value: stats.services, icon: Settings, href: '/admin/services', description: 'Update categories and pricing', trend: 'Stable' },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-12">

@@ -1,32 +1,85 @@
 'use client';
 
-import { useActionState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Wrench, Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { auth, db } from '@/lib/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, setDoc, collection, getDocs, limit, query, serverTimestamp } from 'firebase/firestore';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { loginAction } from './actions';
+import { setAdminSessionAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [state, formAction, isPending] = useActionState(loginAction, null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (state?.success) {
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      // 1. Authenticate with Firebase Auth on the client
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // 2. Check if user is an authorized admin in Firestore
+      const adminDocRef = doc(db, 'admins', user.uid);
+      const adminDoc = await getDoc(adminDocRef);
+
+      let role = 'admin';
+
+      if (!adminDoc.exists()) {
+        // PROTOTYPING HELPER: Auto-provision first admin if collection is empty
+        const adminsSnap = await getDocs(query(collection(db, 'admins'), limit(1)));
+        
+        if (adminsSnap.empty) {
+          role = 'super_admin';
+          await setDoc(adminDocRef, {
+            email: user.email,
+            role: role,
+            active: true,
+            createdAt: serverTimestamp(),
+          });
+          toast({ title: 'System Initialized', description: 'You have been granted Super Admin access.' });
+        } else {
+          throw new Error('You are authenticated but not authorized as an administrator.');
+        }
+      } else {
+        const adminData = adminDoc.data();
+        if (!adminData.active) {
+          throw new Error('Your administrator account has been deactivated.');
+        }
+        role = adminData.role;
+      }
+
+      // 3. Establish secure session cookie via Server Action
+      await setAdminSessionAction(user.uid, user.email!, role);
+
       toast({
         title: 'Login Successful',
         description: 'Welcome to the FixAm Admin Panel.',
       });
+      
       router.push('/admin');
       router.refresh();
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'Invalid credentials or unauthorized access.');
+      setLoading(false);
     }
-  }, [state, router, toast]);
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4 relative overflow-hidden font-body">
@@ -57,12 +110,12 @@ export default function AdminLoginPage() {
           </CardHeader>
 
           <CardContent className="px-8 pb-8">
-            <form action={formAction} className="space-y-6">
-              {state?.message && !state.success && (
+            <form onSubmit={handleLogin} className="space-y-6">
+              {error && (
                 <Alert variant="destructive" className="rounded-xl">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{state.message}</AlertDescription>
+                  <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
 
@@ -70,15 +123,13 @@ export default function AdminLoginPage() {
                 <Label htmlFor="email">Work Email</Label>
                 <Input
                   id="email"
-                  name="email"
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   className="rounded-xl h-12"
                   placeholder="admin@fixam.com"
                 />
-                {state?.errors?.email && (
-                  <p className="text-xs text-destructive font-medium">{state.errors.email[0]}</p>
-                )}
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -87,21 +138,19 @@ export default function AdminLoginPage() {
                 </div>
                 <Input
                   id="password"
-                  name="password"
                   type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                   className="rounded-xl h-12"
                 />
-                {state?.errors?.password && (
-                  <p className="text-xs text-destructive font-medium">{state.errors.password[0]}</p>
-                )}
               </div>
               <Button
                 type="submit"
-                disabled={isPending}
+                disabled={loading}
                 className="w-full h-12 rounded-xl font-bold text-base shadow-lg shadow-primary/20"
               >
-                {isPending ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
+                {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
                 Sign In to Panel
               </Button>
             </form>

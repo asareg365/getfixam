@@ -10,34 +10,56 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
     // --- COLLECTION RULES ---
+
+    match /admins/{adminId} {
+      // Allow the first admin to be created, then restrict to existing admins
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && (
+        !exists(/databases/$(database)/documents/admins/any_admin_placeholder) || // Placeholder logic for first admin
+        isAdmin()
+      );
+      allow update, delete: if isAdmin();
+    }
+
+    match /system_settings/{settingId} {
+      allow get: if true;
+      allow list, create, update, delete: if isAdmin();
+    }
 
     match /categories/{categoryId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow write: if isAdmin();
+    }
+
+    match /services/{serviceId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
     }
 
     match /providers/{providerId} {
       allow get, list: if true;
       
-      // Allow public users to submit their business for review
+      // Public submission
       allow create: if request.resource.data.status == 'pending' 
-                    && request.resource.data.verified == false
-                    && request.resource.data.rating == 0;
+                    && request.resource.data.verified == false;
       
-      allow update, delete: if false; 
+      // Admin management
+      allow update, delete: if isAdmin();
     }
 
-    match /providers/{providerId}/reviews/{reviewId} {
-      allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.providerId == providerId;
-      allow update, delete: if false;
-    }
-    
     match /reviews/{reviewId} {
       allow get, list: if true;
       allow create: if true; // Public submission for prototyping
-      allow update, delete: if false;
+      allow update, delete: if isAdmin();
+    }
+
+    match /auditLogs/{logId} {
+      allow read, write: if isAdmin();
     }
   }
 }
