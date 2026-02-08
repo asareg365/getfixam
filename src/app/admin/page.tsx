@@ -1,15 +1,64 @@
 'use client';
 
-import { Users, UserCheck, MessageSquare, TrendingUp, ArrowUpRight, Clock, ShieldCheck, Zap, BarChart3, Activity } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getCountFromServer } from 'firebase/firestore';
+import { Users, UserCheck, TrendingUp, ArrowUpRight, Clock, ShieldCheck, Zap, Activity, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 export default function AdminDashboard() {
-  const stats = [
-    { title: 'Total Artisans', value: '1,428', icon: Users, trend: '+12%', color: 'text-primary', bg: 'bg-primary/10' },
-    { title: 'Verified Pros', value: '1,084', icon: UserCheck, trend: '76%', color: 'text-green-600', bg: 'bg-green-100' },
-    { title: 'Customer Requests', value: '5,291', icon: Activity, trend: '+18%', color: 'text-blue-600', bg: 'bg-blue-100' },
-    { title: 'System Health', value: '99.9%', icon: ShieldCheck, trend: 'Optimal', color: 'text-orange-600', bg: 'bg-orange-100' },
+  const [stats, setStats] = useState({
+    totalArtisans: 0,
+    verifiedPros: 0,
+    customerRequests: 0,
+    systemHealth: 'Optimal',
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchRealStats() {
+      try {
+        const providersRef = collection(db, 'providers');
+        const jobsRef = collection(db, 'jobs'); // Assuming requests are stored in jobs
+        
+        const verifiedQuery = query(providersRef, where('verified', '==', true));
+
+        const [totalSnap, verifiedSnap, jobsSnap] = await Promise.all([
+          getCountFromServer(providersRef),
+          getCountFromServer(verifiedQuery),
+          getCountFromServer(jobsRef),
+        ]);
+
+        setStats({
+          totalArtisans: totalSnap.data().count,
+          verifiedPros: verifiedSnap.data().count,
+          customerRequests: jobsSnap.data().count,
+          systemHealth: 'Optimal',
+        });
+      } catch (err) {
+        console.error("Error fetching admin stats:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchRealStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const statCards = [
+    { title: 'Total Artisans', value: stats.totalArtisans.toLocaleString(), icon: Users, trend: 'Current', color: 'text-primary', bg: 'bg-primary/10' },
+    { title: 'Verified Pros', value: stats.verifiedPros.toLocaleString(), icon: UserCheck, trend: 'Vetted', color: 'text-green-600', bg: 'bg-green-100' },
+    { title: 'Customer Requests', value: stats.customerRequests.toLocaleString(), icon: Activity, trend: 'Live', color: 'text-blue-600', bg: 'bg-blue-100' },
+    { title: 'System Health', value: stats.systemHealth, icon: ShieldCheck, trend: 'Stable', color: 'text-orange-600', bg: 'bg-orange-100' },
   ];
 
   return (
@@ -28,7 +77,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
+        {statCards.map((stat) => (
           <Card key={stat.title} className="border-none shadow-sm hover:shadow-xl transition-all duration-300 rounded-[32px] overflow-hidden group">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 p-8">
               <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground/70">{stat.title}</CardTitle>
@@ -42,7 +91,7 @@ export default function AdminDashboard() {
                 <div className="bg-green-100 p-1 rounded-full mr-2">
                   <ArrowUpRight className="h-3 w-3" />
                 </div>
-                {stat.trend} <span className="ml-2 text-muted-foreground/60 font-medium">vs last month</span>
+                {stat.trend} <span className="ml-2 text-muted-foreground/60 font-medium">real-time data</span>
               </div>
             </CardContent>
           </Card>
@@ -59,7 +108,11 @@ export default function AdminDashboard() {
             <div className="bg-muted/30 p-10 rounded-full inline-block group-hover:scale-105 transition-transform duration-500">
               <TrendingUp className="h-16 w-16 text-muted-foreground/30" />
             </div>
-            <p className="italic text-muted-foreground font-medium text-lg">Analytics dashboard initializing...</p>
+            {stats.customerRequests === 0 && stats.totalArtisans === 0 ? (
+              <p className="italic text-muted-foreground font-medium text-lg">Waiting for more platform activity to generate trends...</p>
+            ) : (
+              <p className="italic text-muted-foreground font-medium text-lg">Analytics dashboard processing {stats.customerRequests + stats.totalArtisans} data points...</p>
+            )}
           </div>
         </Card>
 
@@ -67,15 +120,15 @@ export default function AdminDashboard() {
           <div className="space-y-2 relative z-10">
             <Zap className="h-12 w-12 text-white/80" />
             <h3 className="text-3xl font-black font-headline pt-4">Smart Matching</h3>
-            <p className="text-white/70 font-medium">Auto-pairing algorithm is active and processing requests in 12 regions.</p>
+            <p className="text-white/70 font-medium">Auto-pairing algorithm is active and ready to process requests.</p>
           </div>
           <div className="mt-auto relative z-10">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-bold uppercase tracking-wider text-white/60">Processing Power</span>
-              <span className="text-sm font-bold">18%</span>
+              <span className="text-sm font-bold uppercase tracking-wider text-white/60">System Ready</span>
+              <span className="text-sm font-bold">100%</span>
             </div>
             <div className="w-full bg-white/20 h-3 rounded-full overflow-hidden">
-              <div className="bg-white h-full w-[18%]" />
+              <div className="bg-white h-full w-[100%]" />
             </div>
           </div>
           <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-white/5 rounded-full" />
