@@ -67,13 +67,11 @@ export default function AdminLoginPage() {
       // 3. Establish secure session cookie via Server Action
       await setAdminSessionAction(user.uid, user.email!, role);
 
-      toast({
-        title: 'Login Successful',
-        description: 'Welcome to the FixAm Admin Panel.',
-      });
+      // 4. Immediate redirect to bypass perceived delay
+      // Using window.location.href for a hard redirect often feels faster than router.push
+      // during authentication transitions.
+      window.location.href = '/admin';
       
-      router.push('/admin');
-      router.refresh();
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'Invalid credentials or unauthorized access.');
