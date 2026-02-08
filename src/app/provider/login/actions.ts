@@ -17,15 +17,16 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
       return { error: 'Authentication or Database service is not available.' };
     }
 
-    const settingsRef = adminDb.collection('system_settings').doc('lockout');
+    // Fixed: Checking the correct settings document 'admin' instead of 'lockout'
+    const settingsRef = adminDb.collection('system_settings').doc('admin');
     const settingsSnap = await settingsRef.get();
     const settings = settingsSnap.data();
 
-    if (settings?.isLocked) {
+    if (settings?.adminLocked === true) {
       return { error: 'The system is currently locked for maintenance. Please try again later.' };
     }
 
-    if (settings?.providerLoginsDisabled) {
+    if (settings?.providerLoginsDisabled === true) {
       return { error: 'Provider logins are temporarily disabled by an administrator.' };
     }
 

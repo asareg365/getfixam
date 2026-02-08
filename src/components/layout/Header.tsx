@@ -11,7 +11,7 @@ export default function Header() {
       </Link>
       <nav className="ml-auto flex gap-4 items-center">
         <Link className="text-sm font-medium hover:text-primary transition-colors hidden sm:inline-block" href="/category/all">
-          Categories
+          Browse Categories
         </Link>
         <Button asChild className="rounded-full font-bold">
           <Link href="/add-provider">
