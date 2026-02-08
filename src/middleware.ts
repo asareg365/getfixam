@@ -22,10 +22,8 @@ export async function middleware(req: NextRequest) {
     // Admins use our custom jose-signed JWT. We try to verify it.
     const payload = await verifyToken(session);
     
-    // DEBUG: Confirm the payload matches the expected structure
-    if (payload) {
-      console.log('Admin payload verified:', { uid: payload.uid, role: payload.role, portal: payload.portal });
-    }
+    // DEBUG: Confirm the payload matches the expected structure as requested
+    console.log('Admin payload:', payload);
 
     // If token is invalid OR not an admin token, redirect
     if (
