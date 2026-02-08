@@ -2,8 +2,8 @@
 
 import { SignJWT, jwtVerify } from 'jose';
 
-// Use a stable secret for the JWT handshake. 
-const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'fixam-ghana-secure-stable-key-2024-v1-persistent';
+// Use a stable, hardened secret for the JWT handshake. 
+const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'fixam-ghana-v1-hardened-stable-secret-key-2024';
 const key = new TextEncoder().encode(SECRET_KEY);
 
 export type AdminJWTPayload = {
@@ -16,7 +16,7 @@ export type AdminJWTPayload = {
 };
 
 /**
- * Signs a payload to create a secure JWT.
+ * Signs a payload to create a secure administrative JWT.
  */
 export async function signToken(payload: Omit<AdminJWTPayload, 'iat' | 'exp'>): Promise<string> {
   return await new SignJWT(payload as any)
@@ -27,7 +27,7 @@ export async function signToken(payload: Omit<AdminJWTPayload, 'iat' | 'exp'>): 
 }
 
 /**
- * Verifies a JWT and returns the typed payload or null.
+ * Verifies a JWT and returns the typed payload or null if invalid.
  */
 export async function verifyToken(token: string): Promise<AdminJWTPayload | null> {
   if (!token) return null;

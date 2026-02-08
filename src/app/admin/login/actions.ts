@@ -7,6 +7,7 @@ import { logAdminAction } from '@/lib/audit-log';
 
 /**
  * Establishes a secure admin session.
+ * Handled gracefully if Admin SDK is not fully initialized.
  */
 export async function setAdminSessionAction(uid: string, email: string | null, role: string) {
   if (!email) {
@@ -14,7 +15,7 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
   }
 
   try {
-    // 1. Generate the token with the REQUIRED portal field
+    // 1. Generate the token with the REQUIRED portal: 'admin' field
     const token = await signToken({ 
       uid, 
       email, 
@@ -27,13 +28,13 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
     const cookieStore = await cookies();
     cookieStore.set('__session', token, {
       httpOnly: true,
-      secure: true, // Required for secure environment context
+      secure: process.env.NODE_ENV === 'production', 
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 2, // 2 hours
     });
 
-    // 3. Log the login event if database is available
+    // 3. Log the login event (safe if adminDb is null)
     if (adminDb && typeof adminDb.collection === 'function') {
       logAdminAction({
           adminEmail: email,
