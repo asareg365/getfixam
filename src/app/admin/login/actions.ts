@@ -10,16 +10,19 @@ import { signToken } from '@/lib/jwt';
 export async function setAdminSessionAction(uid: string, email: string, role: string) {
   try {
     // Add 'portal' field to payload to distinguish from other session types
-    const token = await signToken({ uid, email, role, portal: 'admin' });
+    const token = await signToken({ 
+      uid, 
+      email, 
+      role, 
+      portal: 'admin' 
+    });
     
     const cookieStore = await cookies();
-    cookieStore.set({
-      name: '__session', // Required for Firebase Hosting
-      value: token,
+    cookieStore.set('__session', token, {
       httpOnly: true,
-      path: '/',
-      sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
       maxAge: 60 * 60 * 2, // 2 hours
     });
 
