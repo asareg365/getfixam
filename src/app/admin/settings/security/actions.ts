@@ -7,14 +7,12 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { logAdminAction } from '@/lib/audit-log';
 import { headers } from 'next/headers';
 import { cookies } from 'next/headers';
-import jwt, { type JwtPayload } from 'jsonwebtoken';
-
-const SECRET = process.env.ADMIN_JWT_SECRET || 'this-is-a-super-secret-key-that-should-be-in-an-env-file';
+import { verifyToken } from '@/lib/jwt';
 
 // A custom function to get admin user without the lockout check. For this page only.
 async function getAdminUserForSecurityPage(): Promise<{ uid: string; email: string | undefined; }> {
     const cookieStore = await cookies();
-    const token = cookieStore.get('admin_token')?.value;
+    const token = cookieStore.get('__session')?.value;
     if (!token) throw new Error("Authentication required.");
 
     try {
@@ -22,8 +20,8 @@ async function getAdminUserForSecurityPage(): Promise<{ uid: string; email: stri
             throw new Error("Database not initialized");
         }
 
-        const decoded = jwt.verify(token, SECRET) as JwtPayload;
-        if (!decoded.email) {
+        const decoded = await verifyToken(token);
+        if (!decoded || !decoded.email) {
             throw new Error('Unauthorized user: Invalid token.');
         }
 

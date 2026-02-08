@@ -14,7 +14,7 @@ import { headers } from 'next/headers';
 
 /** ----- AUTH ACTIONS ----- */
 export async function logoutAction() {
-  (await cookies()).delete('admin_token');
+  (await cookies()).delete('__session');
   redirect('/admin/login');
 }
 
@@ -85,7 +85,6 @@ export async function getSwappableArtisans(serviceType: string, excludedArtisanI
             throw new Error('Database connection not available.');
         }
 
-        // Find serviceId from serviceType (which is the name)
         const servicesSnap = await adminDb.collection('services').where('name', '==', serviceType).limit(1).get();
         if (servicesSnap.empty) {
             return { success: false, message: `Service '${serviceType}' not found.` };
@@ -132,7 +131,6 @@ export async function swapStandbyArtisan(artisanToRemoveId: string, artisanToAdd
             const index = currentArtisans.indexOf(artisanToRemoveId);
             
             if (index === -1) {
-                // Artisan not in the list, maybe already swapped. Don't throw error.
                 console.log(`Artisan ${artisanToRemoveId} not found in standby list.`);
                 return;
             }

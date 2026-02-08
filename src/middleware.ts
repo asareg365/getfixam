@@ -3,23 +3,26 @@ import type { NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/jwt';
 
 /**
- * Middleware handles route protection and session verification for Admin and Provider routes.
+ * Middleware handles route protection and session verification.
+ * Firebase Hosting ONLY supports the '__session' cookie name.
  */
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const session = req.cookies.get('__session')?.value;
 
   // 1. Protect Admin Routes
   if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
-    const token = req.cookies.get('admin_token')?.value;
-
-    if (!token) {
+    if (!session) {
       return NextResponse.redirect(new URL('/admin/login', req.url));
     }
 
-    const payload = await verifyToken(token);
-    if (!payload) {
+    // Admins use our custom JWT. We try to verify it.
+    const payload = await verifyToken(session);
+    
+    // If it's not our JWT or the role isn't admin/super_admin, redirect
+    if (!payload || (payload.role !== 'admin' && payload.role !== 'super_admin')) {
       const response = NextResponse.redirect(new URL('/admin/login', req.url));
-      response.cookies.delete('admin_token');
+      response.cookies.delete('__session');
       return response;
     }
     
@@ -32,13 +35,12 @@ export async function middleware(req: NextRequest) {
       pathname !== '/provider/pending' &&
       pathname !== '/provider/logins-disabled') {
     
-    // Provider routes use the standard Firebase session cookie '__session'
-    const session = req.cookies.get('__session')?.value;
-
     if (!session) {
       return NextResponse.redirect(new URL('/provider/login', req.url));
     }
     
+    // Note: Provider sessions are Firebase-signed. In Edge middleware, 
+    // we primarily check for existence. Deep verification happens in the layout/components.
     return NextResponse.next();
   }
 
