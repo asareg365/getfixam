@@ -40,18 +40,14 @@ export async function requireAdmin(): Promise<AdminUser> {
           .limit(1)
           .get();
 
-      if (adminQuery.empty) {
-          cookieStore.delete('__session');
-          redirect('/admin/login');
+      if (!adminQuery.empty) {
+          const adminData = adminQuery.docs[0].data();
+          return {
+              uid: decoded.uid,
+              email: decoded.email,
+              role: adminData.role as 'admin' | 'super_admin',
+          };
       }
-      
-      const adminData = adminQuery.docs[0].data();
-
-      return {
-          uid: decoded.uid,
-          email: decoded.email,
-          role: adminData.role as 'admin' | 'super_admin',
-      };
     } catch (e) {
       console.warn("Admin DB check failed, using JWT claims.");
     }

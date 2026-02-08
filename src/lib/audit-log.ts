@@ -17,7 +17,7 @@ type LogAdminActionParams = {
  * Safely handles cases where the Admin SDK is not initialized.
  */
 export async function logAdminAction(params: LogAdminActionParams) {
-  if (!adminDb) {
+  if (!adminDb || typeof adminDb.collection !== 'function') {
     console.log("Audit Log (Simulated):", params);
     return;
   }
@@ -50,7 +50,7 @@ type LogProviderActionParams = {
  * Logs a provider action to the provider_logs collection in Firestore.
  */
 export async function logProviderAction(params: LogProviderActionParams) {
-  if (!adminDb) {
+  if (!adminDb || typeof adminDb.collection !== 'function') {
     console.log("Provider Log (Simulated):", params);
     return;
   }

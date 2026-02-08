@@ -1,7 +1,6 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { signToken } from '@/lib/jwt';
 import { adminDb } from '@/lib/firebase-admin';
 import { logAdminAction } from '@/lib/audit-log';
@@ -32,7 +31,7 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
   });
 
   // Log the login event if possible
-  if (adminDb) {
+  if (adminDb && typeof adminDb.collection === 'function') {
     try {
         await logAdminAction({
             adminEmail: email,
