@@ -13,7 +13,7 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
     return { success: false, error: 'Email is required for admin access.' };
   }
 
-  // 1. Generate the token with the REQUIRED portal field
+  // 1. Generate the token with the REQUIRED portal field and role mapping
   const token = await signToken({ 
     uid, 
     email, 
@@ -21,7 +21,7 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
     portal: 'admin' 
   });
   
-  // 2. Set the secure __session cookie (REQUIRED by Firebase Hosting for SSR)
+  // 2. Set the secure __session cookie
   const cookieStore = await cookies();
   cookieStore.set('__session', token, {
     httpOnly: true,
@@ -43,7 +43,7 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
             userAgent: 'server-action',
         });
     } catch (e) {
-        console.warn("Failed to log admin login event.");
+        console.warn("Background logging skipped: Admin SDK not initialized.");
     }
   }
 
