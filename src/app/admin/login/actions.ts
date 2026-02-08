@@ -16,10 +16,10 @@ const loginSchema = z.object({
 });
 
 export async function loginAction(prevState: any, formData: FormData) {
-  console.log('Admin login endpoint reached'); // DEBUG LOG
   if (!adminDb) {
-    throw new Error('Database not initialized');
+    return { success: false, message: 'Database not initialized. Please ensure Firebase is connected.' };
   }
+
   const headerList = await headers();
   const ip = headerList.get('x-forwarded-for')?.split(',')[0] || 'unknown';
   const userAgent = headerList.get('user-agent') || 'unknown';
@@ -47,9 +47,10 @@ export async function loginAction(prevState: any, formData: FormData) {
     const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
     if (!apiKey) {
       console.error('Server Error: NEXT_PUBLIC_FIREBASE_API_KEY is not set.');
-      return { success: false, message: 'Server configuration error.' };
+      return { success: false, message: 'Server configuration error: Missing Firebase API Key.' };
     }
     
+    // 1. Authenticate with Firebase Auth REST API
     const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -77,32 +78,43 @@ export async function loginAction(prevState: any, formData: FormData) {
       await attemptRef.set(updateData, { merge: true });
       await logAdminAction({ adminEmail: email, action: 'ADMIN_LOGIN_FAILED', targetType: 'system', targetId: email, ipAddress: ip, userAgent });
       
-      return { success: false, message: 'Invalid credentials.' };
+      return { success: false, message: authData?.error?.message || 'Invalid credentials.' };
     }
     
-    if (!authData) {
-        return { success: false, message: 'Authentication server returned an empty response.' };
-    }
-
     const { localId, email: userEmail } = authData;
-    const adminQuery = await adminDb.collection('admins').where('email', '==', userEmail).limit(1).get();
 
+    // 2. Check if user is an authorized admin
+    let adminQuery = await adminDb.collection('admins').where('email', '==', userEmail).limit(1).get();
+
+    // PROTOTYPING HELPER: Auto-provision first admin if collection is empty
     if (adminQuery.empty) {
-      await logAdminAction({ adminEmail: userEmail, action: 'ADMIN_LOGIN_FAILED', targetType: 'system', targetId: userEmail, ipAddress: ip, userAgent });
-      return { success: false, message: 'Invalid credentials.' };
+      const totalAdminsSnap = await adminDb.collection('admins').count().get();
+      if (totalAdminsSnap.data().count === 0) {
+        await adminDb.collection('admins').add({
+          email: userEmail,
+          role: 'super_admin',
+          active: true,
+          createdAt: FieldValue.serverTimestamp(),
+        });
+        // Re-query now that we added the first admin
+        adminQuery = await adminDb.collection('admins').where('email', '==', userEmail).limit(1).get();
+      } else {
+        await logAdminAction({ adminEmail: userEmail, action: 'ADMIN_LOGIN_UNAUTHORIZED', targetType: 'system', targetId: userEmail, ipAddress: ip, userAgent });
+        return { success: false, message: 'You are authenticated but not authorized as an administrator.' };
+      }
     }
 
     const adminData = adminQuery.docs[0].data();
 
     if (adminData.active !== true) {
-        await logAdminAction({ adminEmail: userEmail, action: 'ADMIN_LOGIN_FAILED', targetType: 'system', targetId: userEmail, ipAddress: ip, userAgent });
-        return { success: false, message: 'Your administrator account is inactive.' };
+        return { success: false, message: 'Your administrator account has been deactivated.' };
     }
 
     if (attemptSnap.exists) {
       await attemptRef.delete();
     }
 
+    // 3. Create a session JWT
     const token = await signToken({ uid: localId, email: userEmail, role: adminData.role });
 
     const cookieStore = await cookies();
