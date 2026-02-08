@@ -21,7 +21,7 @@ export default function AdminDashboardPage() {
         const servicesRef = collection(db, 'services');
         const pendingQuery = query(providersRef, where('status', '==', 'pending'));
 
-        // Fetch counts from actual Firestore collections
+        // Fetch actual real-time counts from Firestore
         const [providersSnap, pendingSnap, jobsSnap, servicesSnap] = await Promise.all([
           getCountFromServer(providersRef),
           getCountFromServer(pendingQuery),
@@ -38,11 +38,8 @@ export default function AdminDashboardPage() {
 
       } catch (err: any) {
         console.error("Error fetching dashboard stats:", err);
-        if (err.code === 'permission-denied') {
-            setError("You do not have permission to view system stats. Please ensure you are logged in as an admin.");
-        } else {
-            setError("Failed to sync system data. Check your database connection.");
-        }
+        // Fallback or non-blocking error for better UX
+        setError(err.message || "Failed to sync system data.");
       } finally {
         setLoading(false);
       }
@@ -81,8 +78,8 @@ export default function AdminDashboardPage() {
       {error && (
         <Alert variant="destructive" className="rounded-2xl border-2">
           <AlertCircle className="h-5 w-5" />
-          <AlertTitle>Access Restriction</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+          <AlertTitle>Synchronization Issue</AlertTitle>
+          <AlertDescription>We had trouble fetching some data, but you can still manage the system below. Error: {error}</AlertDescription>
         </Alert>
       )}
 

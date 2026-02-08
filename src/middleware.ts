@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/request';
+import type { NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/jwt';
 
 /**
  * Middleware handles route protection and session verification.
- * Firebase Hosting ONLY supports the '__session' cookie name.
+ * Firebase Hosting ONLY supports the '__session' cookie name for SSR.
  */
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -12,7 +12,7 @@ export async function middleware(req: NextRequest) {
 
   // 1. Protect Admin Routes
   if (pathname.startsWith('/admin')) {
-    // Skip protection for the login page itself
+    // Skip protection for the login page
     if (pathname === '/admin/login') {
       return NextResponse.next();
     }
@@ -21,7 +21,7 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/admin/login', req.url));
     }
 
-    // Attempt to verify the admin token
+    // Verify the admin-specific token
     const payload = await verifyToken(session);
     
     // CRITICAL: Check for 'portal: admin' to distinguish from provider session cookies
@@ -31,7 +31,7 @@ export async function middleware(req: NextRequest) {
       (payload.role !== 'admin' && payload.role !== 'super_admin')
     ) {
       const response = NextResponse.redirect(new URL('/admin/login', req.url));
-      // Clear potentially mismatched or invalid session
+      // Clear invalid session to prevent infinite loops
       response.cookies.delete('__session');
       return response;
     }
@@ -40,6 +40,8 @@ export async function middleware(req: NextRequest) {
   }
 
   // 2. Protect Provider/Artisan Routes
+  // Note: For prototyping, we allow access if a session exists.
+  // Standard Firebase client sessions also use __session in some configurations.
   if (pathname.startsWith('/provider') && 
       pathname !== '/provider/login' && 
       pathname !== '/provider/pending' &&
@@ -49,7 +51,6 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/provider/login', req.url));
     }
     
-    // Provider sessions are standard Firebase Session Cookies handled by client SDKs
     return NextResponse.next();
   }
 

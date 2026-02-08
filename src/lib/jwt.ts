@@ -2,7 +2,7 @@
 
 import { SignJWT, jwtVerify } from 'jose';
 
-// Stable secret for prototyping environments
+// Stable secret for prototyping environments. In production, this should be a strong env var.
 const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'fixam-ghana-secure-stable-key-2024-v1';
 const key = new TextEncoder().encode(SECRET_KEY);
 

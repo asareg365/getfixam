@@ -35,21 +35,21 @@ export async function requireAdmin(): Promise<AdminUser> {
   if (adminDb && typeof adminDb.collection === 'function') {
     try {
       const adminQuery = await adminDb.collection('admins')
-          .where('email', '==', decoded.email)
-          .where('active', '==', true)
-          .limit(1)
+          .doc(decoded.uid)
           .get();
 
-      if (!adminQuery.empty) {
-          const adminData = adminQuery.docs[0].data();
-          return {
-              uid: decoded.uid,
-              email: decoded.email,
-              role: adminData.role as 'admin' | 'super_admin',
-          };
+      if (adminQuery.exists) {
+          const adminData = adminQuery.data();
+          if (adminData?.active) {
+            return {
+                uid: decoded.uid,
+                email: decoded.email,
+                role: adminData.role as 'admin' | 'super_admin',
+            };
+          }
       }
     } catch (e) {
-      console.warn("Admin DB check bypassed, using JWT payload claims.");
+      console.warn("Admin DB check bypassed, using verified token payload.");
     }
   }
 
