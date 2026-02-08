@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { verifyToken } from './jwt';
+import { verifyToken, AdminJWTPayload } from './jwt';
 import { adminDb } from './firebase-admin';
 
 type AdminUser = {
@@ -34,7 +34,7 @@ export async function requireAdmin(): Promise<AdminUser> {
 
   const decoded = await verifyToken(token);
   
-  if (!decoded || !decoded.email || (decoded.role !== 'admin' && decoded.role !== 'super_admin')) {
+  if (!decoded || !decoded.email || decoded.portal !== 'admin' || (decoded.role !== 'admin' && decoded.role !== 'super_admin')) {
     (await cookies()).delete('__session');
     redirect('/admin/login');
   }
@@ -71,7 +71,7 @@ export async function isAdminUser(): Promise<boolean> {
   if (!token) return false;
 
   const decoded = await verifyToken(token);
-  if (!decoded || !decoded.email || (decoded.role !== 'admin' && decoded.role !== 'super_admin')) return false;
+  if (!decoded || !decoded.email || decoded.portal !== 'admin' || (decoded.role !== 'admin' && decoded.role !== 'super_admin')) return false;
 
   if (adminDb && typeof adminDb.collection === 'function') {
     const adminQuery = await adminDb.collection('admins')
