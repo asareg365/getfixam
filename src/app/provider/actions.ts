@@ -15,6 +15,11 @@ export async function checkProviderForPinLogin(rawPhoneNumber: string): Promise<
         return { canLogin: false, message: 'Please enter a valid 10-digit Ghanaian phone number starting with 0.' };
     }
 
+    if (!adminDb) {
+        console.error('Firebase Admin DB not initialized.');
+        return { canLogin: false, message: 'Database service is not available.' };
+    }
+
     try {
         const providersRef = adminDb.collection('providers');
         const q = providersRef.where('phone', '==', rawPhoneNumber).limit(1);
@@ -58,6 +63,11 @@ export async function updateProviderProfile(
   if (!idToken) {
     return { success: false, error: "Authentication required." };
   }
+
+  if (!adminDb || !adminAuth) {
+    console.error('Firebase Admin not initialized.');
+    return { success: false, error: 'Authentication or Database service is not available.' };
+  }
   
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
@@ -88,7 +98,7 @@ export async function updateProviderProfile(
     await providerRef.update(updateData);
     
     // Log the action
-    const headersList = headers();
+    const headersList = await headers();
     const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown';
     const userAgent = headersList.get('user-agent') || 'unknown';
     

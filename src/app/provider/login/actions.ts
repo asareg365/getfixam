@@ -11,87 +11,80 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
     if (!/^0[0-9]{9}$/.test(phone)) {
       return { error: 'Enter a valid Ghanaian phone number starting with 0.' };
     }
-    
-    const headersList = headers();
-    const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown';
-    const userAgent = headersList.get('user-agent') || 'unknown';
 
-    const snap = await adminDb
-      .collection('providers')
-      .where('phone', '==', phone)
-      .limit(1)
-      .get();
-
-    if (snap.empty) {
-      return { error: 'No provider account found for this phone number.' };
+    if (!adminDb || !adminAuth) {
+      console.error('Firebase Admin not initialized.');
+      return { error: 'Authentication or Database service is not available.' };
     }
 
-    const doc = snap.docs[0];
-    const provider = doc.data();
+    const settingsRef = adminDb.collection('system_settings').doc('lockout');
+    const settingsSnap = await settingsRef.get();
+    const settings = settingsSnap.data();
 
-    if (provider.status !== 'approved') {
-      return { error: `Your account is currently ${provider.status} and cannot be accessed.` };
+    if (settings?.isLocked) {
+      return { error: 'The system is currently locked for maintenance. Please try again later.' };
     }
 
-    if (!provider.loginPinHash) {
-      // This could be because they already used the PIN and are now using Firebase Auth,
-      // or an admin hasn't issued one.
-      return { error: 'PIN login is not available for this account. Please contact an admin if you believe this is an error.' };
+    if (settings?.providerLoginsDisabled) {
+      return { error: 'Provider logins are temporarily disabled by an administrator.' };
     }
 
-    const pinValid = await bcrypt.compare(pin, provider.loginPinHash);
+    const providersRef = adminDb.collection('providers');
+    const query = providersRef.where('phone', '==', phone).limit(1);
+    const snapshot = await query.get();
 
-    if (!pinValid) {
-      await logProviderAction({ providerId: doc.id, action: 'PROVIDER_LOGIN_FAILED_PIN', ipAddress, userAgent });
-      return { error: 'The PIN you entered is incorrect.' };
+    if (snapshot.empty) {
+      return { error: 'No account found with this phone number.' };
     }
 
-    // PIN is valid. Now we create a Firebase Auth user if one doesn't exist,
-    // then create a session cookie.
+    const providerDoc = snapshot.docs[0];
+    const providerData = providerDoc.data();
+    const providerId = providerDoc.id;
 
-    const formattedPhone = `+233${phone.substring(1)}`;
-    let user;
-
-    try {
-      user = await adminAuth.getUserByPhoneNumber(formattedPhone);
-    } catch (error: any) {
-      if (error.code === 'auth/user-not-found') {
-        user = await adminAuth.createUser({ phoneNumber: formattedPhone, displayName: provider.name });
-      } else {
-        throw error; // Re-throw to be caught by the outer catch block
+    if (providerData.status !== 'approved') {
+      if (providerData.status === 'suspended') {
+        return { error: 'Your account has been suspended. Please contact support.' };
       }
+      if (providerData.status === 'rejected') {
+        return { error: 'Your account application was rejected.' };
+      }
+      return { error: 'Your account is not yet approved for login.' };
     }
 
-    // Link the auth UID to the provider profile if it's not already there.
-    if (provider.authUid !== user.uid) {
-        await doc.ref.update({ authUid: user.uid });
+    if (!providerData.loginPinHash) {
+      return { error: 'No PIN has been set for your account. Please contact support to get one.' };
     }
 
-    // Nullify the PIN so it can't be used again.
-    await doc.ref.update({
-      loginPinHash: null,
-      loginPinCreatedAt: null,
-    });
-    
-    await logProviderAction({ providerId: doc.id, action: 'PROVIDER_LOGIN_SUCCESS_PIN', ipAddress, userAgent });
-    
-    // Create session cookie
-    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
-    const idToken = await adminAuth.createCustomToken(user.uid);
-    const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+    const isPinValid = await bcrypt.compare(pin, providerData.loginPinHash);
 
+    if (!isPinValid) {
+      return { error: 'The PIN you entered is incorrect. Please try again.' };
+    }
 
-    cookies().set('__session', sessionCookie, {
+    const customToken = await adminAuth.createCustomToken(providerId);
+
+    const cookieStore = cookies();
+    (await cookieStore).set('temp-token', customToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
       path: '/',
-      maxAge: expiresIn,
+      maxAge: 60 * 5, // 5 minutes
+    });
+
+    const ipAddress = (await headers()).get('x-forwarded-for')?.split(',')[0] || 'unknown';
+    const userAgent = (await headers()).get('user-agent') || 'unknown';
+
+    await logProviderAction({
+      providerId: providerId,
+      action: 'PROVIDER_LOGIN_PIN',
+      ipAddress,
+      userAgent,
     });
 
     return { success: true };
+
   } catch (error: any) {
-    console.error('Provider PIN Login Action Error:', error);
-    return { error: 'An unexpected server error occurred. Please try again.' };
+    console.error('Error during PIN login:', error);
+    return { error: 'An unexpected server error occurred during login.' };
   }
 }

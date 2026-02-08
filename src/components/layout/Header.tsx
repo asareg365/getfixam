@@ -1,67 +1,25 @@
 import Link from 'next/link';
+import { Wrench, PlusCircle, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, PlusCircle, User } from 'lucide-react';
 
 export default function Header() {
-  const navLinks = [
-    { href: '/#categories', label: 'Categories' },
-    { href: '/add-provider', label: 'List your Business' },
-    { href: '/provider/login', label: 'Provider Login' },
-  ];
-
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center">
-        <div className="mr-auto flex items-center">
-          <Link href="/" className="mr-6 flex items-center space-x-2">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2.12l-.15.1a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1 0 2.12l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            <span className="font-bold font-headline">FixAm Ghana</span>
+    <header className="px-4 lg:px-6 h-16 flex items-center border-b bg-white/80 backdrop-blur-md sticky top-0 z-50">
+      <Link className="flex items-center justify-center" href="/">
+        <Wrench className="h-6 w-6 text-primary" />
+        <span className="ml-2 font-bold text-xl tracking-tight text-primary font-headline">FixAm</span>
+      </Link>
+      <nav className="ml-auto flex gap-4 items-center">
+        <Link className="text-sm font-medium hover:text-primary transition-colors hidden sm:inline-block" href="/admin">
+          Admin
+        </Link>
+        <Button asChild className="rounded-full font-bold">
+          <Link href="/add-provider">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            List Business
           </Link>
-        </div>
-
-        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-          <Link href="/#categories" className="transition-colors hover:text-primary">
-            Categories
-          </Link>
-        </nav>
-
-        <div className="flex items-center justify-end ml-auto">
-          <Button asChild className="hidden md:flex" variant="ghost">
-             <Link href="/add-provider">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                List your Business
-            </Link>
-          </Button>
-          <Button asChild className="hidden md:flex" variant="ghost">
-             <Link href="/provider/login">
-                <User className="mr-2 h-4 w-4" />
-                Provider Login
-            </Link>
-          </Button>
-
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle Menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right">
-                <SheetHeader>
-                    <SheetTitle>Menu</SheetTitle>
-                </SheetHeader>
-              <div className="grid gap-4 py-6">
-                {navLinks.map(({ href, label }) => (
-                  <Link key={href} href={href} className="text-lg font-medium transition-colors hover:text-primary">
-                    {label}
-                  </Link>
-                ))}
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-      </div>
+        </Button>
+      </nav>
     </header>
   );
 }

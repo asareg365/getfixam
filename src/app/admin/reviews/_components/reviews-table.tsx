@@ -46,7 +46,7 @@ export function ReviewsTable({ reviews }: ReviewsTableProps) {
                 throw new Error(errorMsg);
             }
 
-            toast({ title: `Review ${action}d successfully!`, variant: 'success' });
+            toast({ title: `Review ${action}d successfully!`, variant: 'default' });
             router.refresh();
         } catch (error: any) {
             toast({ title: `Failed to ${action} review`, description: error.message, variant: 'destructive' });
@@ -99,7 +99,7 @@ export function ReviewsTable({ reviews }: ReviewsTableProps) {
                         <>
                         <Button
                             size="sm"
-                            variant="success"
+                            variant="default"
                             onClick={() => handleAction(r.id, 'approve')}
                             disabled={loadingIds.includes(r.id)}
                         >
@@ -117,7 +117,7 @@ export function ReviewsTable({ reviews }: ReviewsTableProps) {
                     )}
                     {r.status !== 'pending' && (
                         <Badge variant={
-                            r.status === 'approved' ? 'success' : 'destructive'
+                            r.status === 'approved' ? 'default' : 'destructive'
                         }>
                             {r.status}
                         </Badge>

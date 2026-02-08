@@ -50,7 +50,7 @@ export function ProvidersTable({
                 throw new Error(errorMsg);
             }
 
-            toast({ title: `Provider ${action}d successfully!`, variant: 'success' });
+            toast({ title: `Provider ${action}d successfully!`, variant: 'default' });
             if (action === 'approve' && result.pin) {
                 const provider = providers.find(p => p.id === providerId);
                 setShowPinInfo({ providerName: provider?.name || 'the provider', pin: result.pin });
@@ -86,7 +86,7 @@ export function ProvidersTable({
 
             const provider = providers.find(p => p.id === providerId);
             setShowPinInfo({ providerName: provider?.name || 'the provider', pin: result.pin });
-            toast({ title: "PIN has been reset!", variant: 'success' });
+            toast({ title: "PIN has been reset!", variant: 'default' });
             router.refresh();
 
         } catch (error: any) {
@@ -146,7 +146,7 @@ export function ProvidersTable({
                 <TableCell>
                   <Badge variant={
                     p.status === 'approved'
-                      ? 'success'
+                      ? 'default'
                       : p.status === 'rejected'
                       ? 'destructive'
                       : p.status === 'suspended'
@@ -182,7 +182,7 @@ export function ProvidersTable({
                         <>
                         <Button
                             size="sm"
-                            variant="success"
+                            variant="default"
                             onClick={() => handleAction(p.id, 'approve')}
                             disabled={loadingIds.includes(p.id)}
                         >
@@ -232,7 +232,7 @@ export function ProvidersTable({
                      {(p.status === 'rejected' || p.status === 'suspended') && (
                         <Button
                             size="sm"
-                            variant="success"
+                            variant="default"
                             onClick={() => handleAction(p.id, 'approve')}
                             disabled={loadingIds.includes(p.id)}
                         >
@@ -247,7 +247,7 @@ export function ProvidersTable({
       </Table>
     </div>
     
-     <AlertDialog open={!!showPinInfo} onOpenChange={(open) => !open && setShowPinInfo(null)}>
+     <AlertDialog open={!!showPinInfo} onOpenChange={(open: any) => !open && setShowPinInfo(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Provider Action Complete!</AlertDialogTitle>

@@ -62,7 +62,7 @@ export function DashboardCharts({ serviceData, locationData }: DashboardChartsPr
        <Card>
         <CardHeader>
           <CardTitle>Requests by Location</CardTitle>
-          <CardDescription>A breakdown of user requests per zone in Berekum.</CardDescription>
+          <CardDescription>A breakdown of user requests per zone and neighborhood.</CardDescription>
         </CardHeader>
         <CardContent className="flex-1 pb-0">
           <ChartContainer

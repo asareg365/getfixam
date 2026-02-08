@@ -17,6 +17,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Provider ID missing' }, { status: 400 });
     }
 
+    if (!adminDb) {
+        console.error('Firebase Admin DB not initialized.');
+        return NextResponse.json({ success: false, error: 'Database not initialized' }, { status: 500 });
+    }
+
     const providerRef = adminDb.collection('providers').doc(providerId);
     const providerSnap = await providerRef.get();
 
@@ -36,7 +41,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Log the admin action
-    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || req.ip || 'unknown';
+    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
     await logAdminAction({
       adminEmail: adminUser.email!,

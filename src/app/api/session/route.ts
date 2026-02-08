@@ -14,6 +14,11 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'ID token is required.' }, { status: 400 });
     }
 
+    if (!adminAuth) {
+        console.error('Firebase Admin Auth not initialized.');
+        return NextResponse.json({ success: false, error: 'Authentication service not initialized' }, { status: 500 });
+    }
+
     // Set session expiration to 5 days.
     const expiresIn = 60 * 60 * 24 * 5 * 1000;
     const sessionCookie = await adminAuth.createSessionCookie(idToken, {

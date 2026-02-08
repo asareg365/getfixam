@@ -1,3 +1,4 @@
+
 import type { LucideIcon } from "lucide-react";
 
 export type Category = {
@@ -108,10 +109,12 @@ export type Job = {
   categoryId: string;
   description: string;
   location: string;
+  serviceType: string;
+  area: string;
   estimatedCost?: number;
   price?: number;
   surgeMultiplier?: number;
-  status: 'REQUESTED' | 'QUOTED' | 'AWAITING_DEPOSIT' | 'IN_PROGRESS' | 'AWAITING_FINAL_PAYMENT' | 'COMPLETED' | 'CLOSED' | 'DISPUTED' | 'CANCELLED';
+  status: 'REQUESTED' | 'QUOTED' | 'AWAITING_DEPOSIT' | 'IN_PROGRESS' | 'AWAITING_FINAL_PAYMENT' | 'COMPLETED' | 'CLOSED' | 'DISPUTED' | 'CANCELLED' | 'unknown' | string;
   createdAt: string;
   expiresAt?: string;
 };

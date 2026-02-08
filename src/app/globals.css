@@ -23,7 +23,7 @@
     --border: 27 40% 80%;
     --input: 27 40% 80%;
     --ring: 16 100% 64%;
-    --radius: 0.75rem;
+    --radius: 1.25rem;
   }
 }
 
@@ -34,5 +34,9 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: var(--font-inter), sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-space), sans-serif;
   }
 }

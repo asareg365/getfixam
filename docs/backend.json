@@ -28,7 +28,7 @@
         },
         "area": {
           "type": "string",
-          "description": "The area/neighborhood where the provider is located (e.g., Berekum Zongo)."
+          "description": "The area/neighborhood where the provider is located."
         },
         "verified": {
           "type": "boolean",
@@ -189,6 +189,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to support the FixAm Ghana application, focusing on listing local artisans, enabling contact, displaying location, and managing ratings and reviews. It prioritizes simplicity and scalability for an MVP.  \n\n**Authorization Independence (CRITICAL):** There's no explicit authorization beyond potential admin roles, so authorization independence isn't a primary concern at this stage. However, if provider verification becomes permissioned, the `providers` documents could include denormalized admin role data (e.g., an `adminApproverId`) to avoid `get()` calls in security rules.  For example, `providers/{providerId}` would include `adminApproverId: String`. If approval from any admin is ok, a `approved:boolean` flag is sufficient. This approach becomes critical as the application scales and more granular access control is required.\n\n**Clarity of Intent (Debuggability):** The structure uses clear and descriptive collection and field names to enhance debuggability.  Relationships between entities (e.g., Providers and Reviews) are maintained through `providerId` fields, providing a straightforward way to query related data.\n\n**DBAC (No Custom Claims):** The application does not explicitly require role-based access control beyond the potential admin verification, so custom claims are not necessary at this stage.\n\n**QAPs (Rules are not Filters):** The structure is designed to support secure `list` operations by segregating data into collections with homogeneous security postures. For example, all documents in the `providers` collection share the same access requirements. As the application evolves, consider segregating verified and unverified providers into separate collections to enforce different security rules during listing.\n\n**Invariants:** The structure supports data integrity by enforcing required fields in the schema and using timestamps for creation dates. Denormalization of data (if admin roles are added) will require careful management to maintain consistency."
+    "reasoning": "The Firestore structure is designed to support the FixAm Ghana application nationwide, focusing on listing local artisans, enabling contact, displaying location, and managing ratings and reviews. It prioritizes simplicity and scalability for a national MVP. Relationships between entities are maintained through providerId fields, providing a straightforward way to query related data."
   }
 }

@@ -6,7 +6,7 @@ export default function WhatsAppBotScaffold() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">WhatsApp Bot</h1>
+        <h1 className="text-3xl font-bold text-primary font-headline">WhatsApp Bot</h1>
         <p className="text-muted-foreground">Manage automated interactions and service matching.</p>
       </div>
 
@@ -43,15 +43,15 @@ export default function WhatsAppBotScaffold() {
         </div>
       </div>
 
-      <div className="bg-white p-8 rounded-2xl border shadow-sm text-center space-y-4 max-w-2xl mx-auto py-20">
+      <div className="bg-white p-8 rounded-2xl border shadow-sm text-center space-y-4 max-w-2xl mx-auto py-20 mt-12">
         <div className="bg-muted/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
           <MessageSquare className="h-8 w-8 text-muted-foreground" />
         </div>
-        <h2 className="text-xl font-bold">Bot API Integration Placeholder</h2>
+        <h2 className="text-xl font-bold font-headline">Bot API Integration Placeholder</h2>
         <p className="text-muted-foreground">
-          The WhatsApp Bot configuration and real-time logs will appear here once the Twilio or WhatsApp Business API keys are configured in your environment variables.
+          The WhatsApp Bot configuration and real-time logs will appear here once the API keys are configured in your environment variables.
         </p>
-        <div className="bg-muted/30 p-4 rounded-lg text-left font-mono text-xs overflow-x-auto">
+        <div className="bg-muted/30 p-4 rounded-lg text-left font-mono text-xs overflow-x-auto max-w-sm mx-auto">
           <code>
             WHATSAPP_API_ENDPOINT=https://api.whatsapp.com/v1/...<br/>
             BOT_WEBHOOK_SECRET=hidden_secret_key_placeholder

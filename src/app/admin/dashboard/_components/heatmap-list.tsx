@@ -15,18 +15,15 @@ function getHeatClasses(count: number, maxCount: number): string {
     const percentage = maxCount > 0 ? count / maxCount : 0;
 
     if (percentage > 0.75) {
-        return "bg-[hsl(var(--chart-1))]/80 border-[hsl(var(--chart-1))] text-white";
+        return "bg-primary/80 border-primary text-white";
     }
     if (percentage > 0.5) {
-        return "bg-[hsl(var(--chart-5))]/80 border-[hsl(var(--chart-5))] text-white";
+        return "bg-secondary/80 border-secondary text-white";
     }
     if (percentage > 0.25) {
-        return "bg-[hsl(var(--chart-4))]/70 border-[hsl(var(--chart-4))] text-foreground";
+        return "bg-muted border-border text-foreground";
     }
-    if (percentage > 0) {
-        return "bg-[hsl(var(--chart-2))]/70 border-[hsl(var(--chart-2))] text-white";
-    }
-    return "bg-muted border-border text-muted-foreground";
+    return "bg-muted/50 border-border text-muted-foreground";
 }
 
 export function HeatmapList({ data }: HeatmapListProps) {
@@ -34,22 +31,22 @@ export function HeatmapList({ data }: HeatmapListProps) {
     const maxCount = sortedData.length > 0 ? sortedData[0].total : 0;
 
     return (
-        <Card>
+        <Card className="border-none shadow-sm rounded-3xl">
             <CardHeader>
-                <CardTitle>Demand Heatmap</CardTitle>
-                <CardDescription>Top requested zones in Berekum based on bot requests.</CardDescription>
+                <CardTitle className="font-headline">Demand Heatmap</CardTitle>
+                <CardDescription>Top requested zones based on platform interactions.</CardDescription>
             </CardHeader>
             <CardContent>
                 {sortedData.length === 0 ? (
-                     <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">
+                     <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-[20px]">
                         <p>No location data available yet.</p>
                     </div>
                 ) : (
                     <div className="space-y-2">
                         {sortedData.map(({ name, total }) => (
-                            <div key={name} className={`flex justify-between items-center p-3 rounded-lg border transition-all ${getHeatClasses(total, maxCount)}`}>
-                                <span className="font-medium text-base">{name}</span>
-                                <span className="font-bold text-xl">{total}</span>
+                            <div key={name} className={`flex justify-between items-center p-4 rounded-xl border transition-all ${getHeatClasses(total, maxCount)}`}>
+                                <span className="font-bold text-base">{name}</span>
+                                <span className="font-black text-xl">{total}</span>
                             </div>
                         ))}
                     </div>

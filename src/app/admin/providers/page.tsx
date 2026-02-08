@@ -63,10 +63,10 @@ export default async function ProvidersPage(props: PageProps) {
   const { providers, counts } = await getProvidersData(currentStatus);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold font-headline">Artisan Providers</h1>
-        <p className="text-muted-foreground">Review and manage artisan listings in Berekum.</p>
+        <h1 className="text-4xl font-black font-headline text-foreground">Artisan Directory</h1>
+        <p className="text-muted-foreground text-lg mt-1 font-medium">Review and manage verified professionals across the country.</p>
       </div>
 
       <ProviderTabs currentStatus={currentStatus} counts={counts} />

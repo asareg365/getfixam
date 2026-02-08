@@ -1,6 +1,5 @@
-
 import { getCategoryBySlug, getProviders } from '@/lib/services';
-import { getBerekumZones } from '@/lib/data';
+import { getNeighborhoods } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import type { Provider } from '@/lib/types';
 import Link from 'next/link';
@@ -14,7 +13,7 @@ export default async function CategoryPage(props: { params: Promise<{ slug: stri
   const params = await props.params;
   let categoryName = 'All Providers';
   let providers: Provider[] = [];
-  const zones = await getBerekumZones();
+  const zones = await getNeighborhoods();
 
   try {
     if (params.slug === 'all') {

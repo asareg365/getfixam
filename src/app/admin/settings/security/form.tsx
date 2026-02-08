@@ -1,10 +1,10 @@
 'use client';
 
-import { useFormStatus } from 'react-dom';
-import { useActionState, useEffect, useRef } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
+import { useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ShieldAlert } from 'lucide-react';
-import { updateLockoutStatus } from './actions';
+import { updateSecuritySettings } from './actions';
 
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -14,23 +14,24 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type SecurityFormProps = {
   isLocked: boolean;
+  providerLoginsDisabled: boolean;
   reason: string;
   updatedBy: string;
   updatedAt: string;
 };
 
-function SubmitButton({ isLocked }: { isLocked: boolean }) {
+function SubmitButton({ isLocked, providerLoginsDisabled }: { isLocked: boolean; providerLoginsDisabled: boolean }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" variant={isLocked ? 'default' : 'destructive'} className="w-full" disabled={pending}>
+    <Button type="submit" variant={isLocked || providerLoginsDisabled ? 'destructive' : 'default'} className="w-full" disabled={pending}>
       {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-      {isLocked ? 'Enable Admin Access' : 'Disable Admin Access'}
+      Update Security Settings
     </Button>
   );
 }
 
-export default function SecurityForm({ isLocked, reason, updatedBy, updatedAt }: SecurityFormProps) {
-  const [state, formAction] = useActionState(updateLockoutStatus, { success: false, message: '', errors: {} });
+export default function SecurityForm({ isLocked, providerLoginsDisabled, reason, updatedBy, updatedAt }: SecurityFormProps) {
+  const [state, formAction] = useFormState(updateSecuritySettings, { success: false, message: '' });
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -39,7 +40,7 @@ export default function SecurityForm({ isLocked, reason, updatedBy, updatedAt }:
       toast({
         title: 'Success!',
         description: state.message,
-        variant: isLocked ? 'destructive' : 'default',
+        variant: isLocked || providerLoginsDisabled ? 'destructive' : 'default',
       });
     } else if (!state.success && state.message) {
       toast({
@@ -48,7 +49,7 @@ export default function SecurityForm({ isLocked, reason, updatedBy, updatedAt }:
         variant: 'destructive',
       });
     }
-  }, [state, toast, isLocked]);
+  }, [state, toast, isLocked, providerLoginsDisabled]);
 
   return (
     <form ref={formRef} action={formAction} className="space-y-6">
@@ -84,6 +85,18 @@ export default function SecurityForm({ isLocked, reason, updatedBy, updatedAt }:
           className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-destructive"
         />
       </div>
+      
+      <div className="flex items-center space-x-3 rounded-md border p-4">
+        <Label htmlFor="providerLoginsDisabled" className="flex-1 text-lg font-semibold">
+          {providerLoginsDisabled ? 'Enable Provider Logins' : 'Disable Provider Logins'}
+        </Label>
+        <Switch
+          id="providerLoginsDisabled"
+          name="providerLoginsDisabled"
+          defaultChecked={!providerLoginsDisabled}
+          className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-destructive"
+        />
+      </div>
 
       <div className="space-y-2">
         <Label htmlFor="reason">Reason for Change</Label>
@@ -96,7 +109,7 @@ export default function SecurityForm({ isLocked, reason, updatedBy, updatedAt }:
         {state.errors?.reason && <p className="text-sm text-destructive">{state.errors.reason[0]}</p>}
       </div>
 
-      <SubmitButton isLocked={isLocked} />
+      <SubmitButton isLocked={isLocked} providerLoginsDisabled={providerLoginsDisabled} />
     </form>
   );
 }

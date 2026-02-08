@@ -39,22 +39,21 @@ export default function AddServiceForm() {
   const [state, formAction] = useActionState(addServiceAction, {
     errors: {},
     success: false,
-    message: '',
   });
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    if (state.success && state.message) {
+    if (state.success) {
       toast({
         title: 'Success!',
-        description: state.message,
+        description: "Service added successfully!",
       });
       formRef.current?.reset();
-    } else if (!state.success && state.message) {
+    } else if (state.errors && Object.keys(state.errors).length > 0) {
       toast({
         title: 'Error',
-        description: state.message,
+        description: "Please correct the errors and try again.",
         variant: 'destructive',
       });
     }
@@ -64,7 +63,6 @@ export default function AddServiceForm() {
       return (
         <div className="text-center p-8 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200">
             <h3 className="text-xl font-bold text-green-800 dark:text-green-300">Service Added!</h3>
-            <p className="mt-2 text-green-700 dark:text-green-400">{state.message}</p>
              <Button asChild className="mt-6">
                 <Link href="/admin/services">Back to Services</Link>
             </Button>

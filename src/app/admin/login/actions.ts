@@ -17,8 +17,12 @@ const loginSchema = z.object({
 
 export async function loginAction(prevState: any, formData: FormData) {
   console.log('Admin login endpoint reached'); // DEBUG LOG
-  const ip = headers().get('x-forwarded-for')?.split(',')[0] || 'unknown';
-  const userAgent = headers().get('user-agent') || 'unknown';
+  if (!adminDb) {
+    throw new Error('Database not initialized');
+  }
+  const headerList = await headers();
+  const ip = headerList.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+  const userAgent = headerList.get('user-agent') || 'unknown';
   const attemptRef = adminDb.collection('admin_login_attempts').doc(ip);
 
   try {
@@ -101,7 +105,8 @@ export async function loginAction(prevState: any, formData: FormData) {
 
     const token = await signToken({ uid: localId, email: userEmail, role: adminData.role });
 
-    cookies().set({
+    const cookieStore = await cookies();
+    cookieStore.set({
       name: 'admin_token',
       value: token,
       httpOnly: true,

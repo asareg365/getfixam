@@ -8,8 +8,14 @@ import { logAdminAction } from '@/lib/audit-log';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest, { params }: { params: { action: string } }) {
-  const action = params.action;
+export async function POST(req: NextRequest) {
+  if (!adminDb) {
+    return NextResponse.json({ success: false, error: 'Database not initialized' }, { status: 500 });
+  }
+  const pathname = req.nextUrl.pathname;
+  const segments = pathname.split('/');
+  const action = segments.pop() || '';
+
   if (!['approve', 'reject'].includes(action)) {
     return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
   }
@@ -22,12 +28,15 @@ export async function POST(req: NextRequest, { params }: { params: { action: str
       return NextResponse.json({ success: false, error: 'Review ID missing' }, { status: 400 });
     }
 
-    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || req.ip || 'unknown';
+    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
     const reviewRef = adminDb.collection('reviews').doc(reviewId);
     
     if (action === 'approve') {
       await adminDb.runTransaction(async (transaction) => {
+        if (!adminDb) {
+          throw new Error('Database not initialized');
+        }
         const reviewSnap = await transaction.get(reviewRef);
         if (!reviewSnap.exists) throw new Error('Review not found.');
         

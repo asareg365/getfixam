@@ -9,14 +9,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+    <Button type="submit" className="w-full h-14 rounded-2xl text-lg font-bold shadow-lg shadow-primary/20" disabled={pending}>
+      {pending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
       Submit for Review
     </Button>
   );
@@ -55,26 +55,28 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
   return (
     <div>
         {state.success ? (
-            <div className="text-center p-8 bg-green-50 rounded-lg border border-green-200">
-            <h3 className="text-xl font-bold text-green-800">Submission Successful!</h3>
-            <p className="mt-2 text-green-700">{state.message}</p>
-                <p className="mt-2 text-green-600">Our team will review your submission and get back to you.</p>
-            <Button asChild className="mt-6">
-                <Link href="/">Back to Home</Link>
-            </Button>
+            <div className="text-center p-10 bg-primary/5 rounded-[32px] border-2 border-dashed border-primary/20">
+                <div className="bg-primary/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle2 className="h-10 w-10 text-primary" />
+                </div>
+                <h3 className="text-2xl font-bold text-primary font-headline">Submission Received!</h3>
+                <p className="mt-4 text-muted-foreground text-lg">{state.message}</p>
+                <Button asChild className="mt-10 rounded-2xl px-8" variant="outline">
+                    <Link href="/">Back to Home</Link>
+                </Button>
             </div>
         ) : (
-        <form ref={formRef} action={formAction} className="space-y-6">
-        <div className="space-y-2">
-            <Label htmlFor="name">Business Name</Label>
-            <Input id="name" name="name" placeholder="e.g., Kwame Electric Works" required />
-            {state.errors?.name && <p className="text-sm text-destructive">{state.errors.name}</p>}
+        <form ref={formRef} action={formAction} className="space-y-8">
+        <div className="space-y-3">
+            <Label htmlFor="name" className="text-base font-bold">Business Name</Label>
+            <Input id="name" name="name" placeholder="e.g., Kwame Electric Works" required className="h-12 rounded-xl border-muted-foreground/20" />
+            {state.errors?.name && <p className="text-sm text-destructive font-medium">{state.errors.name}</p>}
         </div>
 
-        <div className="space-y-2">
-            <Label htmlFor="category">Category</Label>
+        <div className="space-y-3">
+            <Label htmlFor="category" className="text-base font-bold">Category</Label>
             <Select name="serviceId" required>
-            <SelectTrigger id="category">
+            <SelectTrigger id="category" className="h-12 rounded-xl border-muted-foreground/20">
                 <SelectValue placeholder="Select a service category" />
             </SelectTrigger>
             <SelectContent>
@@ -83,27 +85,27 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
                 ))}
             </SelectContent>
             </Select>
-            {state.errors?.serviceId && <p className="text-sm text-destructive">{state.errors.serviceId}</p>}
+            {state.errors?.serviceId && <p className="text-sm text-destructive font-medium">{state.errors.serviceId}</p>}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
-            <Input id="phone" name="phone" type="tel" placeholder="0241234567" required />
-                {state.errors?.phone && <p className="text-sm text-destructive">{state.errors.phone}</p>}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-3">
+            <Label htmlFor="phone" className="text-base font-bold">Phone Number</Label>
+            <Input id="phone" name="phone" type="tel" placeholder="0241234567" required className="h-12 rounded-xl border-muted-foreground/20" />
+                {state.errors?.phone && <p className="text-sm text-destructive font-medium">{state.errors.phone}</p>}
             </div>
-            <div className="space-y-2">
-            <Label htmlFor="whatsapp">WhatsApp Number</Label>
-            <Input id="whatsapp" name="whatsapp" type="tel" placeholder="0551234567" required />
-            {state.errors?.whatsapp && <p className="text-sm text-destructive">{state.errors.whatsapp}</p>}
+            <div className="space-y-3">
+            <Label htmlFor="whatsapp" className="text-base font-bold">WhatsApp Number</Label>
+            <Input id="whatsapp" name="whatsapp" type="tel" placeholder="0551234567" required className="h-12 rounded-xl border-muted-foreground/20" />
+            {state.errors?.whatsapp && <p className="text-sm text-destructive font-medium">{state.errors.whatsapp}</p>}
             </div>
         </div>
         
-        <div className="space-y-2">
-            <Label htmlFor="zone">Area / Zone</Label>
+        <div className="space-y-3">
+            <Label htmlFor="zone" className="text-base font-bold">Area / Neighborhood</Label>
             <Select name="zone" required>
-            <SelectTrigger id="zone">
-                <SelectValue placeholder="Select your location/zone in Berekum" />
+            <SelectTrigger id="zone" className="h-12 rounded-xl border-muted-foreground/20">
+                <SelectValue placeholder="Select your primary work area" />
             </SelectTrigger>
             <SelectContent>
                 {zones.map((zone) => (
@@ -111,13 +113,13 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
                 ))}
             </SelectContent>
             </Select>
-            {state.errors?.zone && <p className="text-sm text-destructive">{state.errors.zone}</p>}
+            {state.errors?.zone && <p className="text-sm text-destructive font-medium">{state.errors.zone}</p>}
         </div>
 
-        <div className="space-y-2">
-            <Label htmlFor="digitalAddress">Digital Address</Label>
-            <Input id="digitalAddress" name="digitalAddress" placeholder="e.g., BK-001-0101" required />
-            {state.errors?.digitalAddress && <p className="text-sm text-destructive">{state.errors.digitalAddress}</p>}
+        <div className="space-y-3">
+            <Label htmlFor="digitalAddress" className="text-base font-bold">Digital Address (Optional)</Label>
+            <Input id="digitalAddress" name="digitalAddress" placeholder="e.g., GA-123-4567" className="h-12 rounded-xl border-muted-foreground/20" />
+            {state.errors?.digitalAddress && <p className="text-sm text-destructive font-medium">{state.errors.digitalAddress}</p>}
         </div>
 
         <SubmitButton />

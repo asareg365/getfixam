@@ -19,6 +19,11 @@ export async function POST(req: NextRequest) {
     if (!rawPhone || !pin) {
       return NextResponse.json({ success: false, message: 'Phone number and PIN are required.' }, { status: 400 });
     }
+
+    if (!adminDb || !adminAuth) {
+        console.error('Firebase Admin not initialized.');
+        return NextResponse.json({ success: false, error: 'Database not initialized' }, { status: 500 });
+    }
     
     // Find provider by phone number
     const providersRef = adminDb.collection('providers');
@@ -42,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     // Verify PIN
     const pinMatch = await bcrypt.compare(pin, providerData.loginPinHash);
-    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || req.ip || 'unknown';
+    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
     if (!pinMatch) {

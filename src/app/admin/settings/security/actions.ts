@@ -13,10 +13,15 @@ const SECRET = process.env.ADMIN_JWT_SECRET || 'this-is-a-super-secret-key-that-
 
 // A custom function to get admin user without the lockout check. For this page only.
 async function getAdminUserForSecurityPage(): Promise<{ uid: string; email: string | undefined; }> {
-    const token = cookies().get('admin_token')?.value;
+    const cookieStore = await cookies();
+    const token = cookieStore.get('admin_token')?.value;
     if (!token) throw new Error("Authentication required.");
 
     try {
+        if (!adminDb) {
+            throw new Error("Database not initialized");
+        }
+
         const decoded = jwt.verify(token, SECRET) as JwtPayload;
         if (!decoded.email) {
             throw new Error('Unauthorized user: Invalid token.');
@@ -40,51 +45,67 @@ async function getAdminUserForSecurityPage(): Promise<{ uid: string; email: stri
 }
 
 
-const lockoutSchema = z.object({
+const securitySettingsSchema = z.object({
   adminLocked: z.preprocess((val) => val === 'on', z.boolean()),
+  providerLoginsDisabled: z.preprocess((val) => val === 'on', z.boolean()),
   reason: z.string().min(1, { message: 'A reason is required to change lockout status.' }),
 });
 
-export async function updateLockoutStatus(prevState: any, formData: FormData) {
+export async function updateSecuritySettings(prevState: any, formData: FormData) {
   try {
     const adminUser = await getAdminUserForSecurityPage();
 
-    const validatedFields = lockoutSchema.safeParse(Object.fromEntries(formData.entries()));
+    const validatedFields = securitySettingsSchema.safeParse(Object.fromEntries(formData.entries()));
 
     if (!validatedFields.success) {
       return { success: false, errors: validatedFields.error.flatten().fieldErrors };
     }
 
-    const { adminLocked, reason } = validatedFields.data;
+    const { adminLocked, providerLoginsDisabled, reason } = validatedFields.data;
     
+    if (!adminDb) {
+        throw new Error("Database not initialized");
+    }
     const settingsRef = adminDb.collection('system_settings').doc('admin');
     
     await settingsRef.set({
       adminLocked,
+      providerLoginsDisabled,
       reason,
       updatedBy: adminUser.email,
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
     
-    const headersList = headers();
+    const headersList = await headers();
+    const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+    const userAgent = headersList.get('user-agent') || 'unknown';
+
+    // Log both actions
     await logAdminAction({
         adminEmail: adminUser.email!,
         action: adminLocked ? 'SYSTEM_LOCKED' : 'SYSTEM_UNLOCKED',
         targetType: 'system',
         targetId: 'admin_lockout',
-        ipAddress: headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown',
-        userAgent: headersList.get('user-agent') || 'unknown',
+        ipAddress,
+        userAgent,
+    });
+    
+    await logAdminAction({
+        adminEmail: adminUser.email!,
+        action: providerLoginsDisabled ? 'PROVIDER_LOGINS_DISABLED' : 'PROVIDER_LOGINS_ENABLED',
+        targetType: 'system',
+        targetId: 'provider_logins',
+        ipAddress,
+        userAgent,
     });
 
     revalidatePath('/admin/settings/security');
     revalidatePath('/admin/audit-logs');
 
-    return { success: true, message: `Admin access has been ${adminLocked ? 'DISABLED' : 'ENABLED'}.` };
+    return { success: true, message: `Security settings have been updated.` };
 
   } catch (error: any) {
-    console.error('Error updating lockout status:', error);
-    return { success: false, message: error.message || 'Failed to update status.' };
+    console.error('Error updating security settings:', error);
+    return { success: false, message: error.message || 'Failed to update settings.' };
   }
 }
-
-    

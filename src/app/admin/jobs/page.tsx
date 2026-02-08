@@ -7,6 +7,9 @@ import type { Job } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 async function getJobs(): Promise<Job[]> {
+    if (!adminDb) {
+        throw new Error("Database not initialized");
+    }
     const jobsSnap = await adminDb.collection('jobs').orderBy('createdAt', 'desc').get();
     if (jobsSnap.empty) {
         return [];
@@ -15,6 +18,11 @@ async function getJobs(): Promise<Job[]> {
         const data = doc.data();
         return {
             id: doc.id,
+            customerId: data.customerId ?? 'N/A',
+            providerId: data.providerId ?? 'N/A',
+            categoryId: data.categoryId ?? 'N/A',
+            description: data.description ?? 'N/A',
+            location: data.location ?? 'N/A',
             serviceType: data.serviceType ?? 'N/A',
             area: data.area ?? 'N/A',
             status: data.status ?? 'unknown',
@@ -24,7 +32,7 @@ async function getJobs(): Promise<Job[]> {
             expiresAt: data.expiresAt?.toDate().toISOString() ?? new Date(0).toISOString(),
             price: data.price ?? undefined,
             surgeMultiplier: data.surgeMultiplier ?? undefined,
-        }
+        } as Job;
     })
 }
 
