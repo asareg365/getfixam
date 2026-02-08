@@ -35,9 +35,12 @@ export async function verifyToken(token: string): Promise<AdminJWTPayload | null
       algorithms: ['HS256'],
     });
 
-    return payload as unknown as AdminJWTPayload;
+    // Cast and validate portal field
+    const adminPayload = payload as unknown as AdminJWTPayload;
+    if (adminPayload.portal !== 'admin') return null;
+
+    return adminPayload;
   } catch (error) {
-    // Return null to allow middleware to handle the redirection
     return null;
   }
 }

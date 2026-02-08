@@ -24,8 +24,6 @@ export async function middleware(req: NextRequest) {
     // Attempt to verify the admin token
     const payload = await verifyToken(session);
     
-    // DEBUG: console.log('Admin session check:', { hasPayload: !!payload, portal: payload?.portal });
-
     // CRITICAL: Check for 'portal: admin' to distinguish from provider session cookies
     if (
       !payload ||
