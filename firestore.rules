@@ -17,18 +17,22 @@ service cloud.firestore {
     // --- COLLECTION RULES ---
 
     match /admins/{adminId} {
-      // Allow the first admin to be created, then restrict to existing admins
+      // Allow any signed-in user to check if admins exist (required for auto-provisioning)
       allow read: if isSignedIn();
+      
+      // Allow the very first admin to be created if the collection is empty
+      // Or allow existing admins to create new ones
       allow create: if isSignedIn() && (
-        !exists(/databases/$(database)/documents/admins/any_admin_placeholder) || // Placeholder logic for first admin
-        isAdmin()
+        !exists(/databases/$(database)/documents/admins/any_admin_placeholder) || 
+        isAdmin() ||
+        request.auth.uid == adminId // Allow self-provisioning if logic allows
       );
       allow update, delete: if isAdmin();
     }
 
     match /system_settings/{settingId} {
       allow get: if true;
-      allow list, create, update, delete: if isAdmin();
+      allow list, write: if isAdmin();
     }
 
     match /categories/{categoryId} {
@@ -58,7 +62,17 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    match /jobs/{jobId} {
+      allow get, list: if isAdmin();
+      allow create: if true; // Public can request services
+      allow update, delete: if isAdmin();
+    }
+
     match /auditLogs/{logId} {
+      allow read, write: if isAdmin();
+    }
+    
+    match /provider_logs/{logId} {
       allow read, write: if isAdmin();
     }
   }
