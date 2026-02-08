@@ -20,8 +20,7 @@ export default function AdminDashboard() {
     async function fetchRealStats() {
       try {
         const providersRef = collection(db, 'providers');
-        const jobsRef = collection(db, 'jobs'); // Assuming requests are stored in jobs
-        
+        const jobsRef = collection(db, 'jobs');
         const verifiedQuery = query(providersRef, where('verified', '==', true));
 
         const [totalSnap, verifiedSnap, jobsSnap] = await Promise.all([

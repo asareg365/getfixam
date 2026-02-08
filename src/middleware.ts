@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/request';
 import { verifyToken } from '@/lib/jwt';
 
 /**
@@ -49,9 +49,7 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/provider/login', req.url));
     }
     
-    // Provider sessions are standard Firebase Session Cookies. 
-    // They won't pass the verifyToken() check above because they aren't signed 
-    // with our local app secret, which keeps them securely separated from admin routes.
+    // Provider sessions are standard Firebase Session Cookies handled by client SDKs
     return NextResponse.next();
   }
 

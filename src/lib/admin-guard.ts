@@ -59,16 +59,3 @@ export async function requireAdmin(): Promise<AdminUser> {
     role: decoded.role,
   };
 }
-
-/**
- * Quick check for admin status without redirection.
- */
-export async function isAdminUser(): Promise<boolean> {
-  const token = (await cookies()).get('__session')?.value;
-  if (!token) return false;
-
-  const decoded = await verifyToken(token);
-  if (!decoded || decoded.portal !== 'admin') return false;
-
-  return true;
-}
