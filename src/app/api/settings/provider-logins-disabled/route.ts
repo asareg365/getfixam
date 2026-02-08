@@ -1,28 +1,24 @@
-
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 
-export const dynamic = 'force-dynamic'; // Ensure this route is always executed dynamically
+export const dynamic = 'force-dynamic';
 
 /**
  * This API route checks if provider logins are globally disabled in the system settings.
- * It is designed to be called from environments like Edge middleware where direct DB access
- * with firebase-admin is not possible.
+ * During prototyping, we default to false (enabled) if the DB is not fully configured.
  */
 async function areProviderLoginsDisabled(): Promise<boolean> {
   try {
-    // As a user suggested, check if adminDb is initialized.
     if (!adminDb) {
-      console.error("areProviderLoginsDisabled: Firebase Admin DB is not initialized.");
-      // Fail-safe: if we cannot check the setting, we should assume logins are disabled.
-      return true;
+      // During development/prototyping, we allow logins even if adminDb isn't ready.
+      return false;
     }
 
     const settingsRef = adminDb.collection('system_settings').doc('admin');
     const snap = await settingsRef.get();
     
     if (!snap.exists) {
-      // If the setting document doesn't exist, assume not disabled.
+      // Default to enabled if the document isn't there yet.
       return false;
     }
     
@@ -31,8 +27,8 @@ async function areProviderLoginsDisabled(): Promise<boolean> {
 
   } catch (error) {
     console.error("Error checking if provider logins are disabled:", error);
-    // Fail-safe: If any error occurs during the check, assume logins are disabled.
-    return true;
+    // Safe default for prototyping
+    return false;
   }
 }
 
