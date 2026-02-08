@@ -14,8 +14,8 @@ export default function LandingPage() {
           <span className="ml-3 font-bold text-2xl tracking-tight text-primary font-headline">FixAm</span>
         </Link>
         <nav className="ml-auto flex gap-6 items-center">
-          <Link className="text-sm font-semibold hover:text-primary transition-colors hidden md:inline-block" href="/admin">
-            Admin Portal
+          <Link className="text-sm font-semibold hover:text-primary transition-colors hidden md:inline-block" href="/category/all">
+            Browse Categories
           </Link>
           <Button asChild className="rounded-full px-6 font-bold shadow-lg shadow-primary/20">
             <Link href="/provider/login">
@@ -90,7 +90,7 @@ export default function LandingPage() {
                   <ShieldCheck className="h-8 w-8" />
                 </div>
                 <h3 className="text-2xl font-bold font-headline">Vetted Local Pros</h3>
-                <p className="text-muted-foreground leading-relaxed">We manually verify Berekum's finest artisans to ensure your safety and quality of service.</p>
+                <p className="text-muted-foreground leading-relaxed">We manually verify local artisans to ensure your safety and quality of service.</p>
               </div>
               <div className="space-y-4">
                 <div className="bg-secondary/10 w-16 h-16 rounded-2xl flex items-center justify-center text-secondary">
@@ -106,7 +106,7 @@ export default function LandingPage() {
                   <CheckCircle2 className="h-8 w-8" />
                 </div>
                 <h3 className="text-2xl font-bold font-headline">Verified Reviews</h3>
-                <p className="text-muted-foreground leading-relaxed">Real reviews from your neighbors in Berekum. Know who you're hiring before they arrive.</p>
+                <p className="text-muted-foreground leading-relaxed">Real reviews from your neighbors. Know who you're hiring before they arrive.</p>
               </div>
             </div>
           </div>
@@ -124,7 +124,7 @@ export default function LandingPage() {
             <Link href="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
             <Link href="/admin/login" className="hover:text-primary transition-colors">Admin Access</Link>
           </div>
-          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} FixAm Berekum. Connecting you with quality local skills.</p>
+          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} FixAm. Connecting you with quality local skills.</p>
         </div>
       </footer>
     </div>

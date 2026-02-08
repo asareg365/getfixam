@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Wrench, PlusCircle, User } from 'lucide-react';
+import { Wrench, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function Header() {
@@ -10,8 +10,8 @@ export default function Header() {
         <span className="ml-2 font-bold text-xl tracking-tight text-primary font-headline">FixAm</span>
       </Link>
       <nav className="ml-auto flex gap-4 items-center">
-        <Link className="text-sm font-medium hover:text-primary transition-colors hidden sm:inline-block" href="/admin">
-          Admin
+        <Link className="text-sm font-medium hover:text-primary transition-colors hidden sm:inline-block" href="/category/all">
+          Categories
         </Link>
         <Button asChild className="rounded-full font-bold">
           <Link href="/add-provider">
