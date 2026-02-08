@@ -10,7 +10,7 @@ export type AdminJWTPayload = {
   uid: string;
   email?: string;
   role: 'admin' | 'super_admin';
-  portal: 'admin';
+  portal: 'admin'; // 🔑 REQUIRED to distinguish from other session types
   exp?: number;
   iat?: number;
 };
@@ -18,7 +18,7 @@ export type AdminJWTPayload = {
 /**
  * Signs a payload to create a JWT using jose (Edge compatible).
  */
-export async function signToken(payload: any): Promise<string> {
+export async function signToken(payload: AdminJWTPayload): Promise<string> {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()

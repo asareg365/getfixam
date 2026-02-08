@@ -20,7 +20,7 @@ export async function middleware(req: NextRequest) {
     const payload = await verifyToken(session);
     
     // DEBUG: Confirm the payload matches the expected structure
-    console.log('Admin payload:', payload);
+    // console.log('Admin payload:', payload);
 
     // If token is invalid OR not an admin token, redirect and clear session
     if (

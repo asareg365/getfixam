@@ -13,7 +13,7 @@ export async function setAdminSessionAction(uid: string, email: string, role: st
     const token = await signToken({ 
       uid, 
       email, 
-      role, 
+      role: role as 'admin' | 'super_admin', 
       portal: 'admin' 
     });
     
@@ -31,12 +31,4 @@ export async function setAdminSessionAction(uid: string, email: string, role: st
     console.error('Error setting admin session:', error);
     return { success: false, error: 'Failed to establish session.' };
   }
-}
-
-/**
- * Legacy function - kept for compatibility if needed elsewhere, 
- * but the app now prefers client-side auth + setAdminSessionAction.
- */
-export async function loginWithEmailAndPassword(email: string, password: string) {
-    return { error: 'Please use the standard login form.' };
 }
