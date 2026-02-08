@@ -6,14 +6,14 @@ import { adminDb } from '@/lib/firebase-admin';
 import { logAdminAction } from '@/lib/audit-log';
 
 /**
- * Establishes a secure admin session.
+ * Establishes a secure admin session with defensive Admin SDK checks.
  */
 export async function setAdminSessionAction(uid: string, email: string | null, role: string) {
   if (!email) {
     return { success: false, error: 'Email is required for admin access.' };
   }
 
-  // Generate the token with the REQUIRED portal field
+  // 1. Generate the token with the REQUIRED portal field
   const token = await signToken({ 
     uid, 
     email, 
@@ -21,6 +21,7 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
     portal: 'admin' 
   });
   
+  // 2. Set the secure __session cookie
   const cookieStore = await cookies();
   cookieStore.set('__session', token, {
     httpOnly: true,
@@ -30,7 +31,7 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
     maxAge: 60 * 60 * 2, // 2 hours
   });
 
-  // Log the login event if possible
+  // 3. Log the login event if possible (Defensive Check)
   if (adminDb && typeof adminDb.collection === 'function') {
     try {
         await logAdminAction({
@@ -42,7 +43,7 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
             userAgent: 'server-action',
         });
     } catch (e) {
-        console.warn("Failed to log admin login event.");
+        console.warn("Failed to log admin login event to Firestore.");
     }
   }
 

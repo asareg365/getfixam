@@ -13,7 +13,7 @@ type AdminUser = {
 
 /**
  * Server-side guard to ensure the user is an authorized administrator.
- * Used inside Server Components and Server Actions.
+ * Synchronized with middleware.ts logic.
  */
 export async function requireAdmin(): Promise<AdminUser> {
   const cookieStore = await cookies();
@@ -25,13 +25,13 @@ export async function requireAdmin(): Promise<AdminUser> {
 
   const decoded = await verifyToken(token);
   
-  // Basic token validation matching middleware logic
+  // Strict check matching middleware
   if (!decoded || decoded.portal !== 'admin') {
     cookieStore.delete('__session');
     redirect('/admin/login');
   }
 
-  // Double-check against Firestore if the Admin SDK is available
+  // Double-check against Firestore only if the Admin SDK is available
   if (adminDb && typeof adminDb.collection === 'function') {
     try {
       const adminQuery = await adminDb.collection('admins')
@@ -49,7 +49,7 @@ export async function requireAdmin(): Promise<AdminUser> {
           };
       }
     } catch (e) {
-      console.warn("Admin DB check failed, using JWT claims.");
+      console.warn("Admin DB check bypassed, using JWT payload claims.");
     }
   }
 
@@ -60,6 +60,9 @@ export async function requireAdmin(): Promise<AdminUser> {
   };
 }
 
+/**
+ * Quick check for admin status without redirection.
+ */
 export async function isAdminUser(): Promise<boolean> {
   const token = (await cookies()).get('__session')?.value;
   if (!token) return false;

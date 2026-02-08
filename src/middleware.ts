@@ -24,14 +24,16 @@ export async function middleware(req: NextRequest) {
     // Attempt to verify the admin token
     const payload = await verifyToken(session);
     
-    // CRITICAL: Check for 'portal: admin' to distinguish from other session types
+    // DEBUG: console.log('Admin session check:', { hasPayload: !!payload, portal: payload?.portal });
+
+    // CRITICAL: Check for 'portal: admin' to distinguish from provider session cookies
     if (
       !payload ||
       payload.portal !== 'admin' ||
       (payload.role !== 'admin' && payload.role !== 'super_admin')
     ) {
       const response = NextResponse.redirect(new URL('/admin/login', req.url));
-      // Clear invalid session
+      // Clear potentially mismatched or invalid session
       response.cookies.delete('__session');
       return response;
     }
@@ -49,9 +51,9 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/provider/login', req.url));
     }
     
-    // Artisan sessions are standard Firebase Session Cookies. 
+    // Provider sessions are standard Firebase Session Cookies. 
     // They won't pass the verifyToken() check above because they aren't signed 
-    // with our local app secret, which effectively keeps them out of admin routes.
+    // with our local app secret, which keeps them securely separated from admin routes.
     return NextResponse.next();
   }
 

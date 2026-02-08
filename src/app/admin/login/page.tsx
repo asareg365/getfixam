@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Check if user is an authorized admin in Firestore
+      // 2. Check if user is an authorized admin in Firestore (Client SDK)
       const adminDocRef = doc(db, 'admins', user.uid);
       const adminDoc = await getDoc(adminDocRef);
 
@@ -54,12 +54,12 @@ export default function AdminLoginPage() {
           });
           toast({ title: 'System Initialized', description: 'You have been granted Super Admin access.' });
         } else {
-          throw new Error('You are authenticated but not authorized as an administrator.');
+          throw new Error('Authenticated but not authorized as an administrator.');
         }
       } else {
         const adminData = adminDoc.data();
         if (!adminData?.active) {
-          throw new Error('Your administrator account has been deactivated.');
+          throw new Error('Administrator account is inactive.');
         }
         role = adminData.role;
       }
@@ -68,12 +68,12 @@ export default function AdminLoginPage() {
       const sessionResult = await setAdminSessionAction(user.uid, user.email!, role);
 
       if (!sessionResult.success) {
-          throw new Error(sessionResult.error || 'Failed to establish a secure session.');
+          throw new Error(sessionResult.error || 'Failed to establish session.');
       }
 
-      toast({ title: 'Login Successful', description: 'Redirecting to dashboard...' });
+      toast({ title: 'Success', description: 'Redirecting to dashboard...' });
 
-      // 4. Force a hard refresh to the admin dashboard to ensure middleware catches the new cookie
+      // 4. Force hard refresh to ensures middleware recognizes the new cookie immediately
       window.location.href = '/admin';
       
     } catch (err: any) {
@@ -106,7 +106,7 @@ export default function AdminLoginPage() {
             <div className="space-y-2">
               <CardTitle className="text-3xl font-bold font-headline">Admin Access</CardTitle>
               <CardDescription className="text-base">
-                Enter your credentials to manage the FixAm platform.
+                Manage the FixAm platform.
               </CardDescription>
             </div>
           </CardHeader>
@@ -116,13 +116,13 @@ export default function AdminLoginPage() {
               {error && (
                 <Alert variant="destructive" className="rounded-xl">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
+                  <AlertTitle>Login Failed</AlertTitle>
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">Work Email</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -136,7 +136,6 @@ export default function AdminLoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <button type="button" className="text-xs text-primary hover:underline font-bold">Forgot?</button>
                 </div>
                 <Input
                   id="password"
@@ -152,14 +151,13 @@ export default function AdminLoginPage() {
                 disabled={loading}
                 className="w-full h-12 rounded-xl font-bold text-base shadow-lg shadow-primary/20"
               >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
-                Sign In to Panel
+                {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : 'Sign In'}
               </Button>
             </form>
           </CardContent>
           <CardFooter className="bg-muted/30 py-6 text-center justify-center rounded-b-3xl">
             <p className="text-xs text-muted-foreground font-medium">
-              Internal system access only. All activity is logged and monitored.
+              Internal system access only. Activity is monitored.
             </p>
           </CardFooter>
         </Card>
