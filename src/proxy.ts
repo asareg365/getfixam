@@ -5,7 +5,7 @@ import { verifyToken } from '@/lib/jwt';
 /**
  * Proxy handles route protection and session verification.
  * Strictly distinguishes between 'admin' and other portals using the 'portal' claim.
- * Renamed to proxy.ts per server environment requirements.
+ * This is the primary routing security layer for the application.
  */
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -56,12 +56,12 @@ export async function middleware(req: NextRequest) {
       return NextResponse.next();
     }
 
-    // Providers use the same __session cookie, but with different payload logic
+    // Providers use the same __session cookie
     if (!session) {
       return NextResponse.redirect(new URL('/provider/login', req.url));
     }
 
-    // We allow provider navigation if session exists (verification happens at the component level via ID tokens)
+    // We allow provider navigation if session exists
     return NextResponse.next();
   }
 
