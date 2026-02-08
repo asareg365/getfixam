@@ -5,12 +5,13 @@ import { signToken } from '@/lib/jwt';
 
 /**
  * Sets the admin session cookie after the client has verified the user's admin status.
- * This ensures the middleware remains secure while the Firestore checks happen on the client.
  */
 export async function setAdminSessionAction(uid: string, email: string, role: string) {
   const token = await signToken({ uid, email, role });
 
   const cookieStore = await cookies();
+  
+  // Set the cookie with a standard set of security flags
   cookieStore.set({
     name: 'admin_token',
     value: token,

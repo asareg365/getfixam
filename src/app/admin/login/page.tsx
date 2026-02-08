@@ -58,7 +58,7 @@ export default function AdminLoginPage() {
         }
       } else {
         const adminData = adminDoc.data();
-        if (!adminData.active) {
+        if (!adminData?.active) {
           throw new Error('Your administrator account has been deactivated.');
         }
         role = adminData.role;
@@ -67,9 +67,9 @@ export default function AdminLoginPage() {
       // 3. Establish secure session cookie via Server Action
       await setAdminSessionAction(user.uid, user.email!, role);
 
-      // 4. Immediate redirect to bypass perceived delay
-      // Using window.location.href for a hard redirect often feels faster than router.push
-      // during authentication transitions.
+      toast({ title: 'Login Successful', description: 'Redirecting to dashboard...' });
+
+      // 4. Force a hard refresh to the admin dashboard to ensure middleware catches the new cookie
       window.location.href = '/admin';
       
     } catch (err: any) {
@@ -132,7 +132,7 @@ export default function AdminLoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <Link href="#" className="text-xs text-primary hover:underline font-bold">Forgot?</Link>
+                  <button type="button" className="text-xs text-primary hover:underline font-bold">Forgot?</button>
                 </div>
                 <Input
                   id="password"

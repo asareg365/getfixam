@@ -2,7 +2,8 @@
 
 import { SignJWT, jwtVerify } from 'jose';
 
-const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'this-is-a-super-secret-key-that-should-be-in-an-env-file';
+// Use a consistent secret for both middleware and server actions
+const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'fixam-ghana-secure-fallback-secret-2024';
 const key = new TextEncoder().encode(SECRET_KEY);
 
 /**
@@ -26,6 +27,7 @@ export async function verifyToken(token: string) {
     });
     return payload;
   } catch (error) {
+    console.error('JWT Verification Error:', error);
     return null;
   }
 }
