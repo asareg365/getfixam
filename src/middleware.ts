@@ -5,9 +5,6 @@ import { verifyToken } from '@/lib/jwt';
 /**
  * Middleware handles route protection and session verification.
  * Firebase Hosting ONLY supports the '__session' cookie name.
- * 
- * We use the same cookie name for both Admins and Artisans but 
- * distinguish them by the content/verification of the token.
  */
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -22,16 +19,15 @@ export async function middleware(req: NextRequest) {
     // Admins use our custom jose-signed JWT. We try to verify it.
     const payload = await verifyToken(session);
     
-    // DEBUG: Confirm the payload matches the expected structure as requested
+    // DEBUG: Confirm the payload matches the expected structure
     console.log('Admin payload:', payload);
 
-    // If token is invalid OR not an admin token, redirect
+    // If token is invalid OR not an admin token, redirect and clear session
     if (
       !payload ||
       payload.portal !== 'admin' ||
       (payload.role !== 'admin' && payload.role !== 'super_admin')
     ) {
-      // If session is invalid or wrong portal, clear it and redirect
       const response = NextResponse.redirect(new URL('/admin/login', req.url));
       response.cookies.delete('__session');
       return response;
@@ -50,8 +46,8 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/provider/login', req.url));
     }
     
-    // Note: Artisan sessions are standard Firebase Session Cookies. 
-    // They won't have the 'portal: admin' field, ensuring they can't access admin routes.
+    // Artisan sessions are standard Firebase Session Cookies. 
+    // They won't have the 'portal: admin' field, which naturally keeps them out of admin routes.
     return NextResponse.next();
   }
 

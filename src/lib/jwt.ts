@@ -27,7 +27,7 @@ export async function verifyToken(token: string) {
     });
     return payload;
   } catch (error) {
-    console.error('JWT Verification Error:', error);
+    // Fail silently in logs to avoid clutter, middleware handles redirect
     return null;
   }
 }

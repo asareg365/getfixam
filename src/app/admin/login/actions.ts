@@ -9,7 +9,7 @@ import { signToken } from '@/lib/jwt';
  */
 export async function setAdminSessionAction(uid: string, email: string, role: string) {
   try {
-    // Add 'portal' field to payload to distinguish from other session types
+    // REQUIRED: Add 'portal: admin' to payload so middleware can distinguish sessions.
     const token = await signToken({ 
       uid, 
       email, 
@@ -38,6 +38,5 @@ export async function setAdminSessionAction(uid: string, email: string, role: st
  * but the app now prefers client-side auth + setAdminSessionAction.
  */
 export async function loginWithEmailAndPassword(email: string, password: string) {
-    // This is handled client-side now for better reliability in the studio environment.
     return { error: 'Please use the standard login form.' };
 }
