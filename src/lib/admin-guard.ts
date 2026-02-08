@@ -8,7 +8,7 @@ import { adminDb } from './firebase-admin';
 type AdminUser = {
   uid: string;
   email: string | undefined;
-  role: string;
+  role: 'admin' | 'super_admin';
 }
 
 /**
@@ -25,9 +25,8 @@ export async function requireAdmin(): Promise<AdminUser> {
 
   const decoded = await verifyToken(token);
   
-  // Basic token validation
+  // Basic token validation matching middleware logic
   if (!decoded || decoded.portal !== 'admin') {
-    // If the token is invalid, we clear it and redirect
     cookieStore.delete('__session');
     redirect('/admin/login');
   }
@@ -51,19 +50,17 @@ export async function requireAdmin(): Promise<AdminUser> {
       return {
           uid: decoded.uid,
           email: decoded.email,
-          role: adminData.role,
+          role: adminData.role as 'admin' | 'super_admin',
       };
     } catch (e) {
-      // In case of transient DB errors during prototyping, 
-      // we trust the verified JWT.
-      console.warn("Admin verification database check failed, falling back to JWT data.");
+      console.warn("Admin DB check failed, using JWT claims.");
     }
   }
 
   return {
     uid: decoded.uid,
     email: decoded.email,
-    role: decoded.role || 'admin',
+    role: decoded.role,
   };
 }
 

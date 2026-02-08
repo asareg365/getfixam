@@ -8,18 +8,13 @@ import { logAdminAction } from '@/lib/audit-log';
 
 /**
  * Establishes a secure admin session.
- * In a prototyping environment where adminDb might be null, we rely on the 
- * client-side verification and provisioning logic.
  */
 export async function setAdminSessionAction(uid: string, email: string | null, role: string) {
   if (!email) {
     return { success: false, error: 'Email is required for admin access.' };
   }
 
-  // In a production environment with adminDb, we would double-check the role here.
-  // For now, we trust the role passed from the client-side login logic which
-  // handles auto-provisioning of the first admin.
-
+  // Generate the token with the REQUIRED portal field
   const token = await signToken({ 
     uid, 
     email, 
@@ -52,6 +47,5 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
     }
   }
 
-  // Redirect to dashboard
-  redirect('/admin');
+  return { success: true };
 }

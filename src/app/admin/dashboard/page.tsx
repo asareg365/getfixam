@@ -21,33 +21,28 @@ export default function AdminDashboardPage() {
         const servicesRef = collection(db, 'services');
         const pendingQuery = query(providersRef, where('status', '==', 'pending'));
 
-        // We fetch these individually to avoid one failure blocking all stats
-        const results = await Promise.allSettled([
+        // Fetch counts from actual Firestore collections
+        const [providersSnap, pendingSnap, jobsSnap, servicesSnap] = await Promise.all([
           getCountFromServer(providersRef),
           getCountFromServer(pendingQuery),
           getCountFromServer(jobsRef),
           getCountFromServer(servicesRef)
         ]);
 
-        const getVal = (res: PromiseSettledResult<any>) => 
-          res.status === 'fulfilled' ? res.value.data().count : 0;
-
         setStats({
-          providers: getVal(results[0]),
-          pending: getVal(results[1]),
-          jobs: getVal(results[2]),
-          services: getVal(results[3])
+          providers: providersSnap.data().count,
+          pending: pendingSnap.data().count,
+          jobs: jobsSnap.data().count,
+          services: servicesSnap.data().count
         });
-
-        // Check if any critical fetch failed due to permissions
-        const permissionError = results.find(r => r.status === 'rejected' && r.reason?.code === 'permission-denied');
-        if (permissionError) {
-            setError("Some data could not be loaded due to permission restrictions. Ensure your admin account is properly initialized.");
-        }
 
       } catch (err: any) {
         console.error("Error fetching dashboard stats:", err);
-        setError(err.message || "Failed to load dashboard statistics.");
+        if (err.code === 'permission-denied') {
+            setError("You do not have permission to view system stats. Please ensure you are logged in as an admin.");
+        } else {
+            setError("Failed to sync system data. Check your database connection.");
+        }
       } finally {
         setLoading(false);
       }
@@ -57,10 +52,10 @@ export default function AdminDashboardPage() {
   }, []);
 
   const cards = [
-    { title: 'Total Providers', value: stats.providers, icon: Users, href: '/admin/providers', description: 'Manage all artisans nationwide', trend: '+12%' },
-    { title: 'Pending Review', value: stats.pending, icon: Clock, href: '/admin/providers?status=pending', description: 'Review new submissions', trend: 'New' },
-    { title: 'Total Requests', value: stats.jobs, icon: Workflow, href: '/admin/jobs', description: 'Monitor live service jobs', trend: '+5%' },
-    { title: 'Services', value: stats.services, icon: Settings, href: '/admin/services', description: 'Update categories and pricing', trend: 'Stable' },
+    { title: 'Total Providers', value: stats.providers, icon: Users, href: '/admin/providers', description: 'Manage all artisans nationwide' },
+    { title: 'Pending Review', value: stats.pending, icon: Clock, href: '/admin/providers?status=pending', description: 'Review new submissions' },
+    { title: 'Total Requests', value: stats.jobs, icon: Workflow, href: '/admin/jobs', description: 'Monitor live service jobs' },
+    { title: 'Services', value: stats.services, icon: Settings, href: '/admin/services', description: 'Update categories and pricing' },
   ];
 
   if (loading) {
@@ -86,7 +81,7 @@ export default function AdminDashboardPage() {
       {error && (
         <Alert variant="destructive" className="rounded-2xl border-2">
           <AlertCircle className="h-5 w-5" />
-          <AlertTitle>System Notice</AlertTitle>
+          <AlertTitle>Access Restriction</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -107,7 +102,7 @@ export default function AdminDashboardPage() {
                     <div className="bg-green-100 p-1 rounded-full mr-2">
                         <ArrowUpRight className="h-3 w-3" />
                     </div>
-                    {card.trend} <span className="ml-2 text-muted-foreground/60 font-medium">real-time</span>
+                    Real-time <span className="ml-2 text-muted-foreground/60 font-medium">data source</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-4 font-medium">{card.description}</p>
               </CardContent>
