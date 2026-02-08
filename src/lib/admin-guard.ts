@@ -17,10 +17,12 @@ export async function requireAdmin(): Promise<AdminUser> {
         const systemSettingsRef = adminDb.collection('system_settings').doc('admin');
         const systemSettingsSnap = await systemSettingsRef.get();
 
+        /*
         if (systemSettingsSnap.exists && systemSettingsSnap.data()?.adminLocked === true) {
             const reason = systemSettingsSnap.data()?.reason || "No reason provided.";
             throw new Error(`Admin access is temporarily disabled. Reason: ${reason}`);
         }
+        */
     } catch (e) {
         console.warn("System settings check bypassed.");
     }

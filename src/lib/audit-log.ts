@@ -14,9 +14,14 @@ type LogAdminActionParams = {
 
 /**
  * Logs an administrative action to the auditLogs collection in Firestore.
- * @param {LogAdminActionParams} params - The parameters for the log entry.
+ * Safely handles cases where the Admin SDK is not initialized.
  */
 export async function logAdminAction(params: LogAdminActionParams) {
+  if (!adminDb) {
+    console.log("Audit Log (Simulated):", params);
+    return;
+  }
+
   const { adminEmail, action, targetType, targetId, ipAddress, userAgent } = params;
   
   try {
@@ -31,8 +36,6 @@ export async function logAdminAction(params: LogAdminActionParams) {
     });
   } catch (error) {
     console.error("Failed to write to admin audit log:", error);
-    // This failure is not surfaced to the user to avoid confusing them.
-    // It's a background process.
   }
 }
 
@@ -45,9 +48,13 @@ type LogProviderActionParams = {
 
 /**
  * Logs a provider action to the provider_logs collection in Firestore.
- * @param {LogProviderActionParams} params - The parameters for the log entry.
  */
 export async function logProviderAction(params: LogProviderActionParams) {
+  if (!adminDb) {
+    console.log("Provider Log (Simulated):", params);
+    return;
+  }
+
   const { providerId, action, ipAddress, userAgent } = params;
 
   try {

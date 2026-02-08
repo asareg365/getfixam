@@ -35,6 +35,7 @@ export async function verifyToken(token: string): Promise<AdminJWTPayload | null
       algorithms: ['HS256'],
     });
 
+    console.log('JWT payload:', payload);
     return payload as unknown as AdminJWTPayload;
   } catch (error) {
     console.error('JWT Verification Error:', error);
