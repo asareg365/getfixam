@@ -6,7 +6,8 @@ import { collection, query, orderBy, getDocs, limit } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, ShieldCheck, Search, Filter } from 'lucide-react';
-import { format } from 'date-fns';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -15,8 +16,26 @@ export default function AuditLogsPage() {
   useEffect(() => {
     async function fetchLogs() {
       try {
-        const q = query(collection(db, 'auditLogs'), orderBy('createdAt', 'desc'), limit(100));
-        const snap = await getDocs(q);
+        const auditLogsRef = collection(db, 'auditLogs');
+        const q = query(auditLogsRef, orderBy('createdAt', 'desc'), limit(100));
+        
+        const snap = await getDocs(q).catch(async (err) => {
+            if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
+                const permissionError = new FirestorePermissionError({
+                    path: auditLogsRef.path,
+                    operation: 'list',
+                } satisfies SecurityRuleContext);
+                errorEmitter.emit('permission-error', permissionError);
+                return null;
+            }
+            throw err;
+        });
+
+        if (!snap) {
+            setLoading(false);
+            return;
+        }
+
         const logsData = snap.docs.map(doc => {
           const data = doc.data();
           return {
@@ -27,7 +46,7 @@ export default function AuditLogsPage() {
         });
         setLogs(logsData);
       } catch (err) {
-        console.error("Error fetching audit logs:", err);
+        // Non-permission errors are handled silently or via standard error UI
       } finally {
         setLoading(false);
       }

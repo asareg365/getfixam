@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Loader2, Workflow, Clock, MapPin, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Job } from '@/lib/types';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export default function JobsPage() {
     const [jobs, setJobs] = useState<Job[]>([]);
@@ -15,8 +17,26 @@ export default function JobsPage() {
     useEffect(() => {
         async function fetchJobs() {
             try {
-                const q = query(collection(db, 'jobs'), orderBy('createdAt', 'desc'));
-                const snap = await getDocs(q);
+                const jobsRef = collection(db, 'jobs');
+                const q = query(jobsRef, orderBy('createdAt', 'desc'));
+                
+                const snap = await getDocs(q).catch(async (err) => {
+                    if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
+                        const permissionError = new FirestorePermissionError({
+                            path: jobsRef.path,
+                            operation: 'list',
+                        } satisfies SecurityRuleContext);
+                        errorEmitter.emit('permission-error', permissionError);
+                        return null;
+                    }
+                    throw err;
+                });
+
+                if (!snap) {
+                    setLoading(false);
+                    return;
+                }
+
                 const jobsData = snap.docs.map(doc => {
                     const data = doc.data();
                     return {
@@ -27,7 +47,7 @@ export default function JobsPage() {
                 });
                 setJobs(jobsData);
             } catch (err) {
-                console.error("Error fetching jobs:", err);
+                // Non-permission errors handled silently
             } finally {
                 setLoading(false);
             }

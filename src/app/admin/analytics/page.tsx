@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, limit, query, orderBy } from 'firebase/firestore';
 import { Search, Filter, Download, Loader2, Inbox } from 'lucide-react';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export default function AdminAnalyticsPage() {
   const [artisans, setArtisans] = useState<any[]>([]);
@@ -12,16 +14,33 @@ export default function AdminAnalyticsPage() {
   useEffect(() => {
     async function fetchArtisans() {
       try {
-        // Fetch top 10 artisans for performance monitoring
-        const q = query(collection(db, 'providers'), orderBy('rating', 'desc'), limit(10));
-        const snap = await getDocs(q);
+        const providersRef = collection(db, 'providers');
+        const q = query(providersRef, orderBy('rating', 'desc'), limit(10));
+        
+        const snap = await getDocs(q).catch(async (err) => {
+            if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
+                const permissionError = new FirestorePermissionError({
+                    path: providersRef.path,
+                    operation: 'list',
+                } satisfies SecurityRuleContext);
+                errorEmitter.emit('permission-error', permissionError);
+                return null;
+            }
+            throw err;
+        });
+
+        if (!snap) {
+            setLoading(false);
+            return;
+        }
+
         const data = snap.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
         setArtisans(data);
       } catch (err) {
-        console.error("Error fetching analytics data:", err);
+        // Non-permission errors handled silently
       } finally {
         setLoading(false);
       }
