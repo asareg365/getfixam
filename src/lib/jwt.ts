@@ -4,8 +4,7 @@ import { SignJWT, jwtVerify } from 'jose';
 
 /**
  * HARDENED SECRET KEY
- * In a production environment, this MUST be set in environment variables.
- * We use a unique, stable string for consistent session verification across tabs.
+ * Standardized secret for consistent session verification.
  */
 const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'fixam-ghana-v1-hardened-stable-secret-key-2024-unified';
 const key = new TextEncoder().encode(SECRET_KEY);
@@ -43,14 +42,13 @@ export async function verifyToken(token: string): Promise<AdminJWTPayload | null
 
     const adminPayload = payload as unknown as AdminJWTPayload;
     
-    // Strictly verify that the token belongs to the admin portal
+    // Strictly verify the portal claim
     if (adminPayload.portal !== 'admin') {
         return null;
     }
 
     return adminPayload;
   } catch (error) {
-    // If verification fails, it could be an expired token or a non-admin token
     return null;
   }
 }

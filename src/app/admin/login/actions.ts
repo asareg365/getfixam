@@ -7,7 +7,6 @@ import { logAdminAction } from '@/lib/audit-log';
 
 /**
  * Establishes a secure admin session.
- * Handled gracefully if Admin SDK is not fully initialized.
  */
 export async function setAdminSessionAction(uid: string, email: string | null, role: string) {
   if (!email) {
@@ -15,7 +14,7 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
   }
 
   try {
-    // 1. Generate the token with the REQUIRED portal: 'admin' field
+    // 1. Generate the token with the portal: 'admin' field
     const token = await signToken({ 
       uid, 
       email, 
@@ -23,19 +22,18 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
       portal: 'admin' 
     });
     
-    // 2. Set the secure __session cookie
-    // Firebase Hosting requires '__session' for server-side cookie access.
-    // path: '/' and secure: true are essential for cloud environments.
+    // 2. Set the session cookie
+    // IMPORTANT: 'secure' is false in development to allow localhost HTTP testing.
     const cookieStore = await cookies();
     cookieStore.set('__session', token, {
       httpOnly: true,
-      secure: true, 
+      secure: process.env.NODE_ENV === 'production', 
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 2, // 2 hours
     });
 
-    // 3. Log the login event (safe if adminDb is null)
+    // 3. Log the login event
     if (adminDb && typeof adminDb.collection === 'function') {
       logAdminAction({
           adminEmail: email,

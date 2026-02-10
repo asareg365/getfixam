@@ -1,5 +1,3 @@
-/**
- * This file is deprecated in favor of src/proxy.ts to resolve server startup conflicts.
- * Next.js environment requirements mandate using only one routing file.
- */
-export {};
+// This file is intentionally left inert to resolve the Next.js "Both middleware and proxy detected" conflict.
+// All routing and security logic has been moved to src/proxy.ts per the environment's requirements.
+export const config = { matcher: [] };

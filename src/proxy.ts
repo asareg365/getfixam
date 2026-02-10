@@ -4,8 +4,7 @@ import { verifyToken } from '@/lib/jwt';
 
 /**
  * Proxy handles route protection and session verification.
- * Strictly distinguishes between 'admin' and other portals using the 'portal' claim.
- * This is the primary routing security layer for the application.
+ * Standardized to 'src/proxy.ts' per Next.js environment convention.
  */
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -15,7 +14,6 @@ export async function middleware(req: NextRequest) {
   if (pathname.startsWith('/admin')) {
     // Public admin routes
     if (pathname === '/admin/login') {
-      // If user is already logged in as admin, send them to dashboard
       if (session) {
         try {
           const payload = await verifyToken(session);
@@ -23,7 +21,7 @@ export async function middleware(req: NextRequest) {
             return NextResponse.redirect(new URL('/admin', req.url));
           }
         } catch (e) {
-          // Token invalid, stay on login page
+          // Invalid token, allow access to login page
         }
       }
       return NextResponse.next();
@@ -31,6 +29,7 @@ export async function middleware(req: NextRequest) {
 
     // Authentication check for protected admin routes
     if (!session) {
+      console.log(`[Proxy] No session found for ${pathname}, redirecting to login.`);
       return NextResponse.redirect(new URL('/admin/login', req.url));
     }
 
@@ -38,11 +37,9 @@ export async function middleware(req: NextRequest) {
     try {
       const payload = await verifyToken(session);
       
-      // Strict check for portal: 'admin'
-      // This prevents regular users or artisans from accessing the admin panel.
       if (!payload || payload.portal !== 'admin') {
+        console.log(`[Proxy] Invalid or non-admin portal token for ${pathname}.`);
         const response = NextResponse.redirect(new URL('/admin/login', req.url));
-        // Only clear if it's explicitly not an admin token
         response.cookies.delete('__session');
         return response;
       }
@@ -50,6 +47,7 @@ export async function middleware(req: NextRequest) {
       // Valid admin session
       return NextResponse.next();
     } catch (err) {
+      console.error(`[Proxy] JWT verification error for ${pathname}:`, err);
       const response = NextResponse.redirect(new URL('/admin/login', req.url));
       response.cookies.delete('__session');
       return response;
@@ -68,13 +66,10 @@ export async function middleware(req: NextRequest) {
       return NextResponse.next();
     }
 
-    // Providers use the same __session cookie name (Firebase requirement)
     if (!session) {
       return NextResponse.redirect(new URL('/provider/login', req.url));
     }
 
-    // We allow provider navigation if session exists
-    // (Note: Artisans use Firebase Auth tokens which are handled differently)
     return NextResponse.next();
   }
 
