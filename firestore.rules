@@ -14,7 +14,8 @@ service cloud.firestore {
     match /admins/{adminId} {
       allow get: if isSignedIn() && request.auth.uid == adminId;
       allow list: if isSignedIn();
-      allow create: if isSignedIn();
+      allow create: if isSignedIn(); // Permits system initialization by the first user
+      allow update: if isAdmin();
     }
 
     match /providers/{providerId} {
@@ -25,7 +26,7 @@ service cloud.firestore {
 
     match /whatsapp_events/{eventId} {
       allow list, get: if isAdmin();
-      allow create: if true; // In prototype, simulation creates these
+      allow create: if true; // Simulation creates these logs
     }
 
     match /services/{serviceId} {
@@ -41,7 +42,23 @@ service cloud.firestore {
 
     match /auditLogs/{logId} {
       allow list, get: if isAdmin();
-      allow create: if isAdmin();
+      allow create: if isAdmin() || isSignedIn(); // Allow logging during login/actions
+    }
+
+    match /jobs/{jobId} {
+      allow list, get: if isAdmin();
+      allow create: if true; // Allow customers to submit requests
+      allow update: if isAdmin();
+    }
+
+    match /system_settings/{settingId} {
+      allow get: if true; // App needs to check if logins are disabled
+      allow write: if isAdmin();
+    }
+
+    match /provider_logs/{logId} {
+      allow list, get: if isAdmin();
+      allow create: if true;
     }
   }
 }
