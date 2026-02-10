@@ -15,6 +15,11 @@ import type { Review } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import StarRating from '@/components/StarRating';
+import { db } from '@/lib/firebase';
+import { doc, updateDoc, serverTimestamp, runTransaction } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { Loader2 } from 'lucide-react';
 
 interface ReviewsTableProps {
   reviews: (Review & { providerName?: string })[];
@@ -27,29 +32,63 @@ export function ReviewsTable({ reviews }: ReviewsTableProps) {
 
     const handleAction = async (reviewId: string, action: 'approve' | 'reject') => {
         setLoadingIds(prev => [...prev, reviewId]);
+        
         try {
-            const res = await fetch(`/admin/reviews/${action}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reviewId }),
-            });
+            const reviewRef = doc(db, 'reviews', reviewId);
+            
+            if (action === 'approve') {
+                // Approval requires a transaction to update the provider's rating
+                await runTransaction(db, async (transaction) => {
+                    const reviewSnap = await transaction.get(reviewRef);
+                    if (!reviewSnap.exists()) throw new Error('Review not found.');
+                    
+                    const reviewData = reviewSnap.data();
+                    if (reviewData.status === 'approved') return;
 
-            let result;
-            try {
-                result = await res.json();
-            } catch (e) {
-                throw new Error(`The server sent an invalid response (Status: ${res.status})`);
-            }
+                    const providerRef = doc(db, 'providers', reviewData.providerId);
+                    const providerSnap = await transaction.get(providerRef);
+                    if (!providerSnap.exists()) throw new Error('Associated provider not found.');
 
-            if (!res.ok) {
-                const errorMsg = result.error || 'An unknown error occurred.';
-                throw new Error(errorMsg);
+                    const providerData = providerSnap.data();
+                    const currentRating = providerData.rating || 0;
+                    const currentReviewCount = providerData.reviewCount || 0;
+                    const newReviewCount = currentReviewCount + 1;
+                    const newRating = ((currentRating * currentReviewCount) + reviewData.rating) / newReviewCount;
+
+                    transaction.update(providerRef, {
+                        rating: newRating,
+                        reviewCount: newReviewCount,
+                        updatedAt: serverTimestamp(),
+                    });
+
+                    transaction.update(reviewRef, {
+                        status: 'approved',
+                        approvedAt: serverTimestamp(),
+                    });
+                });
+            } else {
+                // Simple update for rejection
+                const updateData = {
+                    status: 'rejected',
+                    rejectedAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                };
+                await updateDoc(reviewRef, updateData);
             }
 
             toast({ title: `Review ${action}d successfully!`, variant: 'default' });
             router.refresh();
         } catch (error: any) {
-            toast({ title: `Failed to ${action} review`, description: error.message, variant: 'destructive' });
+            // Handle permission errors using the central architecture
+            if (error.code === 'permission-denied' || error.message?.includes('permissions')) {
+                const permissionError = new FirestorePermissionError({
+                    path: `reviews/${reviewId}`,
+                    operation: 'update',
+                } satisfies SecurityRuleContext);
+                errorEmitter.emit('permission-error', permissionError);
+            } else {
+                toast({ title: `Failed to ${action} review`, description: error.message, variant: 'destructive' });
+            }
         } finally {
             setLoadingIds(prev => prev.filter(id => id !== reviewId));
         }
@@ -65,7 +104,7 @@ export function ReviewsTable({ reviews }: ReviewsTableProps) {
   }
 
   return (
-    <div className="border rounded-lg">
+    <div className="border rounded-lg bg-white overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>
@@ -103,7 +142,7 @@ export function ReviewsTable({ reviews }: ReviewsTableProps) {
                             onClick={() => handleAction(r.id, 'approve')}
                             disabled={loadingIds.includes(r.id)}
                         >
-                            Approve
+                            {loadingIds.includes(r.id) ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Approve'}
                         </Button>
                         <Button
                             size="sm"

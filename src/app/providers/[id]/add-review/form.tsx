@@ -1,12 +1,13 @@
 'use client';
 
-import { useFormStatus } from 'react-dom';
-import { useActionState, useEffect, useRef, useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
-import { addReviewAction } from '@/app/providers/actions';
 import type { Provider } from '@/lib/types';
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,15 +16,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Star, Loader2, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Submit Review'}
-    </Button>
-  );
-}
 
 function StarRatingInput({ value, onChange }: { value: number; onChange: (value: number) => void }) {
   const [hoverValue, setHoverValue] = useState(0);
@@ -53,32 +45,66 @@ function StarRatingInput({ value, onChange }: { value: number; onChange: (value:
 
 export default function AddReviewForm({ provider }: { provider: Provider }) {
   const [rating, setRating] = useState(0);
-
-  const [state, formAction] = useActionState(addReviewAction, {
-    errors: {},
-    success: false,
-    message: '',
-  });
+  const [isPending, setIsPending] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
 
-  useEffect(() => {
-    if (state.success) {
-      toast({
-        title: 'Success!',
-        description: state.message,
-      });
-      formRef.current?.reset();
-      setRating(0);
-    } else if (state.message) {
-      toast({
-        title: 'Error',
-        description: state.message,
-        variant: 'destructive',
-      });
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setIsPending(true);
+    setErrors({});
+
+    const formData = new FormData(e.currentTarget);
+    const userName = formData.get('userName') as string;
+    const comment = formData.get('comment') as string;
+
+    const newErrors: Record<string, string> = {};
+    if (!rating) newErrors.rating = 'Please select a rating.';
+    if (!userName || userName.length < 2) newErrors.userName = 'Name must be at least 2 characters.';
+    if (!comment || comment.length < 10) newErrors.comment = 'Comment must be at least 10 characters.';
+
+    if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        setIsPending(false);
+        return;
     }
-  }, [state, toast]);
+
+    const randomUserImageId = `user${Math.floor(Math.random() * 6) + 1}`;
+    const reviewsRef = collection(db, 'reviews');
+    const newReviewData = {
+        providerId: provider.id,
+        userName,
+        rating,
+        comment,
+        userImageId: randomUserImageId,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+    };
+
+    // CRITICAL: Non-blocking mutation with contextual error emission
+    addDoc(reviewsRef, newReviewData)
+        .then(() => {
+            setIsSuccess(true);
+            toast({
+                title: 'Success!',
+                description: 'Thank you! Your review has been submitted for moderation.',
+            });
+        })
+        .catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+                path: reviewsRef.path,
+                operation: 'create',
+                requestResourceData: newReviewData,
+            } satisfies SecurityRuleContext);
+            errorEmitter.emit('permission-error', permissionError);
+        })
+        .finally(() => {
+            setIsPending(false);
+        });
+  }
 
   return (
     <div className="container mx-auto px-4 md:px-6 py-12 md:py-20">
@@ -98,10 +124,10 @@ export default function AddReviewForm({ provider }: { provider: Provider }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {state.success ? (
+          {isSuccess ? (
              <div className="text-center p-8 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                 <h3 className="text-xl font-bold text-green-800 dark:text-green-300">Review Submitted!</h3>
-                <p className="mt-2 text-green-700 dark:text-green-400">{state.message}</p>
+                <p className="mt-2 text-green-700 dark:text-green-400">Thank you! Your review has been submitted for moderation.</p>
                 <div className="mt-6 flex justify-center gap-4">
                     <Button asChild>
                         <Link href={`/providers/${provider.id}`}>View Reviews</Link>
@@ -112,29 +138,28 @@ export default function AddReviewForm({ provider }: { provider: Provider }) {
                 </div>
              </div>
           ) : (
-          <form ref={formRef} action={formAction} className="space-y-6">
-            <input type="hidden" name="providerId" value={provider.id} />
-            
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label>Your Rating</Label>
               <StarRatingInput value={rating} onChange={setRating} />
-              <input type="hidden" name="rating" value={rating} />
-              {state.errors?.rating && <p className="text-sm text-destructive">{state.errors.rating}</p>}
+              {errors.rating && <p className="text-sm text-destructive">{errors.rating}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="userName">Your Name</Label>
-              <Input id="userName" name="userName" placeholder="e.g., Ama K." />
-              {state.errors?.userName && <p className="text-sm text-destructive">{state.errors.userName}</p>}
+              <Input id="userName" name="userName" placeholder="e.g., Ama K." required />
+              {errors.userName && <p className="text-sm text-destructive">{errors.userName}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="comment">Your Review</Label>
-              <Textarea id="comment" name="comment" placeholder="Tell us about your experience..." rows={4} />
-              {state.errors?.comment && <p className="text-sm text-destructive">{state.errors.comment}</p>}
+              <Textarea id="comment" name="comment" placeholder="Tell us about your experience..." rows={4} required />
+              {errors.comment && <p className="text-sm text-destructive">{errors.comment}</p>}
             </div>
             
-            <SubmitButton />
+            <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Submit Review'}
+            </Button>
           </form>
           )}
         </CardContent>
