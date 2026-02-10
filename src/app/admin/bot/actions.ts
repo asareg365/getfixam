@@ -1,22 +1,20 @@
 'use server';
 
-import { db } from '@/lib/firebase';
 import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { matchArtisan } from '@/ai/flows/match-artisan-flow';
 import { logAdminAction } from '@/lib/audit-log';
 import { requireAdmin } from '@/lib/admin-guard';
 import { headers } from 'next/headers';
-import { isRedirectError } from 'next/dist/client/components/redirect';
 
 /**
  * Simulates an incoming WhatsApp message and processes it via AI.
  */
 export async function simulateIncomingMessage(phone: string, message: string) {
+  // 1. Security Check - Move outside try/catch to allow Next.js redirects to work correctly
+  const adminUser = await requireAdmin();
+
   try {
-    // 1. Security Check
-    const adminUser = await requireAdmin();
-    
     if (!adminDb) {
         throw new Error('Database service is not initialized.');
     }
@@ -61,11 +59,6 @@ export async function simulateIncomingMessage(phone: string, message: string) {
 
     return { success: true, aiResult };
   } catch (error: any) {
-    // CRITICAL: Re-throw redirect errors so Next.js can handle the navigation
-    if (isRedirectError(error)) {
-        throw error;
-    }
-    
     console.error('Bot Simulation Error:', error);
     return { success: false, error: error.message || 'An unexpected error occurred during simulation.' };
   }

@@ -29,6 +29,9 @@ const serviceSchema = z.object({
 });
 
 export async function addServiceAction(prevState: any, formData: FormData) {
+    // Ensure user is admin before processing anything
+    const adminContext = await requireAdmin();
+
     const validatedFields = serviceSchema.safeParse(Object.fromEntries(formData.entries()));
 
     if (!validatedFields.success) {
@@ -36,7 +39,6 @@ export async function addServiceAction(prevState: any, formData: FormData) {
     }
   
     try {
-        const adminContext = await requireAdmin();
         if (!adminDb || typeof adminDb.collection !== 'function') {
             throw new Error('Database connection not available.');
         }
@@ -57,14 +59,14 @@ export async function addServiceAction(prevState: any, formData: FormData) {
         const newServiceRef = await adminDb.collection('services').add(serviceData);
         
         // Log the admin action
-        const headersList = headers();
+        const headersList = await headers();
         await logAdminAction({
             adminEmail: adminContext.email!,
             action: 'SERVICE_CREATED',
             targetType: 'service',
             targetId: newServiceRef.id,
-            ipAddress: (await headersList).get('x-forwarded-for')?.split(',')[0] || 'unknown',
-            userAgent: (await headersList).get('user-agent') || 'unknown',
+            ipAddress: headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown',
+            userAgent: headersList.get('user-agent') || 'unknown',
         });
         
         revalidatePath('/admin/services');
@@ -79,8 +81,9 @@ export async function addServiceAction(prevState: any, formData: FormData) {
 /** ----- STANDBY ACTIONS ----- */
 
 export async function getSwappableArtisans(serviceType: string, excludedArtisanIds: string[]): Promise<{ success: boolean; artisans?: Provider[]; message?: string; }> {
+    await requireAdmin();
+    
     try {
-        await requireAdmin();
         if (!adminDb || typeof adminDb.collection !== 'function') {
             throw new Error('Database connection not available.');
         }
@@ -114,8 +117,9 @@ export async function getSwappableArtisans(serviceType: string, excludedArtisanI
 
 
 export async function swapStandbyArtisan(artisanToRemoveId: string, artisanToAddId: string): Promise<{ success: boolean; message?: string; }> {
+     await requireAdmin();
+
      try {
-        await requireAdmin();
         if (!adminDb || typeof adminDb.runTransaction !== 'function') {
             throw new Error('Database connection not available.');
         }
@@ -150,8 +154,9 @@ export async function swapStandbyArtisan(artisanToRemoveId: string, artisanToAdd
 }
 
 export async function overrideStandbyPool(): Promise<{ success: boolean; message?: string; }> {
+    await requireAdmin();
+
     try {
-        await requireAdmin();
         if (!adminDb || typeof adminDb.collection !== 'function') {
             throw new Error('Database connection not available.');
         }
