@@ -25,10 +25,11 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
     
     // 2. Set the secure __session cookie
     // Firebase Hosting requires '__session' for server-side cookie access.
+    // path: '/' and secure: true are essential for cloud environments.
     const cookieStore = await cookies();
     cookieStore.set('__session', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', 
+      secure: true, 
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 2, // 2 hours

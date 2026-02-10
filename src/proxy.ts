@@ -15,10 +15,21 @@ export async function middleware(req: NextRequest) {
   if (pathname.startsWith('/admin')) {
     // Public admin routes
     if (pathname === '/admin/login') {
+      // If user is already logged in as admin, send them to dashboard
+      if (session) {
+        try {
+          const payload = await verifyToken(session);
+          if (payload && payload.portal === 'admin') {
+            return NextResponse.redirect(new URL('/admin', req.url));
+          }
+        } catch (e) {
+          // Token invalid, stay on login page
+        }
+      }
       return NextResponse.next();
     }
 
-    // Authentication check
+    // Authentication check for protected admin routes
     if (!session) {
       return NextResponse.redirect(new URL('/admin/login', req.url));
     }
@@ -31,6 +42,7 @@ export async function middleware(req: NextRequest) {
       // This prevents regular users or artisans from accessing the admin panel.
       if (!payload || payload.portal !== 'admin') {
         const response = NextResponse.redirect(new URL('/admin/login', req.url));
+        // Only clear if it's explicitly not an admin token
         response.cookies.delete('__session');
         return response;
       }
@@ -56,12 +68,13 @@ export async function middleware(req: NextRequest) {
       return NextResponse.next();
     }
 
-    // Providers use the same __session cookie
+    // Providers use the same __session cookie name (Firebase requirement)
     if (!session) {
       return NextResponse.redirect(new URL('/provider/login', req.url));
     }
 
     // We allow provider navigation if session exists
+    // (Note: Artisans use Firebase Auth tokens which are handled differently)
     return NextResponse.next();
   }
 

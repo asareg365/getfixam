@@ -2,8 +2,12 @@
 
 import { SignJWT, jwtVerify } from 'jose';
 
-// Use a stable, hardened secret for the JWT handshake. 
-const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'fixam-ghana-v1-hardened-stable-secret-key-2024';
+/**
+ * HARDENED SECRET KEY
+ * In a production environment, this MUST be set in environment variables.
+ * We use a unique, stable string for consistent session verification across tabs.
+ */
+const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'fixam-ghana-v1-hardened-stable-secret-key-2024-unified';
 const key = new TextEncoder().encode(SECRET_KEY);
 
 export type AdminJWTPayload = {
@@ -46,6 +50,7 @@ export async function verifyToken(token: string): Promise<AdminJWTPayload | null
 
     return adminPayload;
   } catch (error) {
+    // If verification fails, it could be an expired token or a non-admin token
     return null;
   }
 }
