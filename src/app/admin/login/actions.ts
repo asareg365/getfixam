@@ -23,7 +23,6 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
     });
     
     // 2. Set the session cookie
-    // IMPORTANT: 'secure' must be false in development (localhost) to allow browser to send the cookie back.
     const cookieStore = await cookies();
     cookieStore.set('__session', token, {
       httpOnly: true,
@@ -33,7 +32,7 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
       maxAge: 60 * 60 * 2, // 2 hours
     });
 
-    // 3. Log the login event (Defensive Check for Admin SDK)
+    // 3. Log the login event defensively
     if (adminDb && typeof adminDb.collection === 'function') {
       logAdminAction({
           adminEmail: email,

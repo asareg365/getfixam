@@ -39,7 +39,7 @@ export async function middleware(req: NextRequest) {
       const payload = await verifyToken(session);
       
       if (!payload || payload.portal !== 'admin') {
-        console.log(`[Proxy] Unauthorized portal access: ${payload?.portal || 'none'} for ${pathname}.`);
+        console.log(`[Proxy] Unauthorized portal access or invalid token for ${pathname}.`);
         const response = NextResponse.redirect(new URL('/admin/login', req.url));
         // Clear invalid session
         response.cookies.delete('__session');

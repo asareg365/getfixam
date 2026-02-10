@@ -1,3 +1,6 @@
-// This file is deactivated to resolve the "Both middleware and proxy detected" conflict.
-// All logic has been moved to src/proxy.ts as required by the environment.
+// This file is neutralized to satisfy the server's "proxy only" requirement.
+// All routing logic has been consolidated into src/proxy.ts.
+export default function middleware() {
+  return;
+}
 export const config = { matcher: [] };

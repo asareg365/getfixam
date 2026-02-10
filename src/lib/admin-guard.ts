@@ -22,7 +22,6 @@ export async function requireAdmin(): Promise<AdminUser> {
     redirect('/admin/login');
   }
 
-  // Use the same verification logic as the proxy
   const decoded = await verifyToken(token);
   
   if (!decoded || decoded.portal !== 'admin') {
