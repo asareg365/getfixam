@@ -6,6 +6,8 @@ import { collection, query, where, getCountFromServer } from 'firebase/firestore
 import { Users, UserCheck, TrendingUp, ArrowUpRight, Clock, ShieldCheck, Zap, Activity, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -23,20 +25,49 @@ export default function AdminDashboard() {
         const jobsRef = collection(db, 'jobs');
         const verifiedQuery = query(providersRef, where('verified', '==', true));
 
-        const [totalSnap, verifiedSnap, jobsSnap] = await Promise.all([
-          getCountFromServer(providersRef),
-          getCountFromServer(verifiedQuery),
-          getCountFromServer(jobsRef),
+        const fetchResults = await Promise.all([
+          getCountFromServer(providersRef).catch(err => {
+            if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
+              errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: providersRef.path,
+                operation: 'list',
+              } satisfies SecurityRuleContext));
+              return null;
+            }
+            throw err;
+          }),
+          getCountFromServer(verifiedQuery).catch(err => {
+            if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
+              // Context already emitted by parent collection check usually, 
+              // but we handle specifically if needed
+              return null;
+            }
+            throw err;
+          }),
+          getCountFromServer(jobsRef).catch(err => {
+            if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
+              errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: jobsRef.path,
+                operation: 'list',
+              } satisfies SecurityRuleContext));
+              return null;
+            }
+            throw err;
+          }),
         ]);
 
-        setStats({
-          totalArtisans: totalSnap.data().count,
-          verifiedPros: verifiedSnap.data().count,
-          customerRequests: jobsSnap.data().count,
-          systemHealth: 'Optimal',
-        });
+        const [totalSnap, verifiedSnap, jobsSnap] = fetchResults;
+
+        if (totalSnap && verifiedSnap && jobsSnap) {
+          setStats({
+            totalArtisans: totalSnap.data().count,
+            verifiedPros: verifiedSnap.data().count,
+            customerRequests: jobsSnap.data().count,
+            systemHealth: 'Optimal',
+          });
+        }
       } catch (err) {
-        console.error("Error fetching admin stats:", err);
+        // Non-permission errors handled silently or via standard UI
       } finally {
         setLoading(false);
       }

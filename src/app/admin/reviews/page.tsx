@@ -8,6 +8,8 @@ import type { Review } from '@/lib/types';
 import { ReviewsTable } from './_components/reviews-table';
 import { ReviewTabs } from './_components/review-tabs';
 import { Loader2 } from 'lucide-react';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export default function ReviewsPage() {
   const searchParams = useSearchParams();
@@ -21,7 +23,24 @@ export default function ReviewsPage() {
     async function fetchData() {
       setLoading(true);
       try {
-        const providersSnap = await getDocs(collection(db, 'providers'));
+        const providersRef = collection(db, 'providers');
+        const providersSnap = await getDocs(providersRef).catch(async (err) => {
+            if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
+                const permissionError = new FirestorePermissionError({
+                    path: providersRef.path,
+                    operation: 'list',
+                } satisfies SecurityRuleContext);
+                errorEmitter.emit('permission-error', permissionError);
+                return null;
+            }
+            throw err;
+        });
+
+        if (!providersSnap) {
+            setLoading(false);
+            return;
+        }
+
         const providersMap = new Map();
         providersSnap.forEach(doc => providersMap.set(doc.id, doc.data().name));
 
@@ -32,7 +51,23 @@ export default function ReviewsPage() {
           q = query(reviewsRef, where('status', '==', currentStatus), orderBy('createdAt', 'desc'));
         }
 
-        const snap = await getDocs(q);
+        const snap = await getDocs(q).catch(async (err) => {
+            if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
+                const permissionError = new FirestorePermissionError({
+                    path: reviewsRef.path,
+                    operation: 'list',
+                } satisfies SecurityRuleContext);
+                errorEmitter.emit('permission-error', permissionError);
+                return null;
+            }
+            throw err;
+        });
+
+        if (!snap) {
+            setLoading(false);
+            return;
+        }
+
         const reviewsData = snap.docs.map(doc => {
           const data = doc.data();
           return {
@@ -50,16 +85,24 @@ export default function ReviewsPage() {
         const newCounts: Record<string, number> = {};
         
         await Promise.all(statuses.map(async (s) => {
-          const countSnap = await getCountFromServer(query(reviewsRef, where('status', '==', s)));
-          newCounts[s] = countSnap.data().count;
+          try {
+            const countSnap = await getCountFromServer(query(reviewsRef, where('status', '==', s)));
+            newCounts[s] = countSnap.data().count;
+          } catch (e) {
+            newCounts[s] = 0;
+          }
         }));
         
-        const allCountSnap = await getCountFromServer(reviewsRef);
-        newCounts['all'] = allCountSnap.data().count;
+        try {
+            const allCountSnap = await getCountFromServer(reviewsRef);
+            newCounts['all'] = allCountSnap.data().count;
+        } catch (e) {
+            newCounts['all'] = reviewsData.length;
+        }
         
         setCounts(newCounts);
       } catch (err) {
-        console.error("Error fetching reviews:", err);
+        // Non-permission errors handled silently
       } finally {
         setLoading(false);
       }

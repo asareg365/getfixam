@@ -9,6 +9,8 @@ import { ProvidersTable } from './_components/providers-table';
 import { ProviderTabs } from './_components/provider-tabs';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export default function ProvidersPage() {
   const searchParams = useSearchParams();
@@ -25,7 +27,21 @@ export default function ProvidersPage() {
       setError(null);
       try {
         // Fetch services first to map category names
-        const servicesSnap = await getDocs(collection(db, 'services'));
+        const servicesRef = collection(db, 'services');
+        const servicesSnap = await getDocs(servicesRef).catch(async (err) => {
+            if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
+                const permissionError = new FirestorePermissionError({
+                    path: servicesRef.path,
+                    operation: 'list',
+                } satisfies SecurityRuleContext);
+                errorEmitter.emit('permission-error', permissionError);
+                return null;
+            }
+            throw err;
+        });
+
+        if (!servicesSnap) return;
+
         const servicesMap = new Map();
         servicesSnap.forEach(doc => servicesMap.set(doc.id, doc.data().name));
 
@@ -39,7 +55,20 @@ export default function ProvidersPage() {
           q = query(providersRef, orderBy('createdAt', 'desc'));
         }
 
-        const snap = await getDocs(q);
+        const snap = await getDocs(q).catch(async (err) => {
+            if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
+                const permissionError = new FirestorePermissionError({
+                    path: providersRef.path,
+                    operation: 'list',
+                } satisfies SecurityRuleContext);
+                errorEmitter.emit('permission-error', permissionError);
+                return null;
+            }
+            throw err;
+        });
+
+        if (!snap) return;
+
         const providersData = snap.docs.map(doc => {
           const data = doc.data();
           return {
@@ -75,12 +104,8 @@ export default function ProvidersPage() {
         
         setCounts(newCounts);
       } catch (err: any) {
-        console.error("Error fetching providers:", err);
-        if (err.code === 'permission-denied') {
-            setError("You do not have permission to view this directory. Please log in as an administrator.");
-        } else {
-            setError(err.message || "Failed to load providers.");
-        }
+        if (err instanceof FirestorePermissionError) return;
+        setError(err.message || "Failed to load providers.");
       } finally {
         setLoading(false);
       }
