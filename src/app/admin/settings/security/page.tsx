@@ -1,65 +1,81 @@
-import { adminDb } from '@/lib/firebase-admin';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import SecurityForm from './form';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, Loader2 } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+export default function SecuritySettingsPage() {
+  const [settings, setSettings] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-async function getSecuritySettings() {
-  // NOTE: We don't use requireAdmin() here because this page MUST be accessible
-  // even when the system is locked, otherwise you can't unlock it.
-  // Middleware will still protect this page from unauthenticated users.
-  
-  if (!adminDb) {
-    throw new Error("Database not initialized. Check Firebase Admin setup.");
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const docRef = doc(db, 'system_settings', 'admin');
+        const snap = await getDoc(docRef);
+        
+        if (snap.exists()) {
+          const data = snap.data();
+          setSettings({
+            isLocked: data.adminLocked === true,
+            providerLoginsDisabled: data.providerLoginsDisabled === true,
+            reason: data.reason || '',
+            updatedBy: data.updatedBy || '',
+            updatedAt: data.updatedAt ? data.updatedAt.toDate().toLocaleString() : '',
+          });
+        } else {
+          setSettings({
+            isLocked: false,
+            providerLoginsDisabled: false,
+            reason: 'Not configured.',
+            updatedBy: 'system',
+            updatedAt: 'initial setup',
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching security settings:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchSettings();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
   }
-
-  const settingsRef = adminDb.collection('system_settings').doc('admin');
-  const snap = await settingsRef.get();
-
-  if (!snap.exists) {
-    return {
-      isLocked: false,
-      providerLoginsDisabled: false,
-      reason: 'Not configured.',
-      updatedBy: '',
-      updatedAt: '',
-    };
-  }
-
-  const data = snap.data()!;
-  return {
-    isLocked: data.adminLocked === true,
-    providerLoginsDisabled: data.providerLoginsDisabled === true,
-    reason: data.reason || '',
-    updatedBy: data.updatedBy || '',
-    updatedAt: data.updatedAt ? data.updatedAt.toDate().toLocaleString() : '',
-  };
-}
-
-export default async function SecuritySettingsPage() {
-  const { isLocked, providerLoginsDisabled, reason, updatedBy, updatedAt } = await getSecuritySettings();
 
   return (
-    <Card className="max-w-2xl mx-auto">
-      <CardHeader>
-        <div className="flex items-center gap-3">
-            <ShieldAlert className="h-8 w-8 text-destructive" />
+    <Card className="max-w-2xl mx-auto border-none shadow-2xl rounded-[40px] overflow-hidden">
+      <div className="h-2 bg-destructive w-full" />
+      <CardHeader className="p-10">
+        <div className="flex items-center gap-4">
+            <div className="bg-destructive/10 p-3 rounded-2xl">
+                <ShieldAlert className="h-8 w-8 text-destructive" />
+            </div>
             <div>
-                <CardTitle className="text-2xl font-headline">Security Settings</CardTitle>
-                <CardDescription>
-                Emergency Admin Lockout & Provider Login Control. Use with caution.
+                <CardTitle className="text-3xl font-black font-headline tracking-tight">Security Center</CardTitle>
+                <CardDescription className="text-lg">
+                Emergency Admin Lockout & Provider Login Control.
                 </CardDescription>
             </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-10 pt-0">
         <SecurityForm 
-          isLocked={isLocked} 
-          providerLoginsDisabled={providerLoginsDisabled} 
-          reason={reason} 
-          updatedBy={updatedBy} 
-          updatedAt={updatedAt} 
+          isLocked={settings.isLocked} 
+          providerLoginsDisabled={settings.providerLoginsDisabled} 
+          reason={settings.reason} 
+          updatedBy={settings.updatedBy} 
+          updatedAt={settings.updatedAt} 
         />
       </CardContent>
     </Card>
