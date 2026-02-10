@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { MessageSquare, Zap, Clock, ShieldCheck, Send, Loader2, Bot, User, History } from 'lucide-react';
+import { MessageSquare, Zap, Clock, ShieldCheck, Send, Loader2, Bot, User, History, Smartphone, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,12 +14,14 @@ import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function WhatsAppBotPage() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [testMessage, setMessage] = useState('');
   const [testPhone, setPhone] = useState('0241234567');
+  const [lastResult, setLastResult] = useState<{ reply: string; category: string; area: string } | null>(null);
 
   // Real-time logs
   const eventsQuery = useMemoFirebase(() => {
@@ -36,6 +38,11 @@ export default function WhatsAppBotPage() {
       
       if (res.success && res.aiResult) {
         const aiResult = res.aiResult;
+        setLastResult({
+            reply: aiResult.reply,
+            category: aiResult.category,
+            area: aiResult.area
+        });
         
         // 2. Log events to Firestore using Client SDK for session reliability
         const eventsRef = collection(db, 'whatsapp_events');
@@ -77,11 +84,10 @@ export default function WhatsAppBotPage() {
               errorEmitter.emit('permission-error', permissionError);
             });
 
-          toast({ title: 'Simulation Successful', description: 'Bot processed the message and replied.' });
+          toast({ title: 'Simulation Successful', description: 'AI processed the request. See preview below.' });
           setMessage('');
         } catch (e) {
-          // Fallback for general errors
-          toast({ title: 'Simulation logged to console', description: 'Permission denied for persistent logging.' });
+          toast({ title: 'Error', description: 'Failed to log simulation data.', variant: 'destructive' });
         }
       } else {
         toast({ title: 'Simulation Failed', description: res.error, variant: 'destructive' });
@@ -94,12 +100,12 @@ export default function WhatsAppBotPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-4xl font-black text-primary font-headline tracking-tight">WhatsApp Command Center</h1>
-          <p className="text-muted-foreground text-lg mt-1">AI-powered service matching and automated artisan interaction.</p>
+          <p className="text-muted-foreground text-lg mt-1 font-medium">AI-powered service matching and automated artisan interaction.</p>
         </div>
         <div className="flex gap-3">
           <div className="bg-green-50 text-green-700 border border-green-200 rounded-2xl px-4 py-2 flex items-center gap-2 shadow-sm">
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-sm font-bold">System Online</span>
+            <span className="text-sm font-bold">Simulator Online</span>
           </div>
         </div>
       </div>
@@ -113,7 +119,7 @@ export default function WhatsAppBotPage() {
             <div>
               <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/70">Engine</h3>
               <p className="text-2xl font-black">Gemini 2.5</p>
-              <p className="text-xs text-muted-foreground mt-1">Smart Matching Active</p>
+              <p className="text-xs text-muted-foreground mt-1 font-medium">Smart Matching Active</p>
             </div>
           </CardContent>
         </Card>
@@ -123,9 +129,9 @@ export default function WhatsAppBotPage() {
               <History className="h-6 w-6 text-secondary" />
             </div>
             <div>
-              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/70">Daily Events</h3>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/70">Simulations</h3>
               <p className="text-2xl font-black">{events?.length || 0}</p>
-              <p className="text-xs text-muted-foreground mt-1">Requests processed today</p>
+              <p className="text-xs text-muted-foreground mt-1 font-medium">Internal test logs</p>
             </div>
           </CardContent>
         </Card>
@@ -135,13 +141,21 @@ export default function WhatsAppBotPage() {
               <ShieldCheck className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/70">Security</h3>
-              <p className="text-2xl font-black">Verified Only</p>
-              <p className="text-xs text-muted-foreground mt-1">Strict matching mode</p>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/70">Mode</h3>
+              <p className="text-2xl font-black">Sandboxed</p>
+              <p className="text-xs text-muted-foreground mt-1 font-medium">Internal testing only</p>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      <Alert className="rounded-[24px] border-primary/20 bg-primary/5">
+        <AlertCircle className="h-5 w-5 text-primary" />
+        <AlertTitle className="font-bold">WhatsApp API Configuration Required</AlertTitle>
+        <AlertDescription className="font-medium">
+          Messages sent via this dashboard are currently <b>simulations</b>. To send messages to real phone numbers, you must configure the Meta Business API in the "Configuration" tab.
+        </AlertDescription>
+      </Alert>
 
       <Tabs defaultValue="simulator" className="space-y-8">
         <TabsList className="bg-muted/50 p-1 rounded-2xl border h-14">
@@ -155,18 +169,18 @@ export default function WhatsAppBotPage() {
             <div className="h-2 bg-primary w-full" />
             <CardHeader className="p-10 pb-4">
               <CardTitle className="text-3xl font-black font-headline">Bot Simulator</CardTitle>
-              <CardDescription className="text-lg">Test the AI matching logic by simulating a customer message.</CardDescription>
+              <CardDescription className="text-lg font-medium">Test how the AI categorizes customer messages and identifies neighborhoods.</CardDescription>
             </CardHeader>
             <CardContent className="p-10 pt-0 space-y-8">
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-12">
+                <div className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Customer Phone</label>
                     <Input 
                       value={testPhone} 
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="0241234567" 
-                      className="h-14 rounded-2xl border-muted-foreground/20 text-lg"
+                      className="h-14 rounded-2xl border-muted-foreground/20 text-lg font-medium"
                     />
                   </div>
                   <div className="space-y-2">
@@ -175,7 +189,7 @@ export default function WhatsAppBotPage() {
                       value={testMessage}
                       onChange={(e) => setMessage(e.target.value)}
                       placeholder="e.g. I need a plumber in Biadan right now" 
-                      className="w-full min-h-[150px] p-4 rounded-3xl border border-muted-foreground/20 focus:outline-none focus:ring-2 focus:ring-primary/50 text-lg resize-none"
+                      className="w-full min-h-[150px] p-6 rounded-3xl border border-muted-foreground/20 focus:outline-none focus:ring-2 focus:ring-primary/50 text-lg font-medium resize-none"
                     />
                   </div>
                   <Button 
@@ -184,15 +198,44 @@ export default function WhatsAppBotPage() {
                     className="w-full h-16 rounded-2xl text-xl font-bold shadow-lg shadow-primary/20"
                   >
                     {isPending ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <Send className="mr-2 h-6 w-6" />}
-                    Test AI Logic
+                    Test AI Matching
                   </Button>
                 </div>
 
-                <div className="bg-muted/30 rounded-[32px] p-8 border border-dashed border-muted-foreground/30 flex flex-col items-center justify-center text-center">
-                  <div className="bg-white p-6 rounded-[24px] shadow-sm max-w-sm mb-6">
-                    <p className="italic text-muted-foreground">"When you run a test, the AI's structured response and the simulated WhatsApp reply will appear in the live logs."</p>
-                  </div>
-                  <p className="text-sm font-medium text-muted-foreground/60">SIMULATOR PREVIEW MODE</p>
+                <div className="space-y-6">
+                    <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Visual Preview (What Customer Sees)</label>
+                    {lastResult ? (
+                        <div className="bg-primary/5 rounded-[32px] p-8 border border-primary/10 relative overflow-hidden group">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="bg-primary p-2 rounded-xl">
+                                    <Bot className="h-5 w-5 text-white" />
+                                </div>
+                                <span className="font-bold text-primary">FixAm Smart Bot</span>
+                            </div>
+                            
+                            <div className="bg-white p-6 rounded-[24px] shadow-sm relative z-10">
+                                <p className="text-lg font-medium text-foreground leading-relaxed">{lastResult.reply}</p>
+                            </div>
+
+                            <div className="mt-6 flex gap-2">
+                                <span className="bg-primary/10 text-primary text-[10px] font-black px-3 py-1 rounded-full uppercase">
+                                    Parsed Category: {lastResult.category}
+                                </span>
+                                <span className="bg-secondary/10 text-secondary text-[10px] font-black px-3 py-1 rounded-full uppercase">
+                                    Parsed Area: {lastResult.area}
+                                </span>
+                            </div>
+                            
+                            <div className="absolute -bottom-10 -right-10 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                                <Smartphone className="h-40 w-40" />
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-muted/30 rounded-[32px] p-12 border border-dashed border-muted-foreground/30 flex flex-col items-center justify-center text-center">
+                            <Smartphone className="h-16 w-16 text-muted-foreground/20 mb-4" />
+                            <p className="text-muted-foreground font-medium italic">Run a test to see the AI response preview here.</p>
+                        </div>
+                    )}
                 </div>
               </div>
             </CardContent>
@@ -202,8 +245,8 @@ export default function WhatsAppBotPage() {
         <TabsContent value="logs">
           <Card className="border-none shadow-sm rounded-[32px] overflow-hidden">
             <CardHeader className="p-8 border-b">
-              <CardTitle className="font-headline">Recent Bot Activity</CardTitle>
-              <CardDescription>Real-time stream of incoming messages and automated replies.</CardDescription>
+              <CardTitle className="font-headline">Recent Simulation Logs</CardTitle>
+              <CardDescription className="font-medium">Real-time stream of internal test activity.</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               {logsLoading ? (
@@ -219,12 +262,12 @@ export default function WhatsAppBotPage() {
                       </div>
                       <div className="flex-1 space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm font-bold">{event.role === 'bot' ? 'FixAm Bot' : event.phone}</span>
+                          <span className="text-sm font-bold">{event.role === 'bot' ? 'FixAm Bot (Simulated)' : event.phone}</span>
                           <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
                             {event.createdAt ? formatDistanceToNow(new Date(event.createdAt.toDate()), { addSuffix: true }) : 'just now'}
                           </span>
                         </div>
-                        <p className="text-foreground leading-relaxed">{event.message}</p>
+                        <p className="text-foreground leading-relaxed font-medium">{event.message}</p>
                         {event.aiParsed && (
                           <div className="flex gap-2 pt-2">
                             <span className="bg-primary/5 text-primary text-[10px] font-black px-2 py-1 rounded-full border border-primary/10 uppercase">
@@ -242,8 +285,8 @@ export default function WhatsAppBotPage() {
               ) : (
                 <div className="p-20 text-center text-muted-foreground">
                   <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                  <p className="font-bold text-lg">No activity yet</p>
-                  <p>Run a simulation to see the bot in action.</p>
+                  <p className="font-bold text-lg">No internal logs yet</p>
+                  <p>Run a simulation to see the bot logic in action.</p>
                 </div>
               )}
             </CardContent>
@@ -255,17 +298,20 @@ export default function WhatsAppBotPage() {
             <div className="bg-muted/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
               <ShieldCheck className="h-10 w-10 text-muted-foreground" />
             </div>
-            <h2 className="text-2xl font-black font-headline mb-4">API Configuration Required</h2>
-            <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-              To connect to a live WhatsApp number, you must configure your Meta Business API keys in the system settings.
+            <h2 className="text-2xl font-black font-headline mb-4 text-primary">Live Connection Required</h2>
+            <p className="text-muted-foreground text-lg leading-relaxed mb-8 font-medium">
+              To connect to a physical WhatsApp number, you must set up a Meta Business account and provide your API keys below.
             </p>
-            <div className="bg-muted/30 p-6 rounded-3xl text-left font-mono text-xs overflow-x-auto">
+            <div className="bg-muted/30 p-8 rounded-3xl text-left font-mono text-xs overflow-x-auto border-2 border-dashed">
               <code className="text-primary/80">
                 WHATSAPP_PHONE_ID=pending_configuration<br/>
                 WHATSAPP_ACCESS_TOKEN=••••••••••••••••••••<br/>
                 WHATSAPP_WEBHOOK_SECRET=••••••••••••••••••••
               </code>
             </div>
+            <p className="mt-8 text-sm text-muted-foreground font-bold">
+                Status: Simulator Mode (Internal Only)
+            </p>
           </div>
         </TabsContent>
       </Tabs>
