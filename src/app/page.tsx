@@ -35,7 +35,7 @@ export default function LandingPage() {
               <span className="flex h-2 w-2 rounded-full bg-primary mr-2 animate-pulse" />
               Trusted Artisans in Berekum & Beyond
             </div>
-            <h1 className="text-4xl md:text-6xl font-black tracking-tight text-primary font-headline max-w-4xl mx-auto leading-[1.1] mb-8">
+            <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-primary font-headline max-w-5xl mx-auto leading-[1.1] mb-8">
              Adwumayɛfoɔ a wotumi de wo ho to wɔn so.
             </h1>
             <p className="mx-auto max-w-[700px] text-muted-foreground text-lg md:text-2xl font-medium leading-relaxed mb-12">

@@ -23,7 +23,7 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
     
     const cookieStore = await cookies();
     
-    // IMPORTANT: secure: false is required for standard http://localhost:9002 access.
+    // IMPORTANT: secure: false is required for standard http access in the workstation environment.
     // If set to true on non-HTTPS, the browser will reject the cookie, causing a redirect loop.
     cookieStore.set('__session', token, {
       httpOnly: true,

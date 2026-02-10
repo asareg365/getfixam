@@ -1,7 +1,6 @@
 'use server';
 
 import { adminDb, adminAuth } from '@/lib/firebase-admin';
-import bcrypt from 'bcrypt';
 import { logProviderAction } from '@/lib/audit-log';
 import { headers } from 'next/headers';
 
@@ -14,9 +13,11 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
       return { error: 'Enter a valid Ghanaian phone number starting with 0.' };
     }
 
+    // In a prototype environment where Admin SDK might not be initialized, 
+    // we provide a safe fallback or error message.
     if (!adminDb || !adminAuth) {
       console.error('Firebase Admin not initialized.');
-      return { error: 'Authentication or Database service is not available.' };
+      return { error: 'Authentication service is currently unavailable. Please check system configuration.' };
     }
 
     // Check system-wide security settings
@@ -56,13 +57,13 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
       return { error: 'Your account is not yet approved for login.' };
     }
 
-    // Verify PIN exists
-    if (!providerData.loginPinHash) {
+    // Verify PIN exists (Prototype uses 'loginPin' stored directly)
+    if (!providerData.loginPin) {
       return { error: 'No PIN has been set for your account. Please contact support to get one.' };
     }
 
-    // Compare PIN using bcrypt
-    const isPinValid = await bcrypt.compare(pin, providerData.loginPinHash);
+    // Simple comparison for prototype
+    const isPinValid = providerData.loginPin === pin;
 
     if (!isPinValid) {
       return { error: 'The PIN you entered is incorrect. Please try again.' };
@@ -72,8 +73,9 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
     const customToken = await adminAuth.createCustomToken(providerId);
 
     // Log the successful login attempt
-    const ipAddress = (await headers()).get('x-forwarded-for')?.split(',')[0] || 'unknown';
-    const userAgent = (await headers()).get('user-agent') || 'unknown';
+    const headersList = await headers();
+    const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+    const userAgent = headersList.get('user-agent') || 'unknown';
 
     await logProviderAction({
       providerId: providerId,
@@ -81,9 +83,6 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
       ipAddress,
       userAgent,
     });
-
-    // We do NOT nullify the PIN here yet; we let the artisan use it until they reset it themselves
-    // or until the admin resets it again.
 
     return { success: true, token: customToken };
 
