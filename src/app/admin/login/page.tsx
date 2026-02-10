@@ -36,12 +36,47 @@ export default function AdminLoginPage() {
       const user = userCredential.user;
 
       const adminDocRef = doc(db, 'admins', user.uid);
-      const adminDoc = await getDoc(adminDocRef);
+      
+      // Perform read with contextual error handling
+      const adminDoc = await getDoc(adminDocRef).catch(async (err) => {
+        if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
+          const permissionError = new FirestorePermissionError({
+            path: adminDocRef.path,
+            operation: 'get',
+          } satisfies SecurityRuleContext);
+          errorEmitter.emit('permission-error', permissionError);
+          return null; // Stop chain
+        }
+        throw err;
+      });
+
+      if (!adminDoc) {
+          setLoading(false);
+          return;
+      }
 
       let role = 'admin';
 
       if (!adminDoc.exists()) {
-        const adminsSnap = await getDocs(query(collection(db, 'admins'), limit(1)));
+        const adminsCollectionRef = collection(db, 'admins');
+        const firstAdminQuery = query(adminsCollectionRef, limit(1));
+        
+        const adminsSnap = await getDocs(firstAdminQuery).catch(async (err) => {
+            if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
+                const permissionError = new FirestorePermissionError({
+                    path: adminsCollectionRef.path,
+                    operation: 'list',
+                } satisfies SecurityRuleContext);
+                errorEmitter.emit('permission-error', permissionError);
+                return null;
+            }
+            throw err;
+        });
+
+        if (!adminsSnap) {
+            setLoading(false);
+            return;
+        }
         
         if (adminsSnap.empty) {
           role = 'super_admin';
@@ -68,7 +103,7 @@ export default function AdminLoginPage() {
                 setLoading(false);
             });
           
-          return; // Stop here, finalized in the .then()
+          return; // Session finalized in .then()
         } else {
           throw new Error('Authenticated but not authorized as an administrator.');
         }
@@ -83,7 +118,10 @@ export default function AdminLoginPage() {
       await finalizeSession(user.uid, user.email!, role);
       
     } catch (err: any) {
-      setError(err.message || 'Invalid credentials or unauthorized access.');
+      // Avoid dual-reporting permission errors that are already handled by the emitter
+      if (!err.message?.includes('denied by Firestore Security Rules')) {
+        setError(err.message || 'Invalid credentials or unauthorized access.');
+      }
       setLoading(false);
     }
   }
