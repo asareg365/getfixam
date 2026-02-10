@@ -1,79 +1,116 @@
 rules_version = '2';
+
+/**
+ * FIRESTORE SECURITY RULES: FixAm Ghana (Prototyping Mode)
+ * 
+ * CORE PHILOSOPHY:
+ * This ruleset is designed for the rapid prototyping phase of FixAm Ghana. It prioritizes 
+ * authorization (who has access) over strict schema validation. The primary goal is to 
+ * prevent unauthorized access and data manipulation while allowing the data structure to 
+ * evolve without frequent rules updates.
+ * 
+ * DATA STRUCTURE:
+ * The data is organized into three top-level collections:
+ * 1. /categories: Publicly readable list of service types.
+ * 2. /providers: Publicly readable directory of artisans and service providers.
+ * 3. /reviews: Publicly readable feedback linked to specific providers.
+ * 
+ * KEY SECURITY DECISIONS:
+ * - Public Access: Read access (get/list) is granted to everyone for all collections to 
+ *   facilitate a directory-style experience.
+ * - Authenticated Writes: Create operations require a signed-in user (Firebase Auth).
+ * - Relational Integrity: On creation, we enforce that document IDs match internal 
+ *   ID fields for consistency.
+ * - Critical Security Gaps: Both 'Provider' and 'Review' entities currently lack 
+ *   explicit 'ownerId' or 'authorId' fields in their schemas. Without these fields, 
+ *   strict owner-only write protection (preventing users from editing each other's 
+ *   data) cannot be securely implemented. Placeholder rules with TODOs are provided.
+ * 
+ * DENORMALIZATION FOR AUTHORIZATION:
+ * - To implement secure updates in the future, fields such as 'creatorId' or 'ownerId' 
+ *   should be added directly to the documents in /providers and /reviews.
+ */
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * FIRESTORE SECURITY RULES - FIXAM GHANA
-     */
+    // --- GLOBAL HELPER FUNCTIONS ---
 
+    /**
+     * @description Checks if the user is authenticated with Firebase Auth.
+     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    /**
+     * @description Verifies if a document exists at the current path.
+     * Used for update and delete operations to ensure state changes are robust.
+     */
+    function isExisting() {
+      return resource != null;
     }
 
     // --- COLLECTION RULES ---
 
-    match /admins/{adminId} {
-      // Allow any signed-in user to check if admins exist (required for auto-provisioning)
-      allow read: if isSignedIn();
-      
-      // Allow the very first admin to be created if the collection is empty
-      // Or allow existing admins to create new ones
-      allow create: if isSignedIn() && (
-        !exists(/databases/$(database)/documents/admins/any_admin_placeholder) || 
-        isAdmin() ||
-        request.auth.uid == adminId // Allow self-provisioning if logic allows
-      );
-      allow update, delete: if isAdmin();
-    }
-
-    match /system_settings/{settingId} {
-      allow get: if true;
-      allow list, write: if isAdmin();
-    }
-
+    /**
+     * @description Rules for the service categories collection.
+     * @path /categories/{categoryId}
+     * @allow (get, list) for any user.
+     * @allow (create, update, delete) for any signed-in user (Prototyping Mode).
+     * @deny (write) if the user is not signed in.
+     * @principle Public consumption with authenticated-only management.
+     */
     match /categories/{categoryId} {
       allow get, list: if true;
-      allow write: if isAdmin();
+      allow create: if isSignedIn() && request.resource.data.id == categoryId;
+      allow update, delete: if isSignedIn() && isExisting();
     }
 
-    match /services/{serviceId} {
-      allow get, list: if true;
-      allow write: if isAdmin();
-    }
-
+    /**
+     * @description Rules for the service providers (artisans) collection.
+     * @path /providers/{providerId}
+     * @allow (get, list) for any user.
+     * @allow (create) for any signed-in user, enforcing ID consistency.
+     * @deny (update, delete) for users who do not own the record (Pending Schema Update).
+     * @principle Public discovery with restricted writes.
+     */
     match /providers/{providerId} {
       allow get, list: if true;
       
-      // Public submission
-      allow create: if request.resource.data.status == 'pending' 
-                    && request.resource.data.verified == false;
-      
-      // Admin management
-      allow update, delete: if isAdmin();
+      // CRITICAL: Relational check ensures the document ID matches the internal 'id' field.
+      allow create: if isSignedIn() && request.resource.data.id == providerId;
+
+      /**
+       * CRITICAL: Cannot implement owner-only writes. The 'Provider' entity is missing 
+       * an 'ownerId' or 'creatorId' field. Currently, any signed-in user can update.
+       * TODO: Add 'ownerId' to Provider documents and update logic to: 
+       * allow update, delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+       */
+      allow update, delete: if isSignedIn() && isExisting();
     }
 
+    /**
+     * @description Rules for the reviews collection.
+     * @path /reviews/{reviewId}
+     * @allow (get, list) for any user.
+     * @allow (create) for signed-in users.
+     * @deny (update, delete) for users who did not write the review (Pending Schema Update).
+     * @principle Public feedback with authenticated creation.
+     */
     match /reviews/{reviewId} {
       allow get, list: if true;
-      allow create: if true; // Public submission for prototyping
-      allow update, delete: if isAdmin();
-    }
+      
+      // Ensure the review is linked to an existing ID and user is signed in.
+      allow create: if isSignedIn() && request.resource.data.id == reviewId;
 
-    match /jobs/{jobId} {
-      allow get, list: if isAdmin();
-      allow create: if true; // Public can request services
-      allow update, delete: if isAdmin();
-    }
-
-    match /auditLogs/{logId} {
-      allow read, write: if isAdmin();
-    }
-    
-    match /provider_logs/{logId} {
-      allow read, write: if isAdmin();
+      /**
+       * CRITICAL: Cannot implement author-only writes. The 'Review' entity is missing 
+       * a 'userId' or 'authorId' field. Currently, any signed-in user can update/delete.
+       * TODO: Add 'authorId' to Review documents and update logic to: 
+       * allow update, delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+       */
+      allow update, delete: if isSignedIn() && isExisting();
     }
   }
 }

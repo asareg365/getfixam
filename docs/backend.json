@@ -8,44 +8,44 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the provider entity."
+          "description": "Unique identifier for the provider."
         },
         "name": {
           "type": "string",
-          "description": "The name of the service provider (e.g., Kwame Electric Works)."
+          "description": "Name of the service provider (e.g., Kwame Electric Works)."
         },
         "category": {
           "type": "string",
-          "description": "The category of service the provider offers (e.g., Electrician)."
+          "description": "Category of service provided (e.g., Electrician, Plumber).",
+          "format": "category"
         },
         "phone": {
           "type": "string",
-          "description": "The provider's phone number."
+          "description": "Phone number of the service provider."
         },
         "whatsapp": {
           "type": "string",
-          "description": "The provider's WhatsApp number."
+          "description": "WhatsApp number of the service provider."
         },
         "area": {
           "type": "string",
-          "description": "The area/neighborhood where the provider is located."
+          "description": "Area or neighborhood where the provider is located (e.g., Berekum Zongo)."
         },
         "verified": {
           "type": "boolean",
-          "description": "Indicates whether the provider has been verified by the platform."
+          "description": "Indicates if the provider has been verified by the platform."
         },
         "rating": {
           "type": "number",
-          "description": "The average rating of the provider (e.g., 4.5).",
-          "format": "float"
+          "description": "Average rating of the provider (e.g., 4.5)."
         },
         "reviewCount": {
           "type": "number",
-          "description": "The number of reviews the provider has received."
+          "description": "Number of reviews the provider has received."
         },
         "createdAt": {
           "type": "string",
-          "description": "Timestamp indicating when the provider was added to the platform.",
+          "description": "Timestamp of when the provider was added to the platform.",
           "format": "date-time"
         }
       },
@@ -54,6 +54,7 @@
         "name",
         "category",
         "phone",
+        "whatsapp",
         "area",
         "verified",
         "rating",
@@ -69,7 +70,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the review entity."
+          "description": "Unique identifier for the review."
         },
         "providerId": {
           "type": "string",
@@ -77,19 +78,19 @@
         },
         "userName": {
           "type": "string",
-          "description": "The name of the user who wrote the review."
+          "description": "Name of the user who wrote the review."
         },
         "rating": {
           "type": "number",
-          "description": "The star rating given by the user (e.g., 5)."
+          "description": "Rating given by the user (e.g., 5)."
         },
         "comment": {
           "type": "string",
-          "description": "The user's written review."
+          "description": "Text comment provided by the user."
         },
         "createdAt": {
           "type": "string",
-          "description": "Timestamp indicating when the review was submitted.",
+          "description": "Timestamp of when the review was created.",
           "format": "date-time"
         }
       },
@@ -106,19 +107,19 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Category",
       "type": "object",
-      "description": "Represents a category of service providers (e.g., Plumber, Electrician).",
+      "description": "Represents a category of service providers.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the category entity."
+          "description": "Unique identifier for the category."
         },
         "name": {
           "type": "string",
-          "description": "The name of the category (e.g., Plumber)."
+          "description": "Name of the category (e.g., Plumber, Electrician)."
         },
         "icon": {
           "type": "string",
-          "description": "An icon representing the category (e.g., 🚿)."
+          "description": "Icon representing the category (e.g., 🚿)."
         }
       },
       "required": [
@@ -143,31 +144,27 @@
           "schema": {
             "$ref": "#/backend/entities/Provider"
           },
-          "description": "Stores information about service providers (artisans).",
+          "description": "Stores information about local service providers (artisans).",
           "params": [
             {
               "name": "providerId",
-              "description": "The unique identifier of the provider."
+              "description": "Unique identifier for the provider."
             }
           ]
         }
       },
       {
-        "path": "/providers/{providerId}/reviews/{reviewId}",
+        "path": "/reviews/{reviewId}",
         "definition": {
           "entityName": "Review",
           "schema": {
             "$ref": "#/backend/entities/Review"
           },
-          "description": "Stores reviews for individual service providers. Includes denormalized `providerId` for relationship.",
+          "description": "Stores reviews for service providers.",
           "params": [
             {
-              "name": "providerId",
-              "description": "The unique identifier of the provider."
-            },
-            {
               "name": "reviewId",
-              "description": "The unique identifier of the review."
+              "description": "Unique identifier for the review."
             }
           ]
         }
@@ -179,16 +176,16 @@
           "schema": {
             "$ref": "#/backend/entities/Category"
           },
-          "description": "Stores categories for service providers.",
+          "description": "Stores categories of service providers.",
           "params": [
             {
               "name": "categoryId",
-              "description": "The unique identifier of the category."
+              "description": "Unique identifier for the category."
             }
           ]
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to support the FixAm Ghana application nationwide, focusing on listing local artisans, enabling contact, displaying location, and managing ratings and reviews. It prioritizes simplicity and scalability for a national MVP. Relationships between entities are maintained through providerId fields, providing a straightforward way to query related data."
+    "reasoning": "The Firestore structure is designed to support the FixAm Ghana application, focusing on listing local artisans, enabling contact, displaying location, and managing ratings and reviews. It prioritizes simplicity and ease of maintenance for the MVP.\n\n*   **Providers:** Stores the core information about each service provider (artisan). No specific authorization requirements beyond the general need to prevent malicious data manipulation, so access is managed at the rule level.\n*   **Reviews:** Stores reviews for each provider. Reviews are tied to a specific `providerId`. Like `providers`, authorization is managed at the rule level.\n*   **Categories:** Stores the list of service categories.\n\nThis structure facilitates Authorization Independence by avoiding complex hierarchical dependencies. Security rules can be written to validate data and control access based on user roles (if implemented later) or data properties without relying on `get()` calls to parent documents.\n\nThe segregation helps to keep access rules simple. The structure also supports QAPs, especially listing providers by category and area, without the need for filtering within the rules.\n"
   }
 }
