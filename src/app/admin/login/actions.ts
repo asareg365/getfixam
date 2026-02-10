@@ -23,12 +23,12 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
     });
     
     // 2. Set the session cookie
-    // IMPORTANT: 'secure: false' is used during prototyping because the preview 
-    // environment often runs on http://localhost. Otherwise, the browser rejects the cookie.
     const cookieStore = await cookies();
     cookieStore.set('__session', token, {
       httpOnly: true,
-      secure: false, // Set to false for local dev/preview environment compatibility
+      // For development in proxies/workstations, we set secure to false
+      // to ensure the browser accepts the cookie over non-HTTPS local links.
+      secure: false, 
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 2, // 2 hours

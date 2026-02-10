@@ -6,14 +6,14 @@ import { SignJWT, jwtVerify } from 'jose';
  * HARDENED SECRET KEY
  * Standardized secret for consistent session verification across server actions and proxy.
  */
-const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'fixam-ghana-v1-stable-security-key-2024-unified-portal';
+const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'fixam-ghana-v1-stable-security-key-2024-unified-portal-robust-v2';
 const key = new TextEncoder().encode(SECRET_KEY);
 
 export type AdminJWTPayload = {
   uid: string;
   email?: string;
   role: 'admin' | 'super_admin';
-  portal: 'admin'; 
+  portal: 'admin' | 'provider'; 
   exp: number;
   iat: number;
 };
@@ -40,14 +40,7 @@ export async function verifyToken(token: string): Promise<AdminJWTPayload | null
       algorithms: ['HS256'],
     });
 
-    const adminPayload = payload as unknown as AdminJWTPayload;
-    
-    // Strictly verify the portal claim to prevent artisan session hijacking
-    if (adminPayload.portal !== 'admin') {
-        return null;
-    }
-
-    return adminPayload;
+    return payload as unknown as AdminJWTPayload;
   } catch (error) {
     return null;
   }

@@ -12,7 +12,7 @@ export async function middleware(req: NextRequest) {
 
   // 1. Protect Admin Routes
   if (pathname.startsWith('/admin')) {
-    // Allow access to the login page itself
+    // Allow access to the login page
     if (pathname === '/admin/login') {
       if (session) {
         try {
@@ -30,7 +30,6 @@ export async function middleware(req: NextRequest) {
 
     // Authentication check for protected admin routes
     if (!session) {
-      console.log(`[Proxy] No session cookie found for ${pathname}. Redirecting to /admin/login.`);
       return NextResponse.redirect(new URL('/admin/login', req.url));
     }
 
@@ -39,7 +38,6 @@ export async function middleware(req: NextRequest) {
       const payload = await verifyToken(session);
       
       if (!payload || payload.portal !== 'admin') {
-        console.log(`[Proxy] Unauthorized portal access or invalid token for ${pathname}.`);
         const response = NextResponse.redirect(new URL('/admin/login', req.url));
         // Clear invalid session
         response.cookies.delete('__session');
@@ -49,7 +47,6 @@ export async function middleware(req: NextRequest) {
       // Valid admin session, proceed
       return NextResponse.next();
     } catch (err) {
-      console.error(`[Proxy] Session verification failed for ${pathname}:`, err);
       const response = NextResponse.redirect(new URL('/admin/login', req.url));
       response.cookies.delete('__session');
       return response;
