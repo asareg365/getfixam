@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Provider": {
@@ -7,147 +6,65 @@
       "type": "object",
       "description": "Represents a local service provider (artisan).",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the provider."
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "serviceId": { "type": "string" },
+        "phone": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "digitalAddress": { "type": "string" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "region": { "type": "string" },
+            "city": { "type": "string" },
+            "zone": { "type": "string" }
+          }
         },
-        "name": {
-          "type": "string",
-          "description": "Name of the service provider (e.g., Kwame Electric Works)."
-        },
-        "category": {
-          "type": "string",
-          "description": "Category of service provided (e.g., Electrician, Plumber).",
-          "format": "category"
-        },
-        "phone": {
-          "type": "string",
-          "description": "Phone number of the service provider."
-        },
-        "whatsapp": {
-          "type": "string",
-          "description": "WhatsApp number of the service provider."
-        },
-        "area": {
-          "type": "string",
-          "description": "Area or neighborhood where the provider is located (e.g., Berekum Zongo)."
-        },
-        "verified": {
-          "type": "boolean",
-          "description": "Indicates if the provider has been verified by the platform."
-        },
-        "rating": {
-          "type": "number",
-          "description": "Average rating of the provider (e.g., 4.5)."
-        },
-        "reviewCount": {
-          "type": "number",
-          "description": "Number of reviews the provider has received."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp of when the provider was added to the platform.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "category",
-        "phone",
-        "whatsapp",
-        "area",
-        "verified",
-        "rating",
-        "reviewCount",
-        "createdAt"
-      ]
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "suspended"] },
+        "verified": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "loginPin": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
     },
-    "Review": {
+    "WhatsAppEvent": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Review",
+      "title": "WhatsAppEvent",
       "type": "object",
-      "description": "Represents a review for a service provider.",
+      "description": "Logs of interactions via the WhatsApp bot.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the review."
+        "phone": { "type": "string" },
+        "message": { "type": "string" },
+        "role": { "type": "string", "enum": ["customer", "bot", "provider"] },
+        "event": { "type": "string" },
+        "aiParsed": {
+          "type": "object",
+          "properties": {
+            "category": { "type": "string" },
+            "area": { "type": "string" },
+            "confidence": { "type": "number" }
+          }
         },
-        "providerId": {
-          "type": "string",
-          "description": "Reference to Provider. (Relationship: Provider 1:N Review)"
-        },
-        "userName": {
-          "type": "string",
-          "description": "Name of the user who wrote the review."
-        },
-        "rating": {
-          "type": "number",
-          "description": "Rating given by the user (e.g., 5)."
-        },
-        "comment": {
-          "type": "string",
-          "description": "Text comment provided by the user."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp of when the review was created.",
-          "format": "date-time"
-        }
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "providerId",
-        "userName",
-        "rating",
-        "comment",
-        "createdAt"
-      ]
-    },
-    "Category": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Category",
-      "type": "object",
-      "description": "Represents a category of service providers.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the category."
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the category (e.g., Plumber, Electrician)."
-        },
-        "icon": {
-          "type": "string",
-          "description": "Icon representing the category (e.g., 🚿)."
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "icon"
-      ]
+      "required": ["phone", "message", "role", "createdAt"]
     },
     "Admin": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Admin",
       "type": "object",
-      "description": "Represents a system administrator.",
+      "description": "System administrator account.",
       "properties": {
         "email": { "type": "string" },
         "role": { "type": "string", "enum": ["admin", "super_admin"] },
-        "active": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["email", "role", "active"]
+        "active": { "type": "boolean" }
+      }
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password", "phone"]
   },
   "firestore": {
     "structure": [
@@ -155,60 +72,23 @@
         "path": "/providers/{providerId}",
         "definition": {
           "entityName": "Provider",
-          "schema": {
-            "$ref": "#/backend/entities/Provider"
-          },
-          "description": "Stores information about local service providers (artisans).",
-          "params": [
-            {
-              "name": "providerId",
-              "description": "Unique identifier for the provider."
-            }
-          ]
+          "description": "Service providers/artisans."
         }
       },
       {
-        "path": "/reviews/{reviewId}",
+        "path": "/whatsapp_events/{eventId}",
         "definition": {
-          "entityName": "Review",
-          "schema": {
-            "$ref": "#/backend/entities/Review"
-          },
-          "description": "Stores reviews for service providers.",
-          "params": [
-            {
-              "name": "reviewId",
-              "description": "Unique identifier for the review."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/categories/{categoryId}",
-        "definition": {
-          "entityName": "Category",
-          "schema": {
-            "$ref": "#/backend/entities/Category"
-          },
-          "description": "Stores categories of service providers.",
-          "params": [
-            {
-              "name": "categoryId",
-              "description": "Unique identifier for the category."
-            }
-          ]
+          "entityName": "WhatsAppEvent",
+          "description": "Logs of bot interactions."
         }
       },
       {
         "path": "/admins/{adminId}",
         "definition": {
           "entityName": "Admin",
-          "schema": { "$ref": "#/backend/entities/Admin" },
-          "description": "Stores platform administrators.",
-          "params": [{ "name": "adminId", "description": "Auth UID" }]
+          "description": "Platform administrators."
         }
       }
-    ],
-    "reasoning": "The Firestore structure supports FixAm Ghana's directory and administration. Expanded to include administrator management for the portal login flow."
+    ]
   }
 }
