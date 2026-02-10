@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Provider": {
@@ -51,6 +52,19 @@
       },
       "required": ["phone", "message", "role", "createdAt"]
     },
+    "BotConfiguration": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "BotConfiguration",
+      "type": "object",
+      "description": "API settings for the WhatsApp integration.",
+      "properties": {
+        "whatsappPhoneId": { "type": "string" },
+        "whatsappAccessToken": { "type": "string" },
+        "whatsappWebhookSecret": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string" }
+      }
+    },
     "Admin": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Admin",
@@ -80,6 +94,13 @@
         "definition": {
           "entityName": "WhatsAppEvent",
           "description": "Logs of bot interactions."
+        }
+      },
+      {
+        "path": "/system_settings/whatsapp",
+        "definition": {
+          "entityName": "BotConfiguration",
+          "description": "Meta API credentials for WhatsApp."
         }
       },
       {

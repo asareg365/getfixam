@@ -1,14 +1,16 @@
+
 'use client';
 
-import { useState, useTransition } from 'react';
-import { MessageSquare, Zap, Clock, ShieldCheck, Send, Loader2, Bot, User, History, Smartphone, AlertCircle } from 'lucide-react';
+import { useState, useTransition, useEffect } from 'react';
+import { MessageSquare, Zap, Clock, ShieldCheck, Send, Loader2, Bot, User, History, Smartphone, AlertCircle, Save, Key, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useCollection, useDoc, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy, limit, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
 import { simulateIncomingMessage } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -29,11 +31,29 @@ export default function WhatsAppBotPage() {
   }, []);
   const { data: events, isLoading: logsLoading } = useCollection(eventsQuery);
 
+  // Config management
+  const configRef = useMemoFirebase(() => doc(db, 'system_settings', 'whatsapp'), []);
+  const { data: configData, isLoading: configLoading } = useDoc(configRef);
+  const [configState, setConfigState] = useState({
+    whatsappPhoneId: '',
+    whatsappAccessToken: '',
+    whatsappWebhookSecret: '',
+  });
+
+  useEffect(() => {
+    if (configData) {
+      setConfigState({
+        whatsappPhoneId: configData.whatsappPhoneId || '',
+        whatsappAccessToken: configData.whatsappAccessToken || '',
+        whatsappWebhookSecret: configData.whatsappWebhookSecret || '',
+      });
+    }
+  }, [configData]);
+
   async function handleSimulate() {
     if (!testMessage) return;
     
     startTransition(async () => {
-      // 1. Get AI result from Server Action
       const res = await simulateIncomingMessage(testMessage);
       
       if (res.success && res.aiResult) {
@@ -44,9 +64,7 @@ export default function WhatsAppBotPage() {
             area: aiResult.area
         });
         
-        // 2. Log events to Firestore using Client SDK for session reliability
         const eventsRef = collection(db, 'whatsapp_events');
-        
         const customerEvent = {
           phone: testPhone,
           message: testMessage,
@@ -60,39 +78,60 @@ export default function WhatsAppBotPage() {
           createdAt: serverTimestamp(),
         };
 
-        try {
-          // CRITICAL: Non-blocking mutation with contextual error emission
-          addDoc(eventsRef, customerEvent)
-            .then((docRef) => {
-              // Log the bot's response
-              const botReply = {
-                phone: testPhone,
-                message: aiResult.reply,
-                role: 'bot',
-                event: 'REPLY',
-                parentId: docRef.id,
-                createdAt: serverTimestamp(),
-              };
-              addDoc(eventsRef, botReply);
-            })
-            .catch(async (err) => {
-              const permissionError = new FirestorePermissionError({
-                path: eventsRef.path,
-                operation: 'create',
-                requestResourceData: customerEvent,
-              } satisfies SecurityRuleContext);
-              errorEmitter.emit('permission-error', permissionError);
-            });
+        // CRITICAL: Non-blocking mutation with contextual error emission
+        addDoc(eventsRef, customerEvent)
+          .then((docRef) => {
+            const botReply = {
+              phone: testPhone,
+              message: aiResult.reply,
+              role: 'bot',
+              event: 'REPLY',
+              parentId: docRef.id,
+              createdAt: serverTimestamp(),
+            };
+            addDoc(eventsRef, botReply);
+          })
+          .catch(async (err) => {
+            const permissionError = new FirestorePermissionError({
+              path: eventsRef.path,
+              operation: 'create',
+              requestResourceData: customerEvent,
+            } satisfies SecurityRuleContext);
+            errorEmitter.emit('permission-error', permissionError);
+          });
 
-          toast({ title: 'Simulation Successful', description: 'AI processed the request. See preview below.' });
-          setMessage('');
-        } catch (e) {
-          toast({ title: 'Error', description: 'Failed to log simulation data.', variant: 'destructive' });
-        }
+        toast({ title: 'Simulation Successful', description: 'AI processed the request. See preview below.' });
+        setMessage('');
       } else {
         toast({ title: 'Simulation Failed', description: res.error, variant: 'destructive' });
       }
     });
+  }
+
+  async function handleSaveConfig(e: React.FormEvent) {
+    e.preventDefault();
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const updateData = {
+      ...configState,
+      updatedAt: serverTimestamp(),
+      updatedBy: user.email,
+    };
+
+    // CRITICAL: Non-blocking mutation with contextual error emission
+    setDoc(configRef, updateData, { merge: true })
+      .then(() => {
+        toast({ title: 'Configuration Saved', description: 'Meta API settings have been updated successfully.' });
+      })
+      .catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: configRef.path,
+          operation: 'update',
+          requestResourceData: updateData,
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
   }
 
   return (
@@ -151,9 +190,9 @@ export default function WhatsAppBotPage() {
 
       <Alert className="rounded-[24px] border-primary/20 bg-primary/5">
         <AlertCircle className="h-5 w-5 text-primary" />
-        <AlertTitle className="font-bold">WhatsApp API Configuration Required</AlertTitle>
+        <AlertTitle className="font-bold">WhatsApp API Status</AlertTitle>
         <AlertDescription className="font-medium">
-          Messages sent via this dashboard are currently <b>simulations</b>. To send messages to real phone numbers, you must configure the Meta Business API in the "Configuration" tab.
+          Messages sent via this dashboard are currently <b>simulations</b>. To connect real devices, provide your Meta Business credentials in the "Configuration" tab.
         </AlertDescription>
       </Alert>
 
@@ -175,7 +214,7 @@ export default function WhatsAppBotPage() {
               <div className="grid md:grid-cols-2 gap-12">
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Customer Phone</label>
+                    <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Customer Phone</Label>
                     <Input 
                       value={testPhone} 
                       onChange={(e) => setPhone(e.target.value)}
@@ -184,7 +223,7 @@ export default function WhatsAppBotPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Message Content</label>
+                    <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Message Content</Label>
                     <textarea 
                       value={testMessage}
                       onChange={(e) => setMessage(e.target.value)}
@@ -294,24 +333,89 @@ export default function WhatsAppBotPage() {
         </TabsContent>
 
         <TabsContent value="config">
-          <div className="bg-white p-12 rounded-[40px] border shadow-sm text-center max-w-2xl mx-auto">
-            <div className="bg-muted/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <ShieldCheck className="h-10 w-10 text-muted-foreground" />
+          <div className="max-w-3xl mx-auto space-y-8">
+            <Card className="border-none shadow-xl rounded-[40px] overflow-hidden">
+              <div className="h-2 bg-blue-500 w-full" />
+              <CardHeader className="p-10 pb-4">
+                <div className="flex items-center gap-4">
+                  <div className="bg-blue-100 p-3 rounded-2xl">
+                    <ShieldCheck className="h-8 w-8 text-blue-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-3xl font-black font-headline">Meta Business API</CardTitle>
+                    <CardDescription className="text-lg font-medium">Connect FixAm to a live WhatsApp Business number.</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-10 pt-0">
+                {configLoading ? (
+                  <div className="flex items-center justify-center py-20">
+                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <form onSubmit={handleSaveConfig} className="space-y-8">
+                    <div className="grid gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="phoneId" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80 flex items-center gap-2">
+                          <Phone className="h-4 w-4" /> Phone Number ID
+                        </Label>
+                        <Input 
+                          id="phoneId"
+                          value={configState.whatsappPhoneId}
+                          onChange={(e) => setConfigState(prev => ({ ...prev, whatsappPhoneId: e.target.value }))}
+                          placeholder="e.g. 106523456789012"
+                          className="h-14 rounded-2xl border-muted-foreground/20 text-lg font-medium"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="token" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80 flex items-center gap-2">
+                          <Key className="h-4 w-4" /> System User Access Token
+                        </Label>
+                        <Input 
+                          id="token"
+                          type="password"
+                          value={configState.whatsappAccessToken}
+                          onChange={(e) => setConfigState(prev => ({ ...prev, whatsappAccessToken: e.target.value }))}
+                          placeholder="EAAW..."
+                          className="h-14 rounded-2xl border-muted-foreground/20 text-lg font-medium"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="secret" className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80 flex items-center gap-2">
+                          <ShieldCheck className="h-4 w-4" /> Webhook Verification Secret
+                        </Label>
+                        <Input 
+                          id="secret"
+                          type="password"
+                          value={configState.whatsappWebhookSecret}
+                          onChange={(e) => setConfigState(prev => ({ ...prev, whatsappWebhookSecret: e.target.value }))}
+                          placeholder="MyCustomSecret123"
+                          className="h-14 rounded-2xl border-muted-foreground/20 text-lg font-medium"
+                        />
+                      </div>
+                    </div>
+
+                    <Button type="submit" className="w-full h-16 rounded-2xl text-xl font-bold shadow-lg shadow-blue-500/20 bg-blue-600 hover:bg-blue-700">
+                      <Save className="mr-2 h-6 w-6" />
+                      Save API Credentials
+                    </Button>
+                  </form>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="bg-muted/30 p-8 rounded-[32px] border border-dashed border-muted-foreground/30 text-center">
+              <p className="text-sm text-muted-foreground font-medium italic">
+                Status: {configState.whatsappAccessToken ? 'Configuration Loaded' : 'Waiting for API Setup'}
+              </p>
+              {configData?.updatedAt && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Last updated {formatDistanceToNow(new Date(configData.updatedAt.toDate()), { addSuffix: true })} by {configData.updatedBy}
+                </p>
+              )}
             </div>
-            <h2 className="text-2xl font-black font-headline mb-4 text-primary">Live Connection Required</h2>
-            <p className="text-muted-foreground text-lg leading-relaxed mb-8 font-medium">
-              To connect to a physical WhatsApp number, you must set up a Meta Business account and provide your API keys below.
-            </p>
-            <div className="bg-muted/30 p-8 rounded-3xl text-left font-mono text-xs overflow-x-auto border-2 border-dashed">
-              <code className="text-primary/80">
-                WHATSAPP_PHONE_ID=pending_configuration<br/>
-                WHATSAPP_ACCESS_TOKEN=••••••••••••••••••••<br/>
-                WHATSAPP_WEBHOOK_SECRET=••••••••••••••••••••
-              </code>
-            </div>
-            <p className="mt-8 text-sm text-muted-foreground font-bold">
-                Status: Simulator Mode (Internal Only)
-            </p>
           </div>
         </TabsContent>
       </Tabs>
