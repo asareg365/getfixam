@@ -73,7 +73,7 @@ export default function AdminLoginPage() {
 
       toast({ title: 'Success', description: 'Redirecting to dashboard...' });
 
-      // 4. Force hard refresh to ensures middleware recognizes the new cookie immediately
+      // 4. Force hard redirect to ensure the browser sends the new cookie to the proxy
       window.location.href = '/admin';
       
     } catch (err: any) {

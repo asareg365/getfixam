@@ -4,7 +4,7 @@ import { verifyToken } from '@/lib/jwt';
 
 /**
  * Proxy handles route protection and session verification.
- * Standardized to 'src/proxy.ts' per Next.js environment convention.
+ * Consolidated from middleware.ts to resolve server file naming conflicts.
  */
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -17,12 +17,12 @@ export async function middleware(req: NextRequest) {
       if (session) {
         try {
           const payload = await verifyToken(session);
-          // If already a valid admin, skip login
+          // If already a valid admin, skip login and go to dashboard
           if (payload && payload.portal === 'admin') {
             return NextResponse.redirect(new URL('/admin', req.url));
           }
         } catch (e) {
-          // Token invalid, stay on login page
+          // Token invalid, allow staying on login page
         }
       }
       return NextResponse.next();
@@ -46,7 +46,7 @@ export async function middleware(req: NextRequest) {
         return response;
       }
       
-      // Valid admin session, proceed to page
+      // Valid admin session, proceed
       return NextResponse.next();
     } catch (err) {
       console.error(`[Proxy] Session verification failed for ${pathname}:`, err);
