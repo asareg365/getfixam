@@ -7,19 +7,24 @@ import { matchArtisan } from '@/ai/flows/match-artisan-flow';
 import { logAdminAction } from '@/lib/audit-log';
 import { requireAdmin } from '@/lib/admin-guard';
 import { headers } from 'next/headers';
+import { isRedirectError } from 'next/dist/client/components/redirect';
 
 /**
  * Simulates an incoming WhatsApp message and processes it via AI.
  */
 export async function simulateIncomingMessage(phone: string, message: string) {
   try {
+    // 1. Security Check
     const adminUser = await requireAdmin();
-    if (!adminDb) throw new Error('Database not initialized.');
+    
+    if (!adminDb) {
+        throw new Error('Database service is not initialized.');
+    }
 
-    // 1. Process with AI
+    // 2. Process with AI
     const aiResult = await matchArtisan({ message });
 
-    // 2. Log the incoming event
+    // 3. Log the incoming event
     const eventRef = await adminDb.collection('whatsapp_events').add({
       phone,
       message,
@@ -33,7 +38,7 @@ export async function simulateIncomingMessage(phone: string, message: string) {
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // 3. Log the bot's response
+    // 4. Log the bot's response
     await adminDb.collection('whatsapp_events').add({
       phone,
       message: aiResult.reply,
@@ -43,7 +48,7 @@ export async function simulateIncomingMessage(phone: string, message: string) {
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // 4. Audit Log
+    // 5. Audit Log
     const headersList = await headers();
     await logAdminAction({
       adminEmail: adminUser.email!,
@@ -56,7 +61,12 @@ export async function simulateIncomingMessage(phone: string, message: string) {
 
     return { success: true, aiResult };
   } catch (error: any) {
+    // CRITICAL: Re-throw redirect errors so Next.js can handle the navigation
+    if (isRedirectError(error)) {
+        throw error;
+    }
+    
     console.error('Bot Simulation Error:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error.message || 'An unexpected error occurred during simulation.' };
   }
 }
