@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 type AddProviderFormProps = {
     categories: { id: string; name: string }[];
@@ -45,7 +47,6 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
     }
 
     try {
-      // Check for duplicate phone number
       const providersRef = collection(db, 'providers');
       const q = query(providersRef, where('phone', '==', data.phone));
       const querySnapshot = await getDocs(q);
@@ -60,8 +61,7 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
           return;
       }
 
-      // Add to Firestore
-      await addDoc(collection(db, 'providers'), {
+      const newProviderData = {
         name: data.name,
         serviceId: data.serviceId,
         phone: data.phone,
@@ -78,21 +78,36 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
         rating: 0,
         reviewCount: 0,
         createdAt: serverTimestamp(),
-      });
+      };
 
-      setIsSuccess(true);
-      toast({
-        title: 'Success!',
-        description: 'Your business has been submitted for review!',
-      });
+      // CRITICAL: Non-blocking mutation with contextual error emission
+      addDoc(providersRef, newProviderData)
+        .then(() => {
+            setIsSuccess(true);
+            toast({
+                title: 'Success!',
+                description: 'Your business has been submitted for review!',
+            });
+        })
+        .catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+                path: providersRef.path,
+                operation: 'create',
+                requestResourceData: newProviderData,
+            } satisfies SecurityRuleContext);
+            errorEmitter.emit('permission-error', permissionError);
+        })
+        .finally(() => {
+            setIsPending(false);
+        });
+
     } catch (error: any) {
-      console.error('Error adding provider:', error);
+      // Catch query or other non-permission errors
       toast({
         title: 'Error',
         description: 'Failed to submit business. Please check your connection and try again.',
         variant: 'destructive',
       });
-    } finally {
       setIsPending(false);
     }
   }

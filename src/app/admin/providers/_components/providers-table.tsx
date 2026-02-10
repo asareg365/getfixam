@@ -18,6 +18,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Copy, RefreshCw, Loader2 } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 interface ProvidersTableProps {
   providers: Provider[];
@@ -33,72 +35,73 @@ export function ProvidersTable({
 
     const handleAction = async (providerId: string, action: 'approve' | 'reject' | 'suspend') => {
         setLoadingIds(prev => [...prev, providerId]);
-        try {
-            // In a prototype environment where the Admin SDK (firebase-admin) might not be fully initialized
-            // due to missing service account environment variables, we perform the update directly 
-            // via the Client SDK. This adheres to the "Generate Client Side Only Firebase Code" directive.
-            
-            const providerRef = doc(db, 'providers', providerId);
-            const updateData: any = {
-                status: action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'suspended',
-                updatedAt: serverTimestamp(),
-            };
+        
+        const providerRef = doc(db, 'providers', providerId);
+        const updateData: any = {
+            status: action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'suspended',
+            updatedAt: serverTimestamp(),
+        };
 
-            let generatedPin = '';
-            if (action === 'approve') {
-                updateData.verified = true;
-                updateData.approvedAt = serverTimestamp();
-                // Generate a one-time 6-digit PIN
-                generatedPin = Math.floor(100000 + Math.random() * 900000).toString();
-                // For the prototype, we store the PIN directly to ensure the login flow works without bcrypt initialization issues
-                updateData.loginPin = generatedPin;
-                updateData.loginPinCreatedAt = serverTimestamp();
-            }
-
-            await updateDoc(providerRef, updateData);
-
-            toast({ title: `Provider ${action}d successfully!`, variant: 'default' });
-            
-            if (action === 'approve' && generatedPin) {
-                const provider = providers.find(p => p.id === providerId);
-                setShowPinInfo({ providerName: provider?.name || 'the provider', pin: generatedPin });
-            }
-            
-            router.refresh();
-        } catch (error: any) {
-            console.error(`Error performing ${action}:`, error);
-            toast({ 
-                title: `Failed to ${action} provider`, 
-                description: error.message || 'Unexpected database error.', 
-                variant: 'destructive' 
-            });
-        } finally {
-            setLoadingIds(prev => prev.filter(id => id !== providerId));
+        let generatedPin = '';
+        if (action === 'approve') {
+            updateData.verified = true;
+            updateData.approvedAt = serverTimestamp();
+            generatedPin = Math.floor(100000 + Math.random() * 900000).toString();
+            updateData.loginPin = generatedPin;
+            updateData.loginPinCreatedAt = serverTimestamp();
         }
+
+        // CRITICAL: Non-blocking mutation with contextual error emission
+        updateDoc(providerRef, updateData)
+            .then(() => {
+                toast({ title: `Provider ${action}d successfully!`, variant: 'default' });
+                if (action === 'approve' && generatedPin) {
+                    const provider = providers.find(p => p.id === providerId);
+                    setShowPinInfo({ providerName: provider?.name || 'the provider', pin: generatedPin });
+                }
+                router.refresh();
+            })
+            .catch(async (serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: providerRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData,
+                } satisfies SecurityRuleContext);
+                errorEmitter.emit('permission-error', permissionError);
+            })
+            .finally(() => {
+                setLoadingIds(prev => prev.filter(id => id !== providerId));
+            });
     };
     
      const handleResetPin = async (providerId: string) => {
         setLoadingIds(prev => [...prev, providerId]);
-        try {
-            const pin = Math.floor(100000 + Math.random() * 900000).toString();
-            const providerRef = doc(db, 'providers', providerId);
-            
-            await updateDoc(providerRef, {
-                loginPin: pin,
-                loginPinCreatedAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
+        const pin = Math.floor(100000 + Math.random() * 900000).toString();
+        const providerRef = doc(db, 'providers', providerId);
+        const updateData = {
+            loginPin: pin,
+            loginPinCreatedAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        };
+        
+        updateDoc(providerRef, updateData)
+            .then(() => {
+                const provider = providers.find(p => p.id === providerId);
+                setShowPinInfo({ providerName: provider?.name || 'the provider', pin: pin });
+                toast({ title: "PIN has been reset!", variant: 'default' });
+                router.refresh();
+            })
+            .catch(async (serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: providerRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData,
+                } satisfies SecurityRuleContext);
+                errorEmitter.emit('permission-error', permissionError);
+            })
+            .finally(() => {
+                setLoadingIds(prev => prev.filter(id => id !== providerId));
             });
-
-            const provider = providers.find(p => p.id === providerId);
-            setShowPinInfo({ providerName: provider?.name || 'the provider', pin: pin });
-            toast({ title: "PIN has been reset!", variant: 'default' });
-            router.refresh();
-
-        } catch (error: any) {
-            toast({ title: 'Failed to reset PIN', description: error.message, variant: 'destructive' });
-        } finally {
-             setLoadingIds(prev => prev.filter(id => id !== providerId));
-        }
     };
     
     const copyPinToClipboard = () => {

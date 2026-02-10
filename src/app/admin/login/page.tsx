@@ -15,6 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { setAdminSessionAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -30,29 +32,43 @@ export default function AdminLoginPage() {
     setError(null);
 
     try {
-      // 1. Authenticate with Firebase Auth on the client
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Check if user is an authorized admin in Firestore (Client SDK)
       const adminDocRef = doc(db, 'admins', user.uid);
       const adminDoc = await getDoc(adminDocRef);
 
       let role = 'admin';
 
       if (!adminDoc.exists()) {
-        // PROTOTYPING HELPER: Auto-provision first admin if collection is empty
         const adminsSnap = await getDocs(query(collection(db, 'admins'), limit(1)));
         
         if (adminsSnap.empty) {
           role = 'super_admin';
-          await setDoc(adminDocRef, {
+          const newAdminData = {
             email: user.email,
             role: role,
             active: true,
             createdAt: serverTimestamp(),
-          });
-          toast({ title: 'System Initialized', description: 'You have been granted Super Admin access.' });
+          };
+
+          // CRITICAL: Non-blocking mutation with contextual error emission
+          setDoc(adminDocRef, newAdminData)
+            .then(async () => {
+                toast({ title: 'System Initialized', description: 'You have been granted Super Admin access.' });
+                await finalizeSession(user.uid, user.email!, role);
+            })
+            .catch(async (serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: adminDocRef.path,
+                    operation: 'create',
+                    requestResourceData: newAdminData,
+                } satisfies SecurityRuleContext);
+                errorEmitter.emit('permission-error', permissionError);
+                setLoading(false);
+            });
+          
+          return; // Stop here, finalized in the .then()
         } else {
           throw new Error('Authenticated but not authorized as an administrator.');
         }
@@ -64,23 +80,21 @@ export default function AdminLoginPage() {
         role = adminData.role;
       }
 
-      // 3. Establish secure session cookie via Server Action
-      const sessionResult = await setAdminSessionAction(user.uid, user.email!, role);
-
-      if (!sessionResult.success) {
-          throw new Error(sessionResult.error || 'Failed to establish session.');
-      }
-
-      toast({ title: 'Success', description: 'Redirecting to dashboard...' });
-
-      // 4. Force hard redirect to ensure the browser sends the new cookie to the proxy
-      window.location.href = '/admin';
+      await finalizeSession(user.uid, user.email!, role);
       
     } catch (err: any) {
-      console.error('Login error:', err);
       setError(err.message || 'Invalid credentials or unauthorized access.');
       setLoading(false);
     }
+  }
+
+  async function finalizeSession(uid: string, email: string, role: string) {
+    const sessionResult = await setAdminSessionAction(uid, email, role);
+    if (!sessionResult.success) {
+        throw new Error(sessionResult.error || 'Failed to establish session.');
+    }
+    toast({ title: 'Success', description: 'Redirecting to dashboard...' });
+    window.location.href = '/admin';
   }
 
   return (
