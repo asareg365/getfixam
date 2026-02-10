@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Provider": {
@@ -127,6 +128,19 @@
         "name",
         "icon"
       ]
+    },
+    "Admin": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Admin",
+      "type": "object",
+      "description": "Represents a system administrator.",
+      "properties": {
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "super_admin"] },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "role", "active"]
     }
   },
   "auth": {
@@ -184,8 +198,17 @@
             }
           ]
         }
+      },
+      {
+        "path": "/admins/{adminId}",
+        "definition": {
+          "entityName": "Admin",
+          "schema": { "$ref": "#/backend/entities/Admin" },
+          "description": "Stores platform administrators.",
+          "params": [{ "name": "adminId", "description": "Auth UID" }]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to support the FixAm Ghana application, focusing on listing local artisans, enabling contact, displaying location, and managing ratings and reviews. It prioritizes simplicity and ease of maintenance for the MVP.\n\n*   **Providers:** Stores the core information about each service provider (artisan). No specific authorization requirements beyond the general need to prevent malicious data manipulation, so access is managed at the rule level.\n*   **Reviews:** Stores reviews for each provider. Reviews are tied to a specific `providerId`. Like `providers`, authorization is managed at the rule level.\n*   **Categories:** Stores the list of service categories.\n\nThis structure facilitates Authorization Independence by avoiding complex hierarchical dependencies. Security rules can be written to validate data and control access based on user roles (if implemented later) or data properties without relying on `get()` calls to parent documents.\n\nThe segregation helps to keep access rules simple. The structure also supports QAPs, especially listing providers by category and area, without the need for filtering within the rules.\n"
+    "reasoning": "The Firestore structure supports FixAm Ghana's directory and administration. Expanded to include administrator management for the portal login flow."
   }
 }

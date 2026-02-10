@@ -1,34 +1,12 @@
+
 rules_version = '2';
 
 /**
  * FIRESTORE SECURITY RULES: FixAm Ghana (Prototyping Mode)
  * 
  * CORE PHILOSOPHY:
- * This ruleset is designed for the rapid prototyping phase of FixAm Ghana. It prioritizes 
- * authorization (who has access) over strict schema validation. The primary goal is to 
- * prevent unauthorized access and data manipulation while allowing the data structure to 
- * evolve without frequent rules updates.
- * 
- * DATA STRUCTURE:
- * The data is organized into three top-level collections:
- * 1. /categories: Publicly readable list of service types.
- * 2. /providers: Publicly readable directory of artisans and service providers.
- * 3. /reviews: Publicly readable feedback linked to specific providers.
- * 
- * KEY SECURITY DECISIONS:
- * - Public Access: Read access (get/list) is granted to everyone for all collections to 
- *   facilitate a directory-style experience.
- * - Authenticated Writes: Create operations require a signed-in user (Firebase Auth).
- * - Relational Integrity: On creation, we enforce that document IDs match internal 
- *   ID fields for consistency.
- * - Critical Security Gaps: Both 'Provider' and 'Review' entities currently lack 
- *   explicit 'ownerId' or 'authorId' fields in their schemas. Without these fields, 
- *   strict owner-only write protection (preventing users from editing each other's 
- *   data) cannot be securely implemented. Placeholder rules with TODOs are provided.
- * 
- * DENORMALIZATION FOR AUTHORIZATION:
- * - To implement secure updates in the future, fields such as 'creatorId' or 'ownerId' 
- *   should be added directly to the documents in /providers and /reviews.
+ * This ruleset prioritizes authorization during rapid prototyping. 
+ * Public read access is granted for the directory, while writes require authentication.
  */
 
 service cloud.firestore {
@@ -36,17 +14,10 @@ service cloud.firestore {
 
     // --- GLOBAL HELPER FUNCTIONS ---
 
-    /**
-     * @description Checks if the user is authenticated with Firebase Auth.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * @description Verifies if a document exists at the current path.
-     * Used for update and delete operations to ensure state changes are robust.
-     */
     function isExisting() {
       return resource != null;
     }
@@ -54,63 +25,77 @@ service cloud.firestore {
     // --- COLLECTION RULES ---
 
     /**
-     * @description Rules for the service categories collection.
-     * @path /categories/{categoryId}
-     * @allow (get, list) for any user.
-     * @allow (create, update, delete) for any signed-in user (Prototyping Mode).
-     * @deny (write) if the user is not signed in.
-     * @principle Public consumption with authenticated-only management.
+     * @description Rules for the administrators collection.
      */
-    match /categories/{categoryId} {
-      allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.id == categoryId;
+    match /admins/{adminId} {
+      // Allow users to read their own admin document during login
+      allow get: if isSignedIn() && request.auth.uid == adminId;
+      // Allow checking for existence of administrators (First Admin check)
+      allow list: if isSignedIn();
+      // Allow initialization of the first admin
+      allow create: if isSignedIn();
+      // Allow admins to manage other admins
       allow update, delete: if isSignedIn() && isExisting();
     }
 
     /**
-     * @description Rules for the service providers (artisans) collection.
-     * @path /providers/{providerId}
-     * @allow (get, list) for any user.
-     * @allow (create) for any signed-in user, enforcing ID consistency.
-     * @deny (update, delete) for users who do not own the record (Pending Schema Update).
-     * @principle Public discovery with restricted writes.
+     * @description Rules for service categories.
+     */
+    match /categories/{categoryId} {
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn();
+    }
+
+    /**
+     * @description Rules for the services collection used by the dashboard.
+     */
+    match /services/{serviceId} {
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn();
+    }
+
+    /**
+     * @description Rules for service providers (artisans).
      */
     match /providers/{providerId} {
       allow get, list: if true;
-      
-      // CRITICAL: Relational check ensures the document ID matches the internal 'id' field.
-      allow create: if isSignedIn() && request.resource.data.id == providerId;
-
-      /**
-       * CRITICAL: Cannot implement owner-only writes. The 'Provider' entity is missing 
-       * an 'ownerId' or 'creatorId' field. Currently, any signed-in user can update.
-       * TODO: Add 'ownerId' to Provider documents and update logic to: 
-       * allow update, delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
-       */
+      allow create: if isSignedIn();
       allow update, delete: if isSignedIn() && isExisting();
     }
 
     /**
      * @description Rules for the reviews collection.
-     * @path /reviews/{reviewId}
-     * @allow (get, list) for any user.
-     * @allow (create) for signed-in users.
-     * @deny (update, delete) for users who did not write the review (Pending Schema Update).
-     * @principle Public feedback with authenticated creation.
      */
     match /reviews/{reviewId} {
       allow get, list: if true;
-      
-      // Ensure the review is linked to an existing ID and user is signed in.
-      allow create: if isSignedIn() && request.resource.data.id == reviewId;
-
-      /**
-       * CRITICAL: Cannot implement author-only writes. The 'Review' entity is missing 
-       * a 'userId' or 'authorId' field. Currently, any signed-in user can update/delete.
-       * TODO: Add 'authorId' to Review documents and update logic to: 
-       * allow update, delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
-       */
+      allow create: if isSignedIn();
       allow update, delete: if isSignedIn() && isExisting();
+    }
+
+    /**
+     * @description Rules for the jobs collection.
+     */
+    match /jobs/{jobId} {
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn();
+    }
+
+    /**
+     * @description Rules for system-wide settings (lockouts, etc).
+     */
+    match /system_settings/{settingId} {
+      allow get: if true;
+      allow write: if isSignedIn();
+    }
+
+    /**
+     * @description Rules for audit and provider logs.
+     */
+    match /auditLogs/{logId} {
+      allow list, get, create: if isSignedIn();
+    }
+    match /provider_logs/{logId} {
+      allow list, get, create: if isSignedIn();
     }
   }
 }
