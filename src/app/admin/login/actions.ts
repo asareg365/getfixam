@@ -24,13 +24,13 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
     const cookieStore = await cookies();
     
     // IMPORTANT: secure: false is required for standard http access in the workstation environment.
-    // If set to true on non-HTTPS, the browser will reject the cookie, causing a redirect loop.
+    // sameSite: 'lax' is used to ensure the cookie is sent during the initial redirect back to /admin.
     cookieStore.set('__session', token, {
       httpOnly: true,
       secure: false, 
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 2, // 2 hours
+      maxAge: 60 * 60 * 24, // 24 hours
     });
 
     if (adminDb && typeof adminDb.collection === 'function') {

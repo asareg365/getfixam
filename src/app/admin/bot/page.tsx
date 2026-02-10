@@ -7,11 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection, query, orderBy, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { simulateIncomingMessage } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export default function WhatsAppBotPage() {
   const { toast } = useToast();
@@ -29,10 +31,58 @@ export default function WhatsAppBotPage() {
     if (!testMessage) return;
     
     startTransition(async () => {
-      const res = await simulateIncomingMessage(testPhone, testMessage);
-      if (res.success) {
-        toast({ title: 'Simulation Successful', description: 'Bot processed the message and replied.' });
-        setMessage('');
+      // 1. Get AI result from Server Action
+      const res = await simulateIncomingMessage(testMessage);
+      
+      if (res.success && res.aiResult) {
+        const aiResult = res.aiResult;
+        
+        // 2. Log events to Firestore using Client SDK for session reliability
+        const eventsRef = collection(db, 'whatsapp_events');
+        
+        const customerEvent = {
+          phone: testPhone,
+          message: testMessage,
+          role: 'customer',
+          event: 'JOB_REQUEST',
+          aiParsed: {
+            category: aiResult.category,
+            area: aiResult.area,
+            confidence: aiResult.confidence,
+          },
+          createdAt: serverTimestamp(),
+        };
+
+        try {
+          // CRITICAL: Non-blocking mutation with contextual error emission
+          addDoc(eventsRef, customerEvent)
+            .then((docRef) => {
+              // Log the bot's response
+              const botReply = {
+                phone: testPhone,
+                message: aiResult.reply,
+                role: 'bot',
+                event: 'REPLY',
+                parentId: docRef.id,
+                createdAt: serverTimestamp(),
+              };
+              addDoc(eventsRef, botReply);
+            })
+            .catch(async (err) => {
+              const permissionError = new FirestorePermissionError({
+                path: eventsRef.path,
+                operation: 'create',
+                requestResourceData: customerEvent,
+              } satisfies SecurityRuleContext);
+              errorEmitter.emit('permission-error', permissionError);
+            });
+
+          toast({ title: 'Simulation Successful', description: 'Bot processed the message and replied.' });
+          setMessage('');
+        } catch (e) {
+          // Fallback for general errors
+          toast({ title: 'Simulation logged to console', description: 'Permission denied for persistent logging.' });
+        }
       } else {
         toast({ title: 'Simulation Failed', description: res.error, variant: 'destructive' });
       }
@@ -171,7 +221,7 @@ export default function WhatsAppBotPage() {
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-bold">{event.role === 'bot' ? 'FixAm Bot' : event.phone}</span>
                           <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
-                            {event.createdAt ? formatDistanceToNow(new Date(event.createdAt), { addSuffix: true }) : 'just now'}
+                            {event.createdAt ? formatDistanceToNow(new Date(event.createdAt.toDate()), { addSuffix: true }) : 'just now'}
                           </span>
                         </div>
                         <p className="text-foreground leading-relaxed">{event.message}</p>
