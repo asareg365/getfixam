@@ -24,11 +24,12 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
     
     // 2. Set the session cookie
     const cookieStore = await cookies();
+    
+    // IMPORTANT: For local development on http://localhost, 'secure' must be false
+    // or the browser will reject the cookie.
     cookieStore.set('__session', token, {
       httpOnly: true,
-      // For development in proxies/workstations, we set secure to false
-      // to ensure the browser accepts the cookie over non-HTTPS local links.
-      secure: false, 
+      secure: process.env.NODE_ENV === 'production', 
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 2, // 2 hours
