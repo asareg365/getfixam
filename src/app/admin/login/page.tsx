@@ -37,7 +37,7 @@ export default function AdminLoginPage() {
 
       const adminDocRef = doc(db, 'admins', user.uid);
       
-      // Perform read with contextual error handling
+      // Attempt to read the admin document with contextual error handling
       const adminDoc = await getDoc(adminDocRef).catch(async (err) => {
         if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
           const permissionError = new FirestorePermissionError({
@@ -45,7 +45,7 @@ export default function AdminLoginPage() {
             operation: 'get',
           } satisfies SecurityRuleContext);
           errorEmitter.emit('permission-error', permissionError);
-          return null; // Stop chain
+          return null; 
         }
         throw err;
       });
@@ -58,6 +58,7 @@ export default function AdminLoginPage() {
       let role = 'admin';
 
       if (!adminDoc.exists()) {
+        // If the document doesn't exist, check if this is the first ever admin
         const adminsCollectionRef = collection(db, 'admins');
         const firstAdminQuery = query(adminsCollectionRef, limit(1));
         
@@ -87,7 +88,7 @@ export default function AdminLoginPage() {
             createdAt: serverTimestamp(),
           };
 
-          // CRITICAL: Non-blocking mutation with contextual error emission
+          // Initialize system with first admin
           setDoc(adminDocRef, newAdminData)
             .then(async () => {
                 toast({ title: 'System Initialized', description: 'You have been granted Super Admin access.' });
@@ -103,7 +104,7 @@ export default function AdminLoginPage() {
                 setLoading(false);
             });
           
-          return; // Session finalized in .then()
+          return;
         } else {
           throw new Error('Authenticated but not authorized as an administrator.');
         }
@@ -118,8 +119,11 @@ export default function AdminLoginPage() {
       await finalizeSession(user.uid, user.email!, role);
       
     } catch (err: any) {
-      // Avoid dual-reporting permission errors that are already handled by the emitter
-      if (!err.message?.includes('denied by Firestore Security Rules')) {
+      // Avoid showing generic toasts for permission errors that trigger the contextual overlay
+      const isPermissionError = err.message?.includes('Missing or insufficient permissions') || 
+                               err.message?.includes('denied by Firestore Security Rules');
+      
+      if (!isPermissionError) {
         setError(err.message || 'Invalid credentials or unauthorized access.');
       }
       setLoading(false);
