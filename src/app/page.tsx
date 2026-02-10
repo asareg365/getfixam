@@ -35,11 +35,11 @@ export default function LandingPage() {
               <span className="flex h-2 w-2 rounded-full bg-primary mr-2 animate-pulse" />
               Trusted Artisans in Berekum & Beyond
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-primary font-headline max-w-4xl mx-auto leading-tight mb-8">
+            <h1 className="text-4xl md:text-6xl font-black tracking-tight text-primary font-headline max-w-4xl mx-auto leading-[1.1] mb-8">
              Adwumayɛfoɔ a wotumi de wo ho to wɔn so.
             </h1>
             <p className="mx-auto max-w-[700px] text-muted-foreground text-lg md:text-2xl font-medium leading-relaxed mb-12">
-              Connect directly with verified plumbers, electricians, and professionals in your neighborhood. Quality service guaranteed. Wo hia mmoa anaa? Find the best artisan here.
+              Connect directly with verified plumbers, electricians, and professionals in your neighborhood. Wo hia mmoa anaa? Find the best artisan here.
             </p>
             
             <div className="w-full max-w-3xl mx-auto flex flex-col md:flex-row gap-3 p-3 bg-white rounded-[32px] shadow-2xl border border-primary/10 mb-12">
