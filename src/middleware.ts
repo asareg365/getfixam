@@ -1,3 +1,3 @@
-// This file is intentionally left inert to resolve the Next.js "Both middleware and proxy detected" conflict.
-// All routing and security logic has been moved to src/proxy.ts per the environment's requirements.
+// This file is deactivated to resolve the "Both middleware and proxy detected" conflict.
+// All logic has been moved to src/proxy.ts as required by the environment.
 export const config = { matcher: [] };

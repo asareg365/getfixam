@@ -12,16 +12,17 @@ export async function middleware(req: NextRequest) {
 
   // 1. Protect Admin Routes
   if (pathname.startsWith('/admin')) {
-    // Public admin routes
+    // Allow access to the login page itself
     if (pathname === '/admin/login') {
       if (session) {
         try {
           const payload = await verifyToken(session);
+          // If already a valid admin, skip login
           if (payload && payload.portal === 'admin') {
             return NextResponse.redirect(new URL('/admin', req.url));
           }
         } catch (e) {
-          // Invalid token, allow access to login page
+          // Token invalid, stay on login page
         }
       }
       return NextResponse.next();
@@ -29,7 +30,7 @@ export async function middleware(req: NextRequest) {
 
     // Authentication check for protected admin routes
     if (!session) {
-      console.log(`[Proxy] No session found for ${pathname}, redirecting to login.`);
+      console.log(`[Proxy] No session cookie found for ${pathname}. Redirecting to /admin/login.`);
       return NextResponse.redirect(new URL('/admin/login', req.url));
     }
 
@@ -38,16 +39,17 @@ export async function middleware(req: NextRequest) {
       const payload = await verifyToken(session);
       
       if (!payload || payload.portal !== 'admin') {
-        console.log(`[Proxy] Invalid or non-admin portal token for ${pathname}.`);
+        console.log(`[Proxy] Unauthorized portal access: ${payload?.portal || 'none'} for ${pathname}.`);
         const response = NextResponse.redirect(new URL('/admin/login', req.url));
+        // Clear invalid session
         response.cookies.delete('__session');
         return response;
       }
       
-      // Valid admin session
+      // Valid admin session, proceed to page
       return NextResponse.next();
     } catch (err) {
-      console.error(`[Proxy] JWT verification error for ${pathname}:`, err);
+      console.error(`[Proxy] Session verification failed for ${pathname}:`, err);
       const response = NextResponse.redirect(new URL('/admin/login', req.url));
       response.cookies.delete('__session');
       return response;

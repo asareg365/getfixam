@@ -12,7 +12,7 @@ type AdminUser = {
 
 /**
  * Server-side guard to ensure the user is an authorized administrator.
- * Synchronized with proxy.ts logic for total security consistency.
+ * This is used inside Server Components to verify the session.
  */
 export async function requireAdmin(): Promise<AdminUser> {
   const cookieStore = await cookies();
@@ -22,9 +22,11 @@ export async function requireAdmin(): Promise<AdminUser> {
     redirect('/admin/login');
   }
 
+  // Use the same verification logic as the proxy
   const decoded = await verifyToken(token);
   
   if (!decoded || decoded.portal !== 'admin') {
+    console.log('[AdminGuard] Invalid or non-admin session detected.');
     cookieStore.delete('__session');
     redirect('/admin/login');
   }
