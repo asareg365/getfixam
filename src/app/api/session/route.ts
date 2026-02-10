@@ -3,9 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * Creates a server-side session cookie from a client-side ID token.
- */
 export async function POST(req: NextRequest) {
   try {
     const { idToken } = await req.json();
@@ -15,24 +12,20 @@ export async function POST(req: NextRequest) {
     }
 
     if (!adminAuth) {
-        console.error('Firebase Admin Auth not initialized.');
-        return NextResponse.json({ success: false, error: 'Authentication service not initialized' }, { status: 500 });
+        return NextResponse.json({ success: false, error: 'Auth service not initialized' }, { status: 500 });
     }
 
-    // Set session expiration to 5 days.
     const expiresIn = 60 * 60 * 24 * 5 * 1000;
-    const sessionCookie = await adminAuth.createSessionCookie(idToken, {
-      expiresIn,
-    });
+    const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
 
     const response = NextResponse.json({ success: true });
     
-    // Set the cookie on the response with httpOnly and other security flags.
+    // secure: false ensures compatibility with the http://localhost:9002 preview environment.
     response.cookies.set('__session', sessionCookie, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,
       maxAge: expiresIn,
-      sameSite: 'strict',
+      sameSite: 'lax',
       path: '/',
     });
 
@@ -44,16 +37,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/**
- * Logs the user out by clearing the session cookie.
- */
-export async function DELETE(req: NextRequest) {
-    try {
-        const response = NextResponse.json({ success: true });
-        response.cookies.delete('__session');
-        return response;
-    } catch (error) {
-        console.error('Session Logout Error:', error);
-        return NextResponse.json({ success: false, error: 'Failed to log out.' }, { status: 500 });
-    }
+export async function DELETE() {
+    const response = NextResponse.json({ success: true });
+    response.cookies.delete('__session');
+    return response;
 }

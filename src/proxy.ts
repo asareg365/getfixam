@@ -3,14 +3,14 @@ import type { NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/jwt';
 
 /**
- * Proxy handles route protection and session verification.
- * This is the preferred routing security layer for this environment.
+ * Unified Routing Security Layer
+ * Consolidates all access control logic to satisfy the server's 'proxy.ts' requirement.
  */
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const session = req.cookies.get('__session')?.value;
 
-  // 1. Protect Admin Routes
+  // 1. Admin Portal Protection
   if (pathname.startsWith('/admin')) {
     if (pathname === '/admin/login') {
       if (session) {
@@ -20,7 +20,7 @@ export async function middleware(req: NextRequest) {
             return NextResponse.redirect(new URL('/admin', req.url));
           }
         } catch (e) {
-          // Token invalid, allow login page
+          // Invalid token, allow access to login page
         }
       }
       return NextResponse.next();
@@ -45,23 +45,15 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 2. Protect Provider Routes
+  // 2. Provider Portal Protection
   if (pathname.startsWith('/provider')) {
-    const publicProviderRoutes = [
-      '/provider/login',
-      '/provider/pending',
-      '/provider/logins-disabled'
-    ];
-
-    if (publicProviderRoutes.includes(pathname)) {
-      return NextResponse.next();
-    }
+    const publicRoutes = ['/provider/login', '/provider/pending', '/provider/logins-disabled'];
+    if (publicRoutes.includes(pathname)) return NextResponse.next();
 
     if (!session) {
       return NextResponse.redirect(new URL('/provider/login', req.url));
     }
-
-    return NextResponse.next();
+    // Additional validation could be added here for provider specific claims
   }
 
   return NextResponse.next();

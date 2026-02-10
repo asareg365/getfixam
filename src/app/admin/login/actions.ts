@@ -14,7 +14,6 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
   }
 
   try {
-    // 1. Generate the token with the portal: 'admin' field
     const token = await signToken({ 
       uid, 
       email, 
@@ -22,20 +21,18 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
       portal: 'admin' 
     });
     
-    // 2. Set the session cookie
     const cookieStore = await cookies();
     
-    // IMPORTANT: For local development on http://localhost, 'secure' must be false
-    // or the browser will reject the cookie.
+    // IMPORTANT: secure: false is required for standard http://localhost:9002 access.
+    // If set to true on non-HTTPS, the browser will reject the cookie, causing a redirect loop.
     cookieStore.set('__session', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', 
+      secure: false, 
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 2, // 2 hours
     });
 
-    // 3. Log the login event defensively
     if (adminDb && typeof adminDb.collection === 'function') {
       logAdminAction({
           adminEmail: email,

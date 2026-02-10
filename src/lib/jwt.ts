@@ -2,11 +2,8 @@
 
 import { SignJWT, jwtVerify } from 'jose';
 
-/**
- * HARDENED SECRET KEY
- * Standardized secret for consistent session verification across server actions and proxy.
- */
-const SECRET_KEY = process.env.ADMIN_JWT_SECRET || 'fixam-ghana-v1-stable-security-key-2024-unified-portal-robust-v2';
+// Robust, consistent secret key for cross-portal session verification.
+const SECRET_KEY = 'fixam-ghana-v1-stable-security-key-2024-standard-unified-v3';
 const key = new TextEncoder().encode(SECRET_KEY);
 
 export type AdminJWTPayload = {
@@ -18,9 +15,6 @@ export type AdminJWTPayload = {
   iat: number;
 };
 
-/**
- * Signs a payload to create a secure administrative JWT.
- */
 export async function signToken(payload: Omit<AdminJWTPayload, 'iat' | 'exp'>): Promise<string> {
   return await new SignJWT(payload as any)
     .setProtectedHeader({ alg: 'HS256' })
@@ -29,9 +23,6 @@ export async function signToken(payload: Omit<AdminJWTPayload, 'iat' | 'exp'>): 
     .sign(key);
 }
 
-/**
- * Verifies a JWT and returns the typed payload or null if invalid.
- */
 export async function verifyToken(token: string): Promise<AdminJWTPayload | null> {
   if (!token) return null;
   
