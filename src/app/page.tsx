@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Wrench, ShieldCheck, Smartphone, ArrowRight, Search, MapPin, CheckCircle2, Facebook, Instagram, MessageCircle, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,12 +9,9 @@ import CategoryCard from '@/components/CategoryCard';
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="px-4 lg:px-10 h-20 flex items-center border-b bg-white/80 backdrop-blur-md sticky top-0 z-50">
+      <header className="px-4 lg:px-10 h-20 flex items-center border-b bg-white">
         <Link className="flex items-center justify-center group" href="/">
-          <div className="bg-primary p-2 rounded-xl group-hover:rotate-12 transition-transform">
-            <Wrench className="h-6 w-6 text-white" />
-          </div>
-          <span className="ml-3 font-bold text-2xl tracking-tight text-primary font-headline">FixAm</span>
+            <Image src="/logo.png" alt="GetFixam Logo" width={135} height={60} />
         </Link>
         <nav className="ml-auto flex gap-6 items-center">
           <Link className="text-sm font-semibold hover:text-primary transition-colors hidden md:inline-block" href="/category/all">
@@ -33,7 +31,7 @@ export default function LandingPage() {
           <div className="container px-4 md:px-6 mx-auto relative z-10 text-center">
             <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary mb-8">
               <span className="flex h-2 w-2 rounded-full bg-primary mr-2 animate-pulse" />
-              Trusted Artisans in Berekum & Beyond
+              Trusted Artisans you can find
             </div>
             <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-primary font-headline max-w-5xl mx-auto leading-[1.1] mb-8">
              Adwumayɛfoɔ a wotumi de wo ho to wɔn so.
@@ -127,7 +125,7 @@ export default function LandingPage() {
           <div className="container px-4 mx-auto text-center">
             <h2 className="text-4xl md:text-6xl font-black font-headline mb-8">Are you a skilled Artisan?</h2>
             <p className="text-xl opacity-90 max-w-2xl mx-auto mb-12">
-              Join hundreds of professionals in Berekum and grow your business with FixAm Ghana.
+              Join hundreds of professionals in Berekum and grow your business with GetFixam Ghana.
             </p>
             <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 rounded-2xl h-16 px-12 text-lg font-bold shadow-2xl">
               <Link href="/add-provider">
@@ -142,8 +140,7 @@ export default function LandingPage() {
       <footer className="py-12 border-t bg-muted/30 text-center">
         <div className="container px-4 mx-auto">
           <div className="flex items-center justify-center mb-6">
-            <Wrench className="h-6 w-6 text-primary" />
-            <span className="ml-2 font-bold text-xl text-primary font-headline">FixAm Ghana</span>
+            <Image src="/logo.png" alt="GetFixam Logo" width={135} height={60} />
           </div>
 
           <div className="flex justify-center gap-6 mb-8">
@@ -171,7 +168,7 @@ export default function LandingPage() {
               Admin Access
             </Link>
           </div>
-          <p className="text-xs text-muted-foreground font-medium">© {new Date().getFullYear()} FixAm Ghana. Connecting quality local skills with customers.</p>
+          <p className="text-xs text-muted-foreground font-medium">© {new Date().getFullYear()} GetFixam Ghana. Connecting quality local skills with customers.</p>
         </div>
       </footer>
     </div>

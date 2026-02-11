@@ -25,6 +25,9 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
     const settingsSnap = await settingsRef.get();
     const settings = settingsSnap.data();
 
+    console.log('Admin Locked:', settings?.adminLocked);
+    console.log('Provider Logins Disabled:', settings?.providerLoginsDisabled);
+
     if (settings?.adminLocked === true) {
       return { error: 'The system is currently locked for maintenance. Please try again later.' };
     }
@@ -87,7 +90,7 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
     return { success: true, token: customToken };
 
   } catch (error: any) {
-    console.error('Error during PIN login:', error);
+    console.error('Error during PIN login:', error || 'The error object was null.');
     return { error: 'An unexpected server error occurred during login.' };
   }
 }

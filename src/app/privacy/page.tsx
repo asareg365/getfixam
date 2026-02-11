@@ -14,9 +14,9 @@ export default function PrivacyPage() {
                         <h2>1. Information We Collect</h2>
                         <p>We collect information that you provide to us directly, such as when you create an account, and information that is automatically collected, such as your IP address.</p>
                         <h2>2. How We Use Your Information</h2>
-                        <p>We use the information we collect to provide, maintain, and improve our services, to develop new services, and to protect FixAm Ghana and our users.</p>
+                        <p>We use the information we collect to provide, maintain, and improve our services, to develop new services, and to protect GetFixam Ghana and our users.</p>
                         <h2>3. Sharing of Information</h2>
-                        <p>We do not share your personal information with companies, organizations, or individuals outside of FixAm Ghana except in the following cases...</p>
+                        <p>We do not share your personal information with companies, organizations, or individuals outside of GetFixam Ghana except in the following cases...</p>
                     </CardContent>
                 </Card>
             </div>

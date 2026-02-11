@@ -21,6 +21,10 @@ export async function addReviewAction(prevState: any, formData: FormData) {
     };
   }
 
+  if (!adminDb) {
+    throw new Error('Admin DB is not initialized');
+  }
+
   // TODO: Replace with actual user image logic
   const randomUserImageId = `user${Math.floor(Math.random() * 6) + 1}`;
 

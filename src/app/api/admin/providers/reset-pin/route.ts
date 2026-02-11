@@ -4,7 +4,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-guard';
 import { logAdminAction } from '@/lib/audit-log';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 export const dynamic = 'force-dynamic';
 

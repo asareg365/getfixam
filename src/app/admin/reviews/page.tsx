@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, orderBy, getCountFromServer } from 'firebase/firestore';
@@ -11,7 +11,7 @@ import { Loader2 } from 'lucide-react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
-export default function ReviewsPage() {
+function ReviewsPage() {
   const searchParams = useSearchParams();
   const currentStatus = searchParams.get('status') || 'pending';
 
@@ -128,5 +128,13 @@ export default function ReviewsPage() {
         <ReviewsTable reviews={reviews} />
       )}
     </div>
+  );
+}
+
+export default function ReviewsPageWithSuspense() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ReviewsPage />
+    </Suspense>
   );
 }

@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, adminAuth } from '@/lib/firebase-admin';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { logProviderAction } from '@/lib/audit-log';
 
 export const dynamic = 'force-dynamic';

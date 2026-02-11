@@ -8,10 +8,11 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Wrench } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { auth } from '@/lib/firebase';
 import { signInWithCustomToken } from 'firebase/auth';
+import Image from 'next/image';
 
 export default function ProviderLoginPage() {
   const router = useRouter();
@@ -72,11 +73,8 @@ export default function ProviderLoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-secondary/30 p-4">
       <Card className="w-full max-w-sm shadow-2xl border-none rounded-3xl">
         <CardHeader className="text-center space-y-4">
-           <Link href="/" className="flex justify-center items-center space-x-2 group">
-                <div className="bg-primary p-2 rounded-xl group-hover:rotate-12 transition-transform">
-                  <Wrench className="h-6 w-6 text-white" />
-                </div>
-                <span className="text-2xl font-bold font-headline text-primary">FixAm Ghana</span>
+           <Link href="/" className="flex justify-center items-center">
+                <Image src="/logo.png" alt="GetFixam Logo" width={250} height={100} />
             </Link>
             <div>
                 <CardTitle className="text-2xl font-bold font-headline">Artisan Login</CardTitle>
@@ -118,7 +116,7 @@ export default function ProviderLoginPage() {
 
             <div className="text-center space-y-2">
               <p className="text-sm text-muted-foreground">
-                Forgot PIN? Contact FixAm Admin for a reset.
+                Forgot PIN? Contact GetFixam Admin for a reset.
               </p>
               <p className="text-xs">
                 Don't have an account? <Link href="/add-provider" className="text-primary font-bold hover:underline">List your business</Link>
@@ -126,14 +124,12 @@ export default function ProviderLoginPage() {
             </div>
           </form>
         </CardContent>
+        <div className="p-4 text-center text-sm">
+            <Link href="/admin/login" className="text-muted-foreground hover:text-primary transition-colors font-medium">
+            Admin Access
+            </Link>
+        </div>
       </Card>
-      <footer className="absolute bottom-6 p-4 w-full">
-            <div className="text-center text-sm">
-                <Link href="/admin/login" className="text-muted-foreground hover:text-primary transition-colors font-medium">
-                Admin Access
-                </Link>
-            </div>
-      </footer>
     </div>
   );
 }

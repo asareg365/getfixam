@@ -41,7 +41,11 @@ export default function ProviderCard({ provider }: ProviderCardProps) {
           </div>
         </CardHeader>
         <CardContent className="p-4 flex-grow">
-          <Badge variant="secondary" className="mb-2">{provider.category}</Badge>
+          <div className="flex flex-wrap gap-1 mb-2">
+            {provider.services?.map(service => (
+                <Badge key={service.name} variant="secondary">{service.name}</Badge>
+            ))}
+          </div>
           <CardTitle className="text-lg font-bold font-headline mb-1 leading-tight">
             {provider.name}
           </CardTitle>

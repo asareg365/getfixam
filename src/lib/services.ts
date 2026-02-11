@@ -91,7 +91,7 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
     try {
         const providerRef = db.collection('providers').doc(id);
         const providerDoc = await providerRef.get();
-        if (!providerDoc.exists()) {
+        if (!providerDoc.exists) {
             return undefined;
         }
         const data = providerDoc.data()!;
@@ -103,7 +103,7 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
         let categoryName = 'N/A';
         if (data.serviceId) {
             const serviceDoc = await db.collection('services').doc(data.serviceId).get();
-            if (serviceDoc.exists()) {
+            if (serviceDoc.exists) {
                 categoryName = serviceDoc.data()!.name;
             }
         }

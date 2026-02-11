@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Wrench, Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -156,13 +157,13 @@ export default function AdminLoginPage() {
 
         <Card className="border-none shadow-2xl rounded-3xl">
           <CardHeader className="text-center space-y-4 pt-10">
-            <div className="mx-auto bg-primary/10 p-4 rounded-3xl w-fit">
-              <Wrench className="h-10 w-10 text-primary" />
+            <div className="mx-auto w-fit">
+                <Image src="/logo.png" alt="GetFixam Logo" width={180} height={80} />
             </div>
             <div className="space-y-2">
               <CardTitle className="text-3xl font-bold font-headline">Admin Access</CardTitle>
               <CardDescription className="text-base">
-                Manage the FixAm platform.
+                Manage the GetFixam platform.
               </CardDescription>
             </div>
           </CardHeader>
@@ -186,7 +187,7 @@ export default function AdminLoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="rounded-xl h-12"
-                  placeholder="admin@fixam.com"
+                  placeholder="admin@getfixam.com"
                 />
               </div>
               <div className="space-y-2">

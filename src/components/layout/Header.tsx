@@ -7,7 +7,7 @@ export default function Header() {
     <header className="px-4 lg:px-6 h-16 flex items-center border-b bg-white/80 backdrop-blur-md sticky top-0 z-50">
       <Link className="flex items-center justify-center" href="/">
         <Wrench className="h-6 w-6 text-primary" />
-        <span className="ml-2 font-bold text-xl tracking-tight text-primary font-headline">FixAm</span>
+        <span className="ml-2 font-bold text-xl tracking-tight text-primary font-headline">GetFixam</span>
       </Link>
       <nav className="ml-auto flex gap-4 items-center">
         <Link className="text-sm font-medium hover:text-primary transition-colors hidden sm:inline-block" href="/category/all">

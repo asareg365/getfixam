@@ -13,6 +13,9 @@ export async function getProviderData(idToken: string): Promise<{ provider: Prov
     if (!idToken) {
         return { provider: null, error: "Authentication token is missing." };
     }
+    if (!adminAuth || !adminDb) {
+        return { provider: null, error: "Firebase Admin is not initialized." };
+    }
 
     try {
         const decodedToken = await adminAuth.verifyIdToken(idToken);
@@ -52,7 +55,7 @@ export async function getProviderData(idToken: string): Promise<{ provider: Prov
         let categoryName = 'N/A';
         if (providerData.serviceId) {
             const serviceDoc = await adminDb.collection('services').doc(providerData.serviceId).get();
-            if(serviceDoc.exists()) {
+            if(serviceDoc.exists) {
                 categoryName = serviceDoc.data()?.name;
             }
         }

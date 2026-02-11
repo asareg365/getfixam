@@ -117,6 +117,7 @@ export type Job = {
   status: 'REQUESTED' | 'QUOTED' | 'AWAITING_DEPOSIT' | 'IN_PROGRESS' | 'AWAITING_FINAL_PAYMENT' | 'COMPLETED' | 'CLOSED' | 'DISPUTED' | 'CANCELLED' | 'unknown' | string;
   createdAt: string;
   expiresAt?: string;
+  assignedTo?: string;
 };
 
 export type ReassignmentLog = {

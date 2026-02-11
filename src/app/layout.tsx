@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space' });
 
 export const metadata = {
-  title: 'FixAm - Trusted Local Artisans',
+  title: 'GetFixam - Trusted Local Artisans',
   description: 'Connect directly with verified professionals for repairs and services in your neighborhood.',
 };
 

@@ -46,6 +46,10 @@ export async function executeProviderAction(providerId: string, status: RuleStat
   }
 
   try {
+    if (!adminDb) {
+      throw new Error("Firebase Admin DB not initialized");
+    }
+
     await adminDb.collection('providers').doc(providerId).update(updateData);
     
     await logProviderAction({

@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+export const dynamic = "force-dynamic";
+
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, orderBy, getCountFromServer } from 'firebase/firestore';
@@ -12,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
-export default function ProvidersPage() {
+function ProvidersPage() {
   const searchParams = useSearchParams();
   const currentStatus = searchParams.get('status') || 'pending';
   
@@ -143,4 +145,12 @@ export default function ProvidersPage() {
       ) : null}
     </div>
   );
+}
+
+export default function ProvidersPageWithSuspense() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <ProvidersPage />
+        </Suspense>
+    );
 }

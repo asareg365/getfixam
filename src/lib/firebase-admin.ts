@@ -1,43 +1,23 @@
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getAuth, type Auth } from 'firebase-admin/auth';
-import { getFirestore, type Firestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps, App, cert } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 
-let adminDb: Firestore | null = null;
-let adminAuth: Auth | null = null;
+let app: App;
 
-const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-const projectId = process.env.FIREBASE_PROJECT_ID;
-const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-
-/**
- * Robust initialization of the Firebase Admin SDK.
- * CRITICAL: This is only initialized if environment variables are present.
- * During the Next.js build process, these are missing, so it safely sets them to null.
- */
-if (privateKey && projectId && clientEmail) {
-  try {
-    const app =
-      getApps().length === 0
-        ? initializeApp({
-            credential: cert({
-              projectId,
-              clientEmail,
-              privateKey,
-            }),
-          })
-        : getApps()[0];
-
-    adminDb = getFirestore(app);
-    adminAuth = getAuth(app);
-  } catch (error) {
-    console.error("Firebase Admin SDK Initialization Error:", error);
-    adminDb = null;
-    adminAuth = null;
+if (!getApps().length) {
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+    const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+    app = initializeApp({
+      credential: cert(serviceAccount),
+    });
+  } else {
+    app = initializeApp();
   }
 } else {
-    // Explicitly set to null if environment variables are missing (e.g. during build)
-    adminDb = null;
-    adminAuth = null;
+  app = getApps()[0];
 }
 
-export { adminDb, adminAuth };
+const adminAuth = getAuth(app);
+const adminDb = getFirestore(app);
+
+export { adminAuth, adminDb };

@@ -1,11 +1,17 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Facebook, Instagram, MessageCircle } from 'lucide-react';
 
 export default function Footer() {
   return (
     <footer className="py-12 border-t bg-white text-center">
       <div className="container px-4 mx-auto">
-        <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} FixAm. All rights reserved.</p>
+        <div className="flex justify-center mb-8">
+            <Link href="/">
+                <Image src="/logo.png" alt="GetFixam Logo" width={180} height={80} />
+            </Link>
+        </div>
+        <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} GetFixam. All rights reserved.</p>
         
         {/* Social Media Links */}
         <div className="flex justify-center gap-6 mt-6 mb-8">
