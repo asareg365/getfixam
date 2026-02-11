@@ -29,16 +29,16 @@ const serviceSchema = z.object({
 });
 
 export async function addServiceAction(prevState: any, formData: FormData) {
-    // Ensure user is admin before processing anything
-    const adminContext = await requireAdmin();
-
-    const validatedFields = serviceSchema.safeParse(Object.fromEntries(formData.entries()));
-
-    if (!validatedFields.success) {
-        return { success: false, errors: validatedFields.error.flatten().fieldErrors };
-    }
-  
     try {
+        // Ensure user is admin before processing anything
+        const adminContext = await requireAdmin();
+
+        const validatedFields = serviceSchema.safeParse(Object.fromEntries(formData.entries()));
+
+        if (!validatedFields.success) {
+            return { success: false, errors: validatedFields.error.flatten().fieldErrors };
+        }
+  
         if (!adminDb || typeof adminDb.collection !== 'function') {
             throw new Error('Database connection not available.');
         }
@@ -73,6 +73,9 @@ export async function addServiceAction(prevState: any, formData: FormData) {
         revalidatePath('/admin/audit-logs');
         return { success: true, message: 'Service added successfully.' };
     } catch (error: any) {
+        // Next.js redirect errors should be allowed to propagate
+        if (error.digest?.includes('NEXT_REDIRECT')) throw error;
+        
         console.error('Error adding service:', error);
         return { success: false, message: error.message || 'Failed to add service.' };
     }
@@ -81,9 +84,9 @@ export async function addServiceAction(prevState: any, formData: FormData) {
 /** ----- STANDBY ACTIONS ----- */
 
 export async function getSwappableArtisans(serviceType: string, excludedArtisanIds: string[]): Promise<{ success: boolean; artisans?: Provider[]; message?: string; }> {
-    await requireAdmin();
-    
     try {
+        await requireAdmin();
+        
         if (!adminDb || typeof adminDb.collection !== 'function') {
             throw new Error('Database connection not available.');
         }
@@ -110,6 +113,7 @@ export async function getSwappableArtisans(serviceType: string, excludedArtisanI
 
         return { success: true, artisans: artisans };
     } catch (error: any) {
+        if (error.digest?.includes('NEXT_REDIRECT')) throw error;
         console.error("Error getting swappable artisans:", error);
         return { success: false, message: error.message || 'Failed to fetch artisans.' };
     }
@@ -117,9 +121,9 @@ export async function getSwappableArtisans(serviceType: string, excludedArtisanI
 
 
 export async function swapStandbyArtisan(artisanToRemoveId: string, artisanToAddId: string): Promise<{ success: boolean; message?: string; }> {
-     await requireAdmin();
-
      try {
+        await requireAdmin();
+
         if (!adminDb || typeof adminDb.runTransaction !== 'function') {
             throw new Error('Database connection not available.');
         }
@@ -148,15 +152,16 @@ export async function swapStandbyArtisan(artisanToRemoveId: string, artisanToAdd
         revalidatePath('/admin/dashboard');
         return { success: true };
     } catch (error: any) {
+        if (error.digest?.includes('NEXT_REDIRECT')) throw error;
         console.error("Error swapping standby artisan:", error);
         return { success: false, message: error.message || 'Failed to swap artisan.' };
     }
 }
 
 export async function overrideStandbyPool(): Promise<{ success: boolean; message?: string; }> {
-    await requireAdmin();
-
     try {
+        await requireAdmin();
+
         if (!adminDb || typeof adminDb.collection !== 'function') {
             throw new Error('Database connection not available.');
         }
@@ -164,6 +169,7 @@ export async function overrideStandbyPool(): Promise<{ success: boolean; message
         revalidatePath('/admin/dashboard');
         return { success: true };
     } catch (error: any) {
+        if (error.digest?.includes('NEXT_REDIRECT')) throw error;
         console.error("Error overriding standby pool:", error);
         return { success: false, message: error.message || 'Failed to override standby pool.' };
     }

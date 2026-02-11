@@ -59,7 +59,7 @@ export default function AdminLoginPage() {
       let role = 'admin';
 
       if (!adminDoc.exists()) {
-        // If the document doesn't exist, check if this is the first ever admin
+        // Check if this is the first ever admin
         const adminsCollectionRef = collection(db, 'admins');
         const firstAdminQuery = query(adminsCollectionRef, limit(1));
         
@@ -90,22 +90,17 @@ export default function AdminLoginPage() {
           };
 
           // Initialize system with first admin
-          setDoc(adminDocRef, newAdminData)
-            .then(async () => {
-                toast({ title: 'System Initialized', description: 'You have been granted Super Admin access.' });
-                await finalizeSession(user.uid, user.email!, role);
-            })
-            .catch(async (serverError) => {
+          await setDoc(adminDocRef, newAdminData).catch(async (serverError) => {
                 const permissionError = new FirestorePermissionError({
                     path: adminDocRef.path,
                     operation: 'create',
                     requestResourceData: newAdminData,
                 } satisfies SecurityRuleContext);
                 errorEmitter.emit('permission-error', permissionError);
-                setLoading(false);
+                throw new Error('Failed to initialize administrator account.');
             });
           
-          return;
+          toast({ title: 'System Initialized', description: 'You have been granted Super Admin access.' });
         } else {
           throw new Error('Authenticated but not authorized as an administrator.');
         }
@@ -120,7 +115,6 @@ export default function AdminLoginPage() {
       await finalizeSession(user.uid, user.email!, role);
       
     } catch (err: any) {
-      // Avoid showing generic toasts for permission errors that trigger the contextual overlay
       const isPermissionError = err.message?.includes('Missing or insufficient permissions') || 
                                err.message?.includes('denied by Firestore Security Rules');
       

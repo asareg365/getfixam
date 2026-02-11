@@ -16,10 +16,6 @@ const providerSchema = z.object({
 });
 
 export async function addProviderAction(prevState: any, formData: FormData) {
-  if (!adminDb) {
-    return { success: false, message: 'System configuration error. Please try again later.' };
-  }
-
   const validatedFields = providerSchema.safeParse(Object.fromEntries(formData.entries()));
 
   if (!validatedFields.success) {
@@ -33,6 +29,10 @@ export async function addProviderAction(prevState: any, formData: FormData) {
   const { name, serviceId, phone, whatsapp, zone, digitalAddress } = validatedFields.data;
 
   try {
+    if (!adminDb) {
+        throw new Error('System configuration error. Please try again later.');
+    }
+
     const existingProviderSnap = await adminDb.collection('providers').where('phone', '==', phone).limit(1).get();
     if (!existingProviderSnap.empty) {
         return { success: false, message: 'A provider with this phone number already exists.' };

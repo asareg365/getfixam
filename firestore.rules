@@ -3,6 +3,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Helper functions for common security checks
     function isSignedIn() {
       return request.auth != null;
     }
@@ -11,51 +12,64 @@ service cloud.firestore {
       return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Admin Profiles: Allow users to manage their own admin status during initialization
     match /admins/{adminId} {
       allow get: if isSignedIn() && request.auth.uid == adminId;
       allow list: if isSignedIn();
-      allow create: if isSignedIn(); // Permits system initialization by the first user
+      allow create: if isSignedIn() && request.auth.uid == adminId; 
       allow update: if isAdmin();
     }
 
+    // Providers: Publicly readable, owner or admin can edit
     match /providers/{providerId} {
       allow get, list: if true;
       allow create: if true;
       allow update, delete: if isAdmin() || (isSignedIn() && resource.data.authUid == request.auth.uid);
     }
 
+    // WhatsApp Events: Internal logs for bot monitoring
     match /whatsapp_events/{eventId} {
       allow list, get: if isAdmin();
-      allow create: if true; // Simulation creates these logs
+      allow create: if true; 
     }
 
+    // Services: Publicly readable categories and pricing
     match /services/{serviceId} {
       allow get, list: if true;
       allow write: if isAdmin();
     }
 
+    // Reviews: Publicly readable, anyone can submit (moderated)
     match /reviews/{reviewId} {
       allow get, list: if true;
       allow create: if true;
       allow update, delete: if isAdmin();
     }
 
+    // Audit Logs: System-wide activity tracking
     match /auditLogs/{logId} {
       allow list, get: if isAdmin();
-      allow create: if isAdmin() || isSignedIn(); // Allow logging during login/actions
+      allow create: if isSignedIn(); // Allow logging during auth events
     }
 
+    // Jobs: Customer service requests
     match /jobs/{jobId} {
       allow list, get: if isAdmin();
-      allow create: if true; // Allow customers to submit requests
+      allow create: if true; 
       allow update: if isAdmin();
     }
 
+    // System Settings: Lockouts and global overrides
     match /system_settings/{settingId} {
-      allow get: if true; // App needs to check if logins are disabled
+      allow get: if true; 
       allow write: if isAdmin();
     }
 
+    // Provider Action Logs
     match /provider_logs/{logId} {
       allow list, get: if isAdmin();
       allow create: if true;
