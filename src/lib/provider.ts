@@ -4,7 +4,7 @@ import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import type { Provider } from '@/lib/types';
 
 /**
- * Securely fetches provider data from the server and links their Firebase Auth UID on first login.
+ * Securely fetches provider data from the server and links their Firebase Auth UID.
  * This is called from the client with the user's ID token.
  * @param idToken The Firebase ID token of the currently signed-in user.
  * @returns An object containing the provider data or an error.
@@ -20,53 +20,54 @@ export async function getProviderData(idToken: string): Promise<{ provider: Prov
     try {
         const decodedToken = await adminAuth.verifyIdToken(idToken);
         const uid = decodedToken.uid;
-        const phone = decodedToken.phone_number;
+        const phoneFromToken = decodedToken.phone_number;
 
-        // 1. Try to find provider by UID
         const providersRef = adminDb.collection('providers');
-        let providerQuery = providersRef.where('authUid', '==', uid);
-        let providerSnap = await providerQuery.get();
-        let providerDoc;
+        
+        // Strategy 1: Direct lookup by ID (Since we use providerId as the UID in custom tokens)
+        const directDoc = await providersRef.doc(uid).get();
+        let providerDoc = directDoc.exists ? directDoc : null;
 
-        if (providerSnap.empty) {
-            // 2. If not found, try to find by phone number
-            if (!phone) {
-                return { provider: null, error: "Your account has no phone number associated. Please contact support." };
+        // Strategy 2: Fallback to query by authUid field (for historical compatibility)
+        if (!providerDoc) {
+            const authUidQuery = await providersRef.where('authUid', '==', uid).limit(1).get();
+            if (!authUidQuery.empty) {
+                providerDoc = authUidQuery.docs[0];
             }
-            // In Ghana, numbers start with 0, but Firebase stores them as +233...
-            // We match the format in the DB, which is `0...`
-            const localPhoneNumber = phone.startsWith('+233') ? '0' + phone.substring(4) : phone;
-            providerQuery = providersRef.where('phone', '==', localPhoneNumber);
-            providerSnap = await providerQuery.get();
+        }
 
-            if (!providerSnap.empty) {
-                // 3. Found by phone! Link the UID for future logins.
-                providerDoc = providerSnap.docs[0];
+        // Strategy 3: Fallback to phone number if available in token
+        if (!providerDoc && phoneFromToken) {
+            const localPhone = phoneFromToken.startsWith('+233') ? '0' + phoneFromToken.substring(4) : phoneFromToken;
+            const phoneQuery = await providersRef.where('phone', '==', localPhone).limit(1).get();
+            if (!phoneQuery.empty) {
+                providerDoc = phoneQuery.docs[0];
+                // Link the UID for future direct lookups
                 await providerDoc.ref.update({ authUid: uid });
-            } else {
-                // 4. Not found by UID or Phone. They need to register.
-                return { provider: null, error: "No provider account found for this phone number. Please create a listing first." };
             }
-        } else {
-            providerDoc = providerSnap.docs[0];
+        }
+
+        if (!providerDoc) {
+            return { provider: null, error: "We could not find an artisan account matching your login. Please ensure you have listed your business." };
         }
 
         const providerData = providerDoc.data();
-        let categoryName = 'N/A';
+        let categoryName = 'Artisan';
+        
         if (providerData.serviceId) {
             const serviceDoc = await adminDb.collection('services').doc(providerData.serviceId).get();
-            if(serviceDoc.exists) {
-                categoryName = serviceDoc.data()?.name;
+            if (serviceDoc.exists) {
+                categoryName = serviceDoc.data()?.name || 'Artisan';
             }
         }
         
         const data = {
             id: providerDoc.id,
-            name: providerData.name ?? 'Unknown',
+            name: providerData.name ?? 'Unnamed Business',
             phone: providerData.phone ?? '',
             whatsapp: providerData.whatsapp ?? '',
             digitalAddress: providerData.digitalAddress ?? '',
-            location: providerData.location ?? { region: '', city: '', zone: ''},
+            location: providerData.location ?? { region: 'Bono Region', city: 'Berekum', zone: 'Unknown' },
             status: providerData.status ?? 'pending',
             verified: providerData.verified ?? false,
             isFeatured: providerData.isFeatured ?? false,
@@ -75,9 +76,8 @@ export async function getProviderData(idToken: string): Promise<{ provider: Prov
             imageId: providerData.imageId ?? '',
             serviceId: providerData.serviceId ?? '',
             category: categoryName,
-            createdAt: providerData.createdAt?.toDate().toISOString() ?? new Date(0).toISOString(),
-            approvedAt: providerData.approvedAt?.toDate().toISOString(),
-            featuredUntil: providerData.featuredUntil?.toDate().toISOString(),
+            createdAt: providerData.createdAt?.toDate?.() ? providerData.createdAt.toDate().toISOString() : (typeof providerData.createdAt === 'string' ? providerData.createdAt : new Date(0).toISOString()),
+            approvedAt: providerData.approvedAt?.toDate?.() ? providerData.approvedAt.toDate().toISOString() : undefined,
         } as Provider;
         
         return { provider: data, error: null };
@@ -85,8 +85,8 @@ export async function getProviderData(idToken: string): Promise<{ provider: Prov
     } catch (e: any) {
         console.error("Error in getProviderData:", e);
         if (e.code === 'auth/id-token-expired') {
-            return { provider: null, error: 'Your session has expired. Please log in again.' };
+            return { provider: null, error: 'Your secure session has expired. Please log in again.' };
         }
-        return { provider: null, error: e.message || 'An unexpected error occurred while fetching your account details.' };
+        return { provider: null, error: 'The server encountered an error retrieving your profile. Please try again.' };
     }
 }

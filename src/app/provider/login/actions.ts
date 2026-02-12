@@ -30,7 +30,6 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
       
       if (settingsSnap.exists) {
         const settings = settingsSnap.data();
-        // Only enforce if explicitly set to true
         if (settings?.adminLocked === true) {
           return { error: 'The system is locked for maintenance. Please try again later.' };
         }
@@ -39,13 +38,12 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
         }
       }
     } catch (e) {
-      // Ignore settings check failures during prototyping
+      // Safe default for prototyping
     }
 
     // 3. Find the provider by phone number
     const providersRef = adminDb.collection('providers');
-    const query = providersRef.where('phone', '==', phone).limit(1);
-    const snapshot = await query.get();
+    const snapshot = await providersRef.where('phone', '==', phone).limit(1).get();
 
     if (snapshot.empty) {
       return { error: 'No account found with this phone number. Please list your business first.' };
@@ -66,7 +64,7 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
       return { error: 'Your account is still pending review. You will be notified via WhatsApp once approved.' };
     }
 
-    // 5. Verify PIN (Support both legacy plain-text 'loginPin' and new hashed 'loginPinHash')
+    // 5. Verify PIN (Support both legacy plain-text 'loginPin' and hashed 'loginPinHash')
     const pinHash = providerData.loginPinHash;
     const plainPin = providerData.loginPin;
 
@@ -86,12 +84,10 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
     // 6. Generate Custom Token
     let customToken: string;
     try {
+      // We use the Firestore document ID as the unique UID for this session
       customToken = await adminAuth.createCustomToken(providerId);
     } catch (tokenErr: any) {
-      if (tokenErr.message?.toLowerCase().includes('payload')) {
-          return { error: 'Maintenance: The security server is temporarily unable to sign tokens. Please try again later.' };
-      }
-      return { error: 'The server failed to create a secure session. Please try again.' };
+      return { error: 'Maintenance: The security server is temporarily unable to sign tokens.' };
     }
 
     // 7. Log Success
@@ -113,7 +109,6 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
     return { success: true, token: customToken };
 
   } catch (error: any) {
-    // Final safety check for the payload error in the outer catch block
     if (error.message?.toLowerCase().includes('payload')) {
         return { error: 'Maintenance: Authentication service is temporarily unavailable.' };
     }
