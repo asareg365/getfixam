@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, BarChart3, MessageSquare, Settings, LogOut, Wrench, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, BarChart3, MessageSquare, Settings, LogOut, Wrench, Menu, X, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const navItems = [
     { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { label: 'Artisans', href: '/admin/providers', icon: Users },
+    { label: 'Reviews', href: '/admin/reviews', icon: Star },
     { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { label: 'WhatsApp Bot', href: '/admin/bot', icon: MessageSquare },
     { label: 'Settings', href: '/admin/settings', icon: Settings },

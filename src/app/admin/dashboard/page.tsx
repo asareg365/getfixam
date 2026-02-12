@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getCountFromServer } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Clock, Workflow, Settings, ArrowUpRight, Loader2, AlertCircle } from 'lucide-react';
+import { Users, Clock, Workflow, Settings, ArrowUpRight, Loader2, AlertCircle, Star } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState({ providers: 0, pending: 0, jobs: 0, services: 0 });
+  const [stats, setStats] = useState({ providers: 0, pending: 0, jobs: 0, reviews: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,27 +18,28 @@ export default function AdminDashboardPage() {
       try {
         const providersRef = collection(db, 'providers');
         const jobsRef = collection(db, 'jobs');
-        const servicesRef = collection(db, 'services');
+        const reviewsRef = collection(db, 'reviews');
+        
         const pendingQuery = query(providersRef, where('status', '==', 'pending'));
+        const pendingReviewsQuery = query(reviewsRef, where('status', '==', 'pending'));
 
         // Fetch actual real-time counts from Firestore
-        const [providersSnap, pendingSnap, jobsSnap, servicesSnap] = await Promise.all([
+        const [providersSnap, pendingSnap, jobsSnap, reviewsSnap] = await Promise.all([
           getCountFromServer(providersRef),
           getCountFromServer(pendingQuery),
           getCountFromServer(jobsRef),
-          getCountFromServer(servicesRef)
+          getCountFromServer(pendingReviewsQuery)
         ]);
 
         setStats({
           providers: providersSnap.data().count,
           pending: pendingSnap.data().count,
           jobs: jobsSnap.data().count,
-          services: servicesSnap.data().count
+          reviews: reviewsSnap.data().count
         });
 
       } catch (err: any) {
         console.error("Error fetching dashboard stats:", err);
-        // During prototyping, we show 0 if collections don't exist yet rather than crashing
         if (err.code === 'permission-denied') {
             setError("You do not have permission to view stats. Please ensure you are logged in as an admin.");
         }
@@ -51,10 +52,10 @@ export default function AdminDashboardPage() {
   }, []);
 
   const cards = [
-    { title: 'Total Providers', value: stats.providers, icon: Users, href: '/admin/providers', description: 'Manage all artisans nationwide' },
-    { title: 'Pending Review', value: stats.pending, icon: Clock, href: '/admin/providers?status=pending', description: 'Review new submissions' },
+    { title: 'Total Providers', value: stats.providers, icon: Users, href: '/admin/providers', description: 'Manage all artisans' },
+    { title: 'Artisan Apps', value: stats.pending, icon: Clock, href: '/admin/providers?status=pending', description: 'Review new submissions' },
+    { title: 'Pending Reviews', value: stats.reviews, icon: Star, href: '/admin/reviews?status=pending', description: 'Moderate customer feedback' },
     { title: 'Total Requests', value: stats.jobs, icon: Workflow, href: '/admin/jobs', description: 'Monitor live service jobs' },
-    { title: 'Services', value: stats.services, icon: Settings, href: '/admin/services', description: 'Update categories and pricing' },
   ];
 
   if (loading) {
