@@ -3,12 +3,16 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { firebaseConfig } from '@/firebase/config';
 
+// Import the service account directly from the project root
+// In this environment, this file contains the required private_key for token signing
+import serviceAccountData from '../../service-account.json';
+
 let adminAuth: any = null;
 let adminDb: any = null;
 
 /**
  * Robust initialization for Firebase Admin SDK.
- * Favors environment variables, but falls back to project defaults for workstation stability.
+ * Prioritizes the local service-account.json to ensure signing capabilities (createCustomToken).
  */
 function getAdminApp(): App {
   if (getApps().length > 0) {
@@ -17,15 +21,24 @@ function getAdminApp(): App {
 
   const projectId = firebaseConfig.projectId;
 
+  // Strategy 1: Use the explicit service-account.json file if available
   try {
-    // Attempt 1: Using the provided service account environment variable
+    if (serviceAccountData && (serviceAccountData as any).private_key) {
+      return initializeApp({
+        credential: cert(serviceAccountData as any),
+        projectId,
+      });
+    }
+  } catch (e) {
+    console.warn('[Firebase Admin] Failed to initialize with service-account.json:', e);
+  }
+
+  // Strategy 2: Use environment variable
+  try {
     const credsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
     if (credsJson && credsJson !== 'null' && credsJson !== 'undefined' && credsJson.length > 10) {
       const serviceAccount = JSON.parse(credsJson);
-      // CRITICAL: Ensure we have a valid object with required fields for signing capabilities.
-      // The "payload must be of type object" error happens when createCustomToken is called
-      // but the SDK lacks a private key to sign the JWT.
-      if (serviceAccount && typeof serviceAccount === 'object' && serviceAccount.private_key) {
+      if (serviceAccount && serviceAccount.private_key) {
         return initializeApp({
           credential: cert(serviceAccount),
           projectId,
@@ -33,16 +46,14 @@ function getAdminApp(): App {
       }
     }
   } catch (e) {
-    console.warn('[Firebase Admin] Failed to initialize with service account JSON, trying fallback...', e);
+    console.warn('[Firebase Admin] Failed to initialize with env JSON:', e);
   }
 
+  // Strategy 3: Project ID fallback (Limited functionality - createCustomToken will likely fail)
   try {
-    // Attempt 2: Initializing with just the Project ID (Standard for Workstations with ADC)
-    // Note: createCustomToken will fail if ADC doesn't provide a service account identity with signing keys.
     return initializeApp({ projectId });
   } catch (e) {
-    console.error('[Firebase Admin] Failed to initialize with Project ID:', e);
-    // Final attempt: No-args initialization (picks up environment defaults)
+    console.error('[Firebase Admin] Final fallback initialization failed:', e);
     return initializeApp();
   }
 }
@@ -52,7 +63,7 @@ try {
   adminAuth = getAuth(app);
   adminDb = getFirestore(app);
 } catch (error) {
-  console.error('[Firebase Admin] Critical Error: Admin services could not be established.', error);
+  console.error('[Firebase Admin] Critical initialization error:', error);
 }
 
 export { adminAuth, adminDb };
