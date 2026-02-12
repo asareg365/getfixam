@@ -9,7 +9,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { CATEGORIES, getNeighborhoods } from '@/lib/data';
+import { CATEGORIES } from '@/lib/constants';
 
 const MatchArtisanInputSchema = z.object({
   message: z.string().describe('The text message received from the customer via WhatsApp.'),
@@ -32,7 +32,7 @@ const prompt = ai.definePrompt({
 Your goal is to extract the requested service category and the location from a customer's WhatsApp message.
 
 Available Categories: ${CATEGORIES.map(c => c.name).join(', ')}
-Available Areas: Biadan, Kato, Koraso, Senase, Anyimon, Mpatasie, Fetentaa, Berekum Central, Ahenbronoso.
+Available Areas: Adom, Adom Newtown, Ahenbronoso, Amomaso, Anyimon, Ayakorase, Benkasa, Berekum Central, Biadan, Brenyekwa, Fetentaa, Jamdede, Jinijini, Kato, Koraso, Kyeritwedie, Magazine, Mpatapo, Mpatasie, Nanasuano, New Biadan, Nsapor, Nyamebekyere, Nyametease, Senase, Sofokyere, World of Friends, Zongo.
 
 Instructions:
 1. Identify the category. If not clear, pick 'Other'.

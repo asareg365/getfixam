@@ -38,15 +38,34 @@ export async function getRegions(): Promise<string[]> {
  */
 export async function getNeighborhoods(): Promise<string[]> {
     return [
+        "Adom",
+        "Adom Newtown",
+        "Ahenbronoso",
+        "Amomaso",
+        "Anyimon",
+        "Ayakorase",
+        "Benkasa",
+        "Berekum Central",
         "Biadan",
+        "Brenyekwa",
+        "Fetentaa",
+        "Jamdede",
+        "Jinijini",
         "Kato",
         "Koraso",
-        "Senase",
-        "Anyimon",
+        "Kyeritwedie",
+        "Magazine",
+        "Mpatapo",
         "Mpatasie",
-        "Fetentaa",
-        "Berekum Central",
-        "Ahenbronoso"
+        "Nanasuano",
+        "New Biadan",
+        "Nsapor",
+        "Nyamebekyere",
+        "Nyametease",
+        "Senase",
+        "Sofokyere",
+        "World of Friends",
+        "Zongo"
     ];
 }
 
