@@ -13,6 +13,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { CATEGORIES } from '@/lib/constants';
 
 function ProvidersPage() {
   const searchParams = useSearchParams();
@@ -73,6 +74,14 @@ function ProvidersPage() {
 
         const providersData = snap.docs.map(doc => {
           const data = doc.data();
+          
+          // Robust Category Mapping: Dynamic -> Static -> Field -> Default
+          let categoryName = servicesMap.get(data.serviceId);
+          if (!categoryName) {
+              const staticCat = CATEGORIES.find(c => c.id === data.serviceId || c.slug === data.serviceId);
+              categoryName = staticCat?.name || data.category || 'Artisan';
+          }
+
           return {
             id: doc.id,
             authUid: data.authUid || '',
@@ -86,7 +95,7 @@ function ProvidersPage() {
             serviceId: data.serviceId,
             rating: data.rating || 0,
             reviewCount: data.reviewCount || 0,
-            category: servicesMap.get(data.serviceId) || 'N/A',
+            category: categoryName,
             createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : (typeof data.createdAt === 'string' ? data.createdAt : undefined),
             approvedAt: data.approvedAt?.toDate?.() ? data.approvedAt.toDate().toISOString() : (typeof data.approvedAt === 'string' ? data.approvedAt : undefined),
             updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : (typeof data.updatedAt === 'string' ? data.updatedAt : undefined),

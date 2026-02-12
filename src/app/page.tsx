@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { Wrench, ShieldCheck, Smartphone, ArrowRight, Search, MapPin, CheckCircle2, Facebook, Instagram, MessageCircle, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CATEGORIES } from '@/lib/data';
+import { CATEGORIES } from '@/lib/constants';
 import CategoryCard from '@/components/CategoryCard';
 import { searchAction } from './actions';
 

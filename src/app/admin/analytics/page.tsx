@@ -6,6 +6,7 @@ import { collection, getDocs, limit, query, orderBy } from 'firebase/firestore';
 import { Search, Filter, Download, Loader2, Inbox } from 'lucide-react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { CATEGORIES } from '@/lib/constants';
 
 export default function AdminAnalyticsPage() {
   const [artisans, setArtisans] = useState<any[]>([]);
@@ -14,8 +15,16 @@ export default function AdminAnalyticsPage() {
   useEffect(() => {
     async function fetchArtisans() {
       try {
+        // Fetch services first to map category names
+        const servicesRef = collection(db, 'services');
+        const servicesSnap = await getDocs(servicesRef).catch(() => null);
+        const servicesMap = new Map();
+        if (servicesSnap) {
+            servicesSnap.forEach(doc => servicesMap.set(doc.id, doc.data().name));
+        }
+
         const providersRef = collection(db, 'providers');
-        const q = query(providersRef, orderBy('rating', 'desc'), limit(10));
+        const q = query(providersRef, orderBy('rating', 'desc'), limit(50));
         
         const snap = await getDocs(q).catch(async (err) => {
             if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
@@ -34,10 +43,22 @@ export default function AdminAnalyticsPage() {
             return;
         }
 
-        const data = snap.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        const data = snap.docs.map(doc => {
+          const item = doc.data();
+          
+          // Robust Category Mapping
+          let categoryName = servicesMap.get(item.serviceId);
+          if (!categoryName) {
+              const staticCat = CATEGORIES.find(c => c.id === item.serviceId || c.slug === item.serviceId);
+              categoryName = staticCat?.name || item.category || 'Artisan';
+          }
+
+          return {
+            id: doc.id,
+            ...item,
+            categoryName
+          };
+        });
         setArtisans(data);
       } catch (err) {
         // Non-permission errors handled silently
@@ -102,7 +123,7 @@ export default function AdminAnalyticsPage() {
                 {artisans.map((item) => (
                   <tr key={item.id} className="hover:bg-muted/5 transition-colors">
                     <td className="p-4 border-b text-sm font-medium">{item.name}</td>
-                    <td className="p-4 border-b text-sm text-muted-foreground">{item.category || 'N/A'}</td>
+                    <td className="p-4 border-b text-sm text-muted-foreground">{item.categoryName || 'Artisan'}</td>
                     <td className="p-4 border-b text-sm text-center font-mono">{item.rating?.toFixed(1) || '0.0'}</td>
                     <td className="p-4 border-b text-sm text-center font-mono">{item.reviewCount || 0}</td>
                     <td className="p-4 border-b text-sm">

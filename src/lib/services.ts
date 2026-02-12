@@ -2,7 +2,8 @@ import { adminDb } from './firebase-admin';
 import { db as clientDb } from './firebase';
 import { collection, query, where, getDocs as clientGetDocs, orderBy } from 'firebase/firestore';
 import type { Category, Provider } from './types';
-import { getCategories, CATEGORIES } from './data';
+import { getCategories } from './data';
+import { CATEGORIES } from './constants';
 
 /**
  * Helper to pick a relevant image based on the category name.
