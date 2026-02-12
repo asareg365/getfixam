@@ -1,4 +1,3 @@
-
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -13,6 +12,7 @@ import StarRating from '@/components/StarRating';
 import ProviderReviews from '@/components/ProviderReviews';
 import { Phone, MessageCircle, CheckCircle, MapPin, Home, Plus, Star } from 'lucide-react';
 import PublicLayout from '@/components/layout/PublicLayout';
+import { ContactButton } from '@/components/ContactButton';
 
 export const dynamic = "force-dynamic";
 
@@ -87,18 +87,14 @@ export default async function ProviderDetailPage(props: { params: Promise<{ id: 
                     </div>
                     <Separator className="my-6" />
                     <div className="space-y-3 hidden md:block">
-                    <Button asChild className='w-full'>
-                        <a href={`https://wa.me/233${provider.whatsapp.slice(1)}`} target="_blank" rel="noopener noreferrer">
+                        <ContactButton provider={provider} type="whatsapp" className="w-full">
                             <MessageCircle className="mr-2 h-4 w-4" />
                             Chat on WhatsApp
-                        </a>
-                    </Button>
-                    <Button asChild className='w-full' variant="outline">
-                        <a href={`tel:${provider.phone}`}>
+                        </ContactButton>
+                        <ContactButton provider={provider} type="call" className="w-full" variant="outline">
                             <Phone className="mr-2 h-4 w-4" />
                             Call Now
-                        </a>
-                    </Button>
+                        </ContactButton>
                     </div>
                 </CardContent>
                 </Card>
@@ -121,18 +117,14 @@ export default async function ProviderDetailPage(props: { params: Promise<{ id: 
 
         <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background p-3 md:hidden">
             <div className="container mx-auto flex items-center gap-3">
-            <Button asChild className="flex-1" variant="outline">
-                <a href={`tel:${provider.phone}`}>
-                <Phone className="mr-2 h-4 w-4" />
-                Call
-                </a>
-            </Button>
-            <Button asChild className="flex-1">
-                <a href={`https://wa.me/233${provider.whatsapp.slice(1)}`} target="_blank" rel="noopener noreferrer">
-                <MessageCircle className="mr-2 h-4 w-4" />
-                WhatsApp
-                </a>
-            </Button>
+                <ContactButton provider={provider} type="call" className="flex-1" variant="outline">
+                    <Phone className="mr-2 h-4 w-4" />
+                    Call
+                </ContactButton>
+                <ContactButton provider={provider} type="whatsapp" className="flex-1">
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    WhatsApp
+                </ContactButton>
             </div>
         </div>
     </PublicLayout>

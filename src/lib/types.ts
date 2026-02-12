@@ -113,7 +113,8 @@ export type Job = {
   estimatedCost?: number;
   price?: number;
   surgeMultiplier?: number;
-  status: 'REQUESTED' | 'QUOTED' | 'AWAITING_DEPOSIT' | 'IN_PROGRESS' | 'AWAITING_FINAL_PAYMENT' | 'COMPLETED' | 'CLOSED' | 'DISPUTED' | 'CANCELLED' | 'unknown' | string;
+  status: 'REQUESTED' | 'CONTACTED' | 'QUOTED' | 'AWAITING_DEPOSIT' | 'IN_PROGRESS' | 'AWAITING_FINAL_PAYMENT' | 'COMPLETED' | 'CLOSED' | 'DISPUTED' | 'CANCELLED' | 'unknown' | string;
+  contactMethod?: 'call' | 'whatsapp';
   createdAt: string;
   expiresAt?: string;
   assignedTo?: string;
