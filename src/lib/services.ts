@@ -5,6 +5,34 @@ import type { Category, Provider } from './types';
 import { getCategories, CATEGORIES } from './data';
 
 /**
+ * Helper to pick a relevant image based on the category name.
+ */
+function getImageForProvider(id: string, categoryName: string, existingImageId?: string): string {
+    // If they already have a custom image ID that isn't one of our auto-placeholders, keep it
+    if (existingImageId && !existingImageId.startsWith('provider')) return existingImageId;
+    
+    const cat = categoryName.toLowerCase();
+    
+    const getImageFromPool = (pool: string[]) => {
+        const index = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % pool.length;
+        return pool[index];
+    };
+
+    if (cat.includes('electric')) return getImageFromPool(['provider1', 'provider7']);
+    if (cat.includes('plumb')) return getImageFromPool(['provider2', 'provider8']);
+    if (cat.includes('phone') || cat.includes('mobile') || cat.includes('repair')) {
+        if (cat.includes('phone') || cat.includes('mobile')) return getImageFromPool(['provider3', 'provider9']);
+    }
+    if (cat.includes('mechanic') || cat.includes('car') || cat.includes('auto')) return getImageFromPool(['provider4', 'provider10']);
+    if (cat.includes('hair') || cat.includes('beauty') || cat.includes('salon') || cat.includes('beautician')) return getImageFromPool(['provider5', 'provider12']);
+    if (cat.includes('carpenter') || cat.includes('wood') || cat.includes('furniture')) return getImageFromPool(['provider6', 'provider11']);
+    
+    // Default to a random provider image if no match
+    const randomIndex = (id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 12) + 1;
+    return `provider${randomIndex}`;
+}
+
+/**
  * Fetches a category by its slug.
  */
 export async function getCategoryBySlug(slug: string): Promise<Category | undefined> {
@@ -95,7 +123,7 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
                 isFeatured: !!data.isFeatured,
                 rating: data.rating || 0,
                 reviewCount: data.reviewCount || 0,
-                imageId: data.imageId || `provider${(Math.floor(Math.random() * 12) + 1)}`,
+                imageId: getImageForProvider(data.id, categoryName, data.imageId),
                 createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : (typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString()),
                 approvedAt: data.approvedAt?.toDate?.() ? data.approvedAt.toDate().toISOString() : (typeof data.approvedAt === 'string' ? data.approvedAt : undefined),
                 updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : (typeof data.updatedAt === 'string' ? data.updatedAt : undefined),
@@ -157,7 +185,7 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
             isFeatured: !!data.isFeatured,
             rating: data.rating || 0,
             reviewCount: data.reviewCount || 0,
-            imageId: data.imageId || `provider${(Math.floor(Math.random() * 12) + 1)}`,
+            imageId: getImageForProvider(providerId, categoryName, data.imageId),
             createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : (typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString()),
             approvedAt: data.approvedAt?.toDate?.() ? data.approvedAt.toDate().toISOString() : (typeof data.approvedAt === 'string' ? data.approvedAt : undefined),
             updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : (typeof data.updatedAt === 'string' ? data.updatedAt : undefined),
