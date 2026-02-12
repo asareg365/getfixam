@@ -19,12 +19,12 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
       return { error: 'Please enter a valid PIN.' };
     }
 
-    // Check if the admin services are available
+    // 1. Check if the admin services are available
     if (!adminDb || !adminAuth) {
       return { error: 'The authentication server is temporarily offline. Please try again later.' };
     }
 
-    // 1. Check system-wide security settings (Lockouts)
+    // 2. Check system-wide security settings (Lockouts)
     try {
       const settingsRef = adminDb.collection('system_settings').doc('admin');
       const settingsSnap = await settingsRef.get();
@@ -42,7 +42,7 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
       // Ignore settings check failures during prototyping if the collection doesn't exist
     }
 
-    // 2. Find the provider by phone number
+    // 3. Find the provider by phone number
     const providersRef = adminDb.collection('providers');
     const query = providersRef.where('phone', '==', phone).limit(1);
     const snapshot = await query.get();
@@ -55,7 +55,7 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
     const providerData = providerDoc.data();
     const providerId = providerDoc.id;
 
-    // 3. Verify account status
+    // 4. Verify account status
     if (providerData.status !== 'approved') {
       if (providerData.status === 'suspended') {
         return { error: 'Your account has been suspended. Please contact GetFixam support.' };
@@ -66,7 +66,7 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
       return { error: 'Your account is still pending review. You will be notified via WhatsApp once approved.' };
     }
 
-    // 4. Verify PIN (Support both legacy plain-text 'loginPin' and new hashed 'loginPinHash')
+    // 5. Verify PIN (Support both legacy plain-text 'loginPin' and new hashed 'loginPinHash')
     const pinHash = providerData.loginPinHash;
     const plainPin = providerData.loginPin;
 
@@ -83,20 +83,20 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
       return { error: 'The PIN you entered is incorrect.' };
     }
 
-    // 5. Generate Custom Token
+    // 6. Generate Custom Token
     let customToken: string;
     try {
       // This is where the "payload must be of type object" error happens if keys are missing
       customToken = await adminAuth.createCustomToken(providerId);
     } catch (tokenErr: any) {
       // Trap the specific crypto/signing error to prevent red-screen crashes
-      if (tokenErr.message?.toLowerCase().includes('payload') || tokenErr.message?.toLowerCase().includes('object')) {
+      if (tokenErr.message?.toLowerCase().includes('payload')) {
           return { error: 'Authentication Error: The server is missing valid security keys to sign your session. Please contact GetFixam support.' };
       }
       return { error: 'The server failed to create a secure session. Please try again.' };
     }
 
-    // 6. Log Success (Non-blocking)
+    // 7. Log Success (Non-blocking)
     try {
         const headersList = await headers();
         const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown';
@@ -115,12 +115,7 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
     return { success: true, token: customToken };
 
   } catch (error: any) {
-    // Prevent overlay for crypto errors that reach here
-    if (error.message?.toLowerCase().includes('payload')) {
-        return { error: 'Security Error: Invalid server configuration. Session could not be signed.' };
-    }
-    
-    console.error('[Artisan Login] Error:', error.message || error);
+    // Final catch-all to prevent server crash
     return { error: 'An unexpected error occurred. Please contact support.' };
   }
 }

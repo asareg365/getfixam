@@ -30,7 +30,7 @@ function getAdminApp(): App {
       });
     }
   } catch (e) {
-    console.warn('[Firebase Admin] Failed to initialize with service-account.json:', e);
+    // Silent catch during strategy check
   }
 
   // Strategy 2: Use environment variable
@@ -46,14 +46,13 @@ function getAdminApp(): App {
       }
     }
   } catch (e) {
-    console.warn('[Firebase Admin] Failed to initialize with env JSON:', e);
+    // Silent catch
   }
 
   // Strategy 3: Project ID fallback (Limited functionality - createCustomToken will likely fail)
   try {
     return initializeApp({ projectId });
   } catch (e) {
-    console.error('[Firebase Admin] Final fallback initialization failed:', e);
     return initializeApp();
   }
 }
