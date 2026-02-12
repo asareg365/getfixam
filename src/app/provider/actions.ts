@@ -80,7 +80,7 @@ export async function updateProviderProfile(
 
     const providersRef = adminDb.collection('providers');
     
-    // Strategy 1: Direct lookup by ID (Most reliable as we use providerId as the UID)
+    // Strategy 1: Direct lookup by ID
     let providerDoc = await providersRef.doc(uid).get();
     
     // Strategy 2: Fallback to authUid query
@@ -111,7 +111,6 @@ export async function updateProviderProfile(
 
     await providerRef.update(updateData);
     
-    // Log the action
     const headersList = await headers();
     const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown';
     const userAgent = headersList.get('user-agent') || 'unknown';
@@ -130,5 +129,63 @@ export async function updateProviderProfile(
   } catch (e: any) {
     console.error('Error updating provider profile:', e);
     return { success: false, error: e.message || 'An unexpected error occurred saving your changes.' };
+  }
+}
+
+/**
+ * Updates an artisan's specialized services list.
+ */
+export async function updateProviderServices(
+    idToken: string,
+    services: { name: string; active: boolean; price?: number }[]
+) {
+  if (!idToken) {
+    return { success: false, error: "Authentication required." };
+  }
+
+  if (!adminDb || !adminAuth) {
+    return { success: false, error: 'Authentication or Database service is not available.' };
+  }
+  
+  try {
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const uid = decodedToken.uid;
+
+    const providersRef = adminDb.collection('providers');
+    let providerDoc = await providersRef.doc(uid).get();
+    
+    if (!providerDoc.exists) {
+        const snap = await providersRef.where('authUid', '==', uid).limit(1).get();
+        if (!snap.empty) providerDoc = snap.docs[0];
+    }
+
+    if (!providerDoc.exists) {
+      return { success: false, error: 'Artisan profile not found.' };
+    }
+
+    const providerRef = providerDoc.ref;
+    await providerRef.update({
+        services,
+        updatedAt: FieldValue.serverTimestamp(),
+    });
+    
+    const headersList = await headers();
+    const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+    const userAgent = headersList.get('user-agent') || 'unknown';
+    
+    await logProviderAction({
+        providerId: providerRef.id,
+        action: 'PROVIDER_SERVICES_UPDATE',
+        ipAddress,
+        userAgent,
+    });
+    
+    revalidatePath('/provider/services');
+    revalidatePath('/provider/dashboard');
+
+    return { success: true };
+  } catch (e: any) {
+    console.error('Error updating services:', e);
+    return { success: false, error: e.message || 'Failed to update services.' };
   }
 }

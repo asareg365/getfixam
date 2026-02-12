@@ -83,6 +83,7 @@ export async function getProviderData(idToken: string): Promise<{ provider: Prov
             imageId: providerData.imageId ?? '',
             serviceId: providerData.serviceId ?? '',
             category: categoryName,
+            services: providerData.services || [],
             createdAt: providerData.createdAt?.toDate?.() ? providerData.createdAt.toDate().toISOString() : (typeof providerData.createdAt === 'string' ? providerData.createdAt : new Date(0).toISOString()),
             approvedAt: providerData.approvedAt?.toDate?.() ? providerData.approvedAt.toDate().toISOString() : undefined,
         } as Provider;
