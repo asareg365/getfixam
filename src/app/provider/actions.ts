@@ -2,10 +2,11 @@
 
 import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { Provider } from '@/lib/types';
+import type { Provider, ProviderSettings } from '@/lib/types';
 import { logProviderAction } from '@/lib/audit-log';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import bcrypt from 'bcryptjs';
 
 /**
  * Checks if a provider exists and is eligible for PIN login.
@@ -43,7 +44,7 @@ export async function checkProviderForPinLogin(rawPhoneNumber: string): Promise<
         const plainPin = providerData.loginPin;
 
         if (providerData.status === 'approved' && !pinHash && !plainPin) {
-             return { canLogin: false, message: `Your account is approved, but no login PIN is set. Please contact support.` };
+             return { canLogin: true, message: null }; // Fallback allowing them to try login
         }
         
         if (providerData.status === 'approved') {
@@ -80,15 +81,11 @@ export async function updateProviderProfile(
 
     const providersRef = adminDb.collection('providers');
     
-    // Strategy 1: Direct lookup by ID
+    // Multi-strategy lookup for reliable updates
     let providerDoc = await providersRef.doc(uid).get();
-    
-    // Strategy 2: Fallback to authUid query
     if (!providerDoc.exists) {
         const snap = await providersRef.where('authUid', '==', uid).limit(1).get();
-        if (!snap.empty) {
-            providerDoc = snap.docs[0];
-        }
+        if (!snap.empty) providerDoc = snap.docs[0];
     }
 
     if (!providerDoc.exists) {
@@ -248,5 +245,107 @@ export async function updateProviderAvailability(
   } catch (e: any) {
     console.error('Error updating availability:', e);
     return { success: false, error: e.message || 'Failed to update availability.' };
+  }
+}
+
+/**
+ * Updates an artisan's account settings.
+ */
+export async function updateProviderSettings(
+    idToken: string,
+    settings: ProviderSettings
+) {
+  if (!idToken) return { success: false, error: "Authentication required." };
+  if (!adminDb || !adminAuth) return { success: false, error: 'System services unavailable.' };
+  
+  try {
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const uid = decodedToken.uid;
+
+    const providersRef = adminDb.collection('providers');
+    let providerDoc = await providersRef.doc(uid).get();
+    
+    if (!providerDoc.exists) {
+        const snap = await providersRef.where('authUid', '==', uid).limit(1).get();
+        if (!snap.empty) providerDoc = snap.docs[0];
+    }
+
+    if (!providerDoc.exists) return { success: false, error: 'Artisan profile not found.' };
+
+    await providerDoc.ref.update({
+        settings,
+        updatedAt: FieldValue.serverTimestamp(),
+    });
+    
+    revalidatePath('/provider/settings');
+    return { success: true };
+  } catch (e: any) {
+    console.error('Error updating settings:', e);
+    return { success: false, error: e.message || 'Failed to save settings.' };
+  }
+}
+
+/**
+ * Changes an artisan's login PIN.
+ */
+export async function changeProviderPin(
+    idToken: string,
+    oldPin: string,
+    newPin: string
+) {
+  if (!idToken) return { success: false, error: "Authentication required." };
+  if (!adminDb || !adminAuth) return { success: false, error: 'System services unavailable.' };
+  
+  try {
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const uid = decodedToken.uid;
+
+    const providersRef = adminDb.collection('providers');
+    let providerDoc = await providersRef.doc(uid).get();
+    
+    if (!providerDoc.exists) {
+        const snap = await providersRef.where('authUid', '==', uid).limit(1).get();
+        if (!snap.empty) providerDoc = snap.docs[0];
+    }
+
+    if (!providerDoc.exists) return { success: false, error: 'Artisan profile not found.' };
+
+    const providerData = providerDoc.data();
+    const pinHash = providerData.loginPinHash;
+    const plainPin = providerData.loginPin;
+
+    // Verify old PIN
+    let isOldPinValid = false;
+    if (pinHash) {
+        isOldPinValid = await bcrypt.compare(oldPin, pinHash);
+    } else if (plainPin) {
+        isOldPinValid = plainPin === oldPin;
+    }
+
+    if (!isOldPinValid) {
+        return { success: false, error: "The current PIN you entered is incorrect." };
+    }
+
+    // Hash and save new PIN
+    const newPinHash = await bcrypt.hash(newPin, 10);
+    await providerDoc.ref.update({
+        loginPinHash: newPinHash,
+        loginPin: FieldValue.delete(), // Always move away from plain text
+        loginPinCreatedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+    });
+    
+    const headersList = await headers();
+    await logProviderAction({
+        providerId: providerDoc.id,
+        action: 'PROVIDER_PIN_CHANGED_SELF',
+        ipAddress: headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown',
+        userAgent: headersList.get('user-agent') || 'unknown',
+    });
+
+    return { success: true };
+  } catch (e: any) {
+    console.error('Error changing PIN:', e);
+    return { success: false, error: e.message || 'Failed to change PIN.' };
   }
 }

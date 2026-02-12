@@ -19,6 +19,12 @@ export type Service = {
   minSurge?: number;
 };
 
+export type ProviderSettings = {
+    whatsappOnly: boolean;
+    hideRating: boolean;
+    notifyOnReview: boolean;
+};
+
 export type Provider = {
   id: string;
   authUid?: string;
@@ -54,6 +60,7 @@ export type Provider = {
   availability?: {
       [day: string]: { from: string; to: string; active: boolean };
   };
+  settings?: ProviderSettings;
   performanceScore?: number;
   jobsCompleted?: number;
   jobsCancelled?: number;
