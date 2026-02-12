@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { auth } from '@/lib/firebase';
 import { signInWithCustomToken } from 'firebase/auth';
@@ -70,7 +70,16 @@ export default function ProviderLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-secondary/30 p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-secondary/30 p-4">
+      <div className="w-full max-w-sm mb-6">
+        <Button variant="ghost" asChild size="sm" className="rounded-full text-muted-foreground hover:text-primary">
+          <Link href="/">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Website
+          </Link>
+        </Button>
+      </div>
+
       <Card className="w-full max-w-sm shadow-2xl border-none rounded-3xl">
         <CardHeader className="text-center space-y-4">
            <Link href="/" className="flex justify-center items-center">
