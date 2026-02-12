@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PublicLayout from "@/components/layout/PublicLayout";
 import { Separator } from "@/components/ui/separator";
 import { ShieldCheck, Users, MapPin, CheckCircle2 } from "lucide-react";
+import Link from "next/link";
 
 export default function AboutPage() {
     return (
