@@ -22,7 +22,8 @@ function getAdminApp(): App {
     const credsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
     if (credsJson && credsJson !== 'null' && credsJson !== 'undefined') {
       const serviceAccount = JSON.parse(credsJson);
-      if (serviceAccount && typeof serviceAccount === 'object') {
+      // Ensure we have a valid object with required fields for signing capabilities
+      if (serviceAccount && typeof serviceAccount === 'object' && serviceAccount.private_key) {
         return initializeApp({
           credential: cert(serviceAccount),
           projectId,
@@ -35,7 +36,7 @@ function getAdminApp(): App {
 
   try {
     // Attempt 2: Initializing with just the Project ID (Standard for Workstations with ADC)
-    // Note: createCustomToken might fail in some limited environments without a service account JSON.
+    // Note: createCustomToken will fail if ADC doesn't provide a service account identity.
     return initializeApp({ projectId });
   } catch (e) {
     console.error('[Firebase Admin] Failed to initialize with Project ID:', e);

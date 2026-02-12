@@ -10,14 +10,18 @@ import bcrypt from 'bcryptjs';
  */
 export async function loginWithPin(phone: string, pin: string): Promise<{ success: true; token: string } | { error: string }> {
   try {
-    if (!/^0[0-9]{9}$/.test(phone)) {
+    if (!phone || !/^0[0-9]{9}$/.test(phone)) {
       return { error: 'Enter a valid Ghanaian phone number starting with 0.' };
+    }
+
+    if (!pin || pin.length < 4) {
+      return { error: 'Please enter a valid PIN.' };
     }
 
     // Check if the admin services are available
     if (!adminDb || !adminAuth) {
-      console.error('[Artisan Login] Admin services are null.');
-      return { error: 'The authentication server is temporarily unavailable. Please try again in a few minutes.' };
+      console.error('[Artisan Login] Admin services are unavailable.');
+      return { error: 'The authentication server is temporarily offline. Please try again later.' };
     }
 
     // 1. Check system-wide security settings (Lockouts)
@@ -28,15 +32,14 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
       if (settingsSnap.exists) {
         const settings = settingsSnap.data();
         if (settings?.adminLocked === true) {
-          return { error: 'The system is currently locked for maintenance. Please try again later.' };
+          return { error: 'The system is locked for maintenance. Please try again later.' };
         }
         if (settings?.providerLoginsDisabled === true) {
           return { error: 'Artisan logins are temporarily disabled by an administrator.' };
         }
       }
     } catch (e) {
-      // If settings don't exist yet, we continue (graceful degradation)
-      console.warn('[Artisan Login] Could not verify system settings, proceeding anyway.');
+      console.warn('[Artisan Login] System settings check skipped (not found).');
     }
 
     // 2. Find the provider by phone number
@@ -45,12 +48,16 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
     const snapshot = await query.get();
 
     if (snapshot.empty) {
-      return { error: 'No account found with this phone number. Please register your business first.' };
+      return { error: 'No account found with this phone number. Please list your business first.' };
     }
 
     const providerDoc = snapshot.docs[0];
     const providerData = providerDoc.data();
     const providerId = providerDoc.id;
+
+    if (!providerId) {
+        return { error: 'Invalid account data. Please contact support.' };
+    }
 
     // 3. Verify account status
     if (providerData.status !== 'approved') {
@@ -69,14 +76,12 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
 
     let isPinValid = false;
 
-    if (pinHash) {
-      // Modern hashed PIN verification
+    if (pinHash && typeof pinHash === 'string') {
       isPinValid = await bcrypt.compare(pin, pinHash);
-    } else if (plainPin) {
-      // Legacy plain-text verification
+    } else if (plainPin && typeof plainPin === 'string') {
       isPinValid = plainPin === pin;
     } else {
-      return { error: 'A login PIN has not been set for your account. Please contact GetFixam Admin for a reset.' };
+      return { error: 'No login PIN is set for your account. Please contact GetFixam Admin for a reset.' };
     }
 
     if (!isPinValid) {
@@ -84,31 +89,38 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
     }
 
     // 5. Generate Custom Token
-    // This requires the Admin SDK to be initialized with a service account or proper ADC credentials.
     let customToken: string;
     try {
+      // providerId is guaranteed to be a string here
       customToken = await adminAuth.createCustomToken(providerId);
     } catch (tokenErr: any) {
       console.error('[Artisan Login] Token Generation Error:', tokenErr);
-      return { error: 'The security server failed to generate your session. This usually happens if the server is not fully configured with its keys.' };
+      if (tokenErr.message?.includes('payload')) {
+          return { error: 'Security configuration error. The server lacks the required keys to sign your session.' };
+      }
+      return { error: 'The authentication server failed to generate your session. Please try again.' };
     }
 
     // 6. Log Success
-    const headersList = await headers();
-    const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown';
-    const userAgent = headersList.get('user-agent') || 'unknown';
+    try {
+        const headersList = await headers();
+        const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+        const userAgent = headersList.get('user-agent') || 'unknown';
 
-    await logProviderAction({
-      providerId: providerId,
-      action: 'PROVIDER_LOGIN_PIN_SUCCESS',
-      ipAddress,
-      userAgent,
-    });
+        await logProviderAction({
+            providerId: providerId,
+            action: 'PROVIDER_LOGIN_PIN_SUCCESS',
+            ipAddress,
+            userAgent,
+        });
+    } catch (logErr) {
+        console.warn('[Artisan Login] Success log failed, but continuing login.');
+    }
 
     return { success: true, token: customToken };
 
   } catch (error: any) {
     console.error('[Artisan Login] Critical Error:', error);
-    return { error: 'An unexpected error occurred. Please contact support if this persists.' };
+    return { error: 'An unexpected error occurred during login. Please contact support.' };
   }
 }

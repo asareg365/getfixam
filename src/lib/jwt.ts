@@ -16,8 +16,9 @@ export type AdminJWTPayload = {
 };
 
 export async function signToken(payload: Omit<AdminJWTPayload, 'iat' | 'exp'>): Promise<string> {
-  if (!payload || typeof payload !== 'object') {
-    throw new Error('JWT Payload must be a valid object');
+  // Defensive check: typeof null is 'object', so we must be explicit.
+  if (!payload || typeof payload !== 'object' || payload === null) {
+    throw new Error('JWT Payload must be a valid non-null object');
   }
 
   return await new SignJWT(payload as any)
