@@ -6,33 +6,37 @@ import { auth } from '@/lib/firebase';
 import { getProviderData } from '@/lib/provider';
 import { updateProviderProfile } from '../actions';
 import type { Provider } from '@/lib/types';
+import Link from 'next/link';
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function ProfileSkeleton() {
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Edit Your Profile</CardTitle>
-                <CardDescription>Update your business name, location, and contact information.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="space-y-2"><Label>Business Name</Label><Skeleton className="h-10 w-full" /></div>
-                <div className="space-y-2"><Label>Phone Number (Read-only)</Label><Skeleton className="h-10 w-full" /></div>
-                <div className="space-y-2"><Label>WhatsApp Number</Label><Skeleton className="h-10 w-full" /></div>
-                <div className="space-y-2"><Label>Zone</Label><Skeleton className="h-10 w-full" /></div>
-                <div className="space-y-2"><Label>Digital Address</Label><Skeleton className="h-10 w-full" /></div>
-            </CardContent>
-            <CardFooter>
-                 <Skeleton className="h-10 w-24" />
-            </CardFooter>
-        </Card>
+        <div className="space-y-6">
+            <Skeleton className="h-10 w-40" />
+            <Card>
+                <CardHeader>
+                    <CardTitle>Edit Your Profile</CardTitle>
+                    <CardDescription>Update your business name, location, and contact information.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="space-y-2"><Label>Business Name</Label><Skeleton className="h-10 w-full" /></div>
+                    <div className="space-y-2"><Label>Phone Number (Read-only)</Label><Skeleton className="h-10 w-full" /></div>
+                    <div className="space-y-2"><Label>WhatsApp Number</Label><Skeleton className="h-10 w-full" /></div>
+                    <div className="space-y-2"><Label>Zone</Label><Skeleton className="h-10 w-full" /></div>
+                    <div className="space-y-2"><Label>Digital Address</Label><Skeleton className="h-10 w-full" /></div>
+                </CardContent>
+                <CardFooter>
+                    <Skeleton className="h-10 w-24" />
+                </CardFooter>
+            </Card>
+        </div>
     );
 }
 
@@ -112,71 +116,81 @@ export default function ProviderProfilePage() {
   }
 
   return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Edit Your Profile</CardTitle>
-          <CardDescription>Update your business name, location, and contact information.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          
-          <div className="space-y-2">
-            <Label htmlFor="name">Business Name</Label>
-            <Input
-              id="name"
-              name="name"
-              value={formState.name}
-              onChange={handleInputChange}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label>Phone Number (Read-only)</Label>
-            <Input
-              value={provider.phone}
-              readOnly
-              disabled
-              className="bg-muted/50"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="whatsapp">WhatsApp Number</Label>
-            <Input
-              id="whatsapp"
-              name="whatsapp"
-              type="tel"
-              value={formState.whatsapp}
-              onChange={handleInputChange}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="zone">Zone</Label>
-            {/* TODO: This could be a dropdown in the future */}
-            <Input
-              id="zone"
-              name="zone"
-              value={formState.zone}
-              onChange={handleInputChange}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="digitalAddress">Digital Address</Label>
-            <Input
-              id="digitalAddress"
-              name="digitalAddress"
-              value={formState.digitalAddress}
-              onChange={handleInputChange}
-            />
-          </div>
-        </CardContent>
-        <CardFooter>
-            <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Changes
+      <div className="space-y-6">
+        <div className="flex items-center">
+            <Button variant="ghost" asChild className="-ml-4 text-muted-foreground hover:text-primary">
+                <Link href="/provider/dashboard">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Dashboard
+                </Link>
             </Button>
-        </CardFooter>
-      </Card>
+        </div>
+
+        <Card>
+            <CardHeader>
+            <CardTitle>Edit Your Profile</CardTitle>
+            <CardDescription>Update your business name, location, and contact information.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+            
+            <div className="space-y-2">
+                <Label htmlFor="name">Business Name</Label>
+                <Input
+                id="name"
+                name="name"
+                value={formState.name}
+                onChange={handleInputChange}
+                />
+            </div>
+            
+            <div className="space-y-2">
+                <Label>Phone Number (Read-only)</Label>
+                <Input
+                value={provider.phone}
+                readOnly
+                disabled
+                className="bg-muted/50"
+                />
+            </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="whatsapp">WhatsApp Number</Label>
+                <Input
+                id="whatsapp"
+                name="whatsapp"
+                type="tel"
+                value={formState.whatsapp}
+                onChange={handleInputChange}
+                />
+            </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="zone">Zone</Label>
+                <Input
+                id="zone"
+                name="zone"
+                value={formState.zone}
+                onChange={handleInputChange}
+                />
+            </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="digitalAddress">Digital Address</Label>
+                <Input
+                id="digitalAddress"
+                name="digitalAddress"
+                value={formState.digitalAddress}
+                onChange={handleInputChange}
+                />
+            </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleSave} disabled={isSaving}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Changes
+                </Button>
+            </CardFooter>
+        </Card>
+      </div>
   );
 }
