@@ -3,6 +3,7 @@
 import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import { logProviderAction } from '@/lib/audit-log';
 import { headers } from 'next/headers';
+import bcrypt from 'bcryptjs';
 
 /**
  * Verifies the artisan's PIN and returns a custom Firebase token if valid.
@@ -62,17 +63,35 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
       return { error: 'Your account is still pending review. You will be notified via WhatsApp once approved.' };
     }
 
-    // 4. Verify PIN
-    if (!providerData.loginPin) {
-      return { error: 'A login PIN has not been set for your account. Please contact GetFixam Admin.' };
+    // 4. Verify PIN (Support both legacy plain-text 'loginPin' and new 'loginPinHash')
+    const pinHash = providerData.loginPinHash;
+    const plainPin = providerData.loginPin;
+
+    let isPinValid = false;
+
+    if (pinHash) {
+      // Modern hashed PIN verification
+      isPinValid = await bcrypt.compare(pin, pinHash);
+    } else if (plainPin) {
+      // Legacy plain-text verification
+      isPinValid = plainPin === pin;
+    } else {
+      return { error: 'A login PIN has not been set for your account. Please contact GetFixam Admin for a reset.' };
     }
 
-    if (providerData.loginPin !== pin) {
+    if (!isPinValid) {
       return { error: 'The PIN you entered is incorrect.' };
     }
 
     // 5. Generate Custom Token
-    const customToken = await adminAuth.createCustomToken(providerId);
+    // This requires the Admin SDK to be initialized with a service account or proper ADC credentials.
+    let customToken: string;
+    try {
+      customToken = await adminAuth.createCustomToken(providerId);
+    } catch (tokenErr: any) {
+      console.error('[Artisan Login] Token Generation Error:', tokenErr);
+      return { error: 'The security server failed to generate your session. This usually happens if the server is not fully configured with its keys.' };
+    }
 
     // 6. Log Success
     const headersList = await headers();

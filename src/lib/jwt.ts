@@ -16,6 +16,10 @@ export type AdminJWTPayload = {
 };
 
 export async function signToken(payload: Omit<AdminJWTPayload, 'iat' | 'exp'>): Promise<string> {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('JWT Payload must be a valid object');
+  }
+
   return await new SignJWT(payload as any)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
