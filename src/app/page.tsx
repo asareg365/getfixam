@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CATEGORIES } from '@/lib/data';
 import CategoryCard from '@/components/CategoryCard';
+import { searchAction } from './actions';
 
 export default function LandingPage() {
   return (
@@ -41,7 +42,7 @@ export default function LandingPage() {
             </p>
             
             <div className="w-full max-w-3xl mx-auto flex flex-col md:flex-row gap-3 p-3 bg-white rounded-[32px] shadow-2xl border border-primary/10 mb-12">
-              <form action="/category/all" className="flex-1 flex flex-col md:flex-row gap-3">
+              <form action={searchAction} className="flex-1 flex flex-col md:flex-row gap-3">
                 <div className="flex-1 flex items-center px-4 border-b md:border-b-0 md:border-r border-muted">
                   <Search className="h-5 w-5 text-muted-foreground mr-3" />
                   <Input 

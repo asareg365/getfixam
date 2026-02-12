@@ -1,4 +1,3 @@
-
 import { getCategories } from '@/lib/data';
 import { getProviders } from '@/lib/services';
 import PublicLayout from '@/components/layout/PublicLayout';
@@ -9,17 +8,18 @@ import type { Category, Provider } from '@/lib/types';
 export const dynamic = "force-dynamic";
 
 export default async function SearchPage(props: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; location?: string }>;
 }) {
   const searchParams = await props.searchParams;
   const query = (searchParams.q || '').toLowerCase().trim();
+  const locationQuery = (searchParams.location || '').toLowerCase().trim();
 
-  if (!query) {
+  if (!query && !locationQuery) {
     return (
       <PublicLayout>
         <div className="container py-20 text-center">
-          <h2 className="text-2xl font-semibold">No search term provided</h2>
-          <p className="text-muted-foreground mt-2">Please go back and enter a search term.</p>
+          <h2 className="text-2xl font-semibold">No search criteria provided</h2>
+          <p className="text-muted-foreground mt-2">Please go back and enter a service or location.</p>
         </div>
       </PublicLayout>
     );
@@ -31,20 +31,29 @@ export default async function SearchPage(props: {
   ]);
 
   const matchedCategories = categories.filter((cat) =>
-    cat.name.toLowerCase().includes(query)
+    query && cat.name.toLowerCase().includes(query)
   );
 
-  const matchedProviders = providers.filter((p) =>
-    p.name.toLowerCase().includes(query) ||
-    (p.category && p.category.toLowerCase().includes(query))
-  );
+  const matchedProviders = providers.filter((p) => {
+    const matchesQuery = !query || 
+      p.name.toLowerCase().includes(query) ||
+      (p.category && p.category.toLowerCase().includes(query));
+    
+    const matchesLocation = !locationQuery || 
+      p.location.zone.toLowerCase().includes(locationQuery) ||
+      p.location.city.toLowerCase().includes(locationQuery);
+
+    return matchesQuery && matchesLocation;
+  });
 
   return (
     <PublicLayout>
       <div className="container mx-auto px-4 py-12 space-y-12">
         <div>
           <h1 className="text-3xl font-bold font-headline">
-            Results for <span className="text-primary">“{query}”</span>
+            Results for {query && <span className="text-primary">“{query}”</span>}
+            {query && locationQuery && <span> in </span>}
+            {locationQuery && <span className="text-primary">“{locationQuery}”</span>}
           </h1>
           <p className="text-muted-foreground mt-1">
             {matchedCategories.length + matchedProviders.length} result(s) found
@@ -75,9 +84,9 @@ export default async function SearchPage(props: {
 
         {matchedCategories.length === 0 && matchedProviders.length === 0 && (
           <div className="text-center py-20 border-2 border-dashed rounded-lg bg-muted/30">
-            <h3 className="text-xl font-semibold">No results found for “{query}”</h3>
+            <h3 className="text-xl font-semibold">No results found</h3>
             <p className="mt-2 text-muted-foreground">
-              Try searching for a service like <b>plumber</b>, <b>electrician</b>, or <b>mechanic</b>.
+              Try searching for a service like <b>plumber</b> or a different area like <b>Kato</b>.
             </p>
           </div>
         )}
