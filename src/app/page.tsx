@@ -160,7 +160,8 @@ export default function LandingPage() {
             </a>
           </div>
 
-          <div className="flex justify-center gap-8 text-sm font-bold text-muted-foreground mb-8">
+          <div className="flex justify-center flex-wrap gap-8 text-sm font-bold text-muted-foreground mb-8">
+            <Link href="/about" className="hover:text-primary transition-colors">About</Link>
             <Link href="/terms" className="hover:text-primary transition-colors">Terms</Link>
             <Link href="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
             <Link href="/admin/login" className="hover:text-primary transition-colors flex items-center">

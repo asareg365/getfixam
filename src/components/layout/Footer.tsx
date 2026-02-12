@@ -31,7 +31,8 @@ export default function Footer() {
           </a>
         </div>
 
-        <div className="flex justify-center gap-6 mt-4 text-xs text-muted-foreground">
+        <div className="flex justify-center gap-6 mt-4 text-xs text-muted-foreground flex-wrap">
+          <Link href="/about" className="hover:text-primary transition-colors">About</Link>
           <Link href="/terms" className="hover:text-primary transition-colors">Terms</Link>
           <Link href="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
           <Link href="/admin/login" className="hover:text-primary transition-colors">Admin Access</Link>
