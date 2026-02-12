@@ -189,3 +189,61 @@ export async function updateProviderServices(
     return { success: false, error: e.message || 'Failed to update services.' };
   }
 }
+
+/**
+ * Updates an artisan's weekly availability.
+ */
+export async function updateProviderAvailability(
+    idToken: string,
+    availability: { [day: string]: { from: string; to: string; active: boolean } }
+) {
+  if (!idToken) {
+    return { success: false, error: "Authentication required." };
+  }
+
+  if (!adminDb || !adminAuth) {
+    return { success: false, error: 'Authentication or Database service is not available.' };
+  }
+  
+  try {
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const uid = decodedToken.uid;
+
+    const providersRef = adminDb.collection('providers');
+    let providerDoc = await providersRef.doc(uid).get();
+    
+    if (!providerDoc.exists) {
+        const snap = await providersRef.where('authUid', '==', uid).limit(1).get();
+        if (!snap.empty) providerDoc = snap.docs[0];
+    }
+
+    if (!providerDoc.exists) {
+      return { success: false, error: 'Artisan profile not found.' };
+    }
+
+    const providerRef = providerDoc.ref;
+    await providerRef.update({
+        availability,
+        updatedAt: FieldValue.serverTimestamp(),
+    });
+    
+    const headersList = await headers();
+    const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+    const userAgent = headersList.get('user-agent') || 'unknown';
+    
+    await logProviderAction({
+        providerId: providerRef.id,
+        action: 'PROVIDER_AVAILABILITY_UPDATE',
+        ipAddress,
+        userAgent,
+    });
+    
+    revalidatePath('/provider/availability');
+    revalidatePath('/provider/dashboard');
+
+    return { success: true };
+  } catch (e: any) {
+    console.error('Error updating availability:', e);
+    return { success: false, error: e.message || 'Failed to update availability.' };
+  }
+}

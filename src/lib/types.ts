@@ -1,4 +1,3 @@
-
 import type { LucideIcon } from "lucide-react";
 
 export type Category = {
@@ -53,7 +52,7 @@ export type Provider = {
   updatedAt?: string;
   services?: { name: string; active: boolean; price?: number }[];
   availability?: {
-      [day: string]: { from: string; to: string };
+      [day: string]: { from: string; to: string; active: boolean };
   };
   performanceScore?: number;
   jobsCompleted?: number;
