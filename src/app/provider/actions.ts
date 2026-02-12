@@ -7,9 +7,9 @@ import { logProviderAction } from '@/lib/audit-log';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
-// Re-using getProviderData from lib/provider.ts is a good idea.
-import { getProviderData } from '@/lib/provider';
-
+/**
+ * Checks if a provider exists and is eligible for PIN login.
+ */
 export async function checkProviderForPinLogin(rawPhoneNumber: string): Promise<{ canLogin: boolean; message: string | null }> {
     if (!rawPhoneNumber || !/^0[0-9]{9}$/.test(rawPhoneNumber)) {
         return { canLogin: false, message: 'Please enter a valid 10-digit Ghanaian phone number starting with 0.' };
@@ -39,11 +39,14 @@ export async function checkProviderForPinLogin(rawPhoneNumber: string): Promise<
             return { canLogin: false, message: `Your account is still pending approval. Please wait for an admin to verify your business.` };
         }
 
-        if (providerData.status === 'approved' && !providerData.loginPinHash) {
-             return { canLogin: false, message: `Your account is approved, but no login PIN is set. This might mean you've already used it. Please contact support.` };
+        const pinHash = providerData.loginPinHash;
+        const plainPin = providerData.loginPin;
+
+        if (providerData.status === 'approved' && !pinHash && !plainPin) {
+             return { canLogin: false, message: `Your account is approved, but no login PIN is set. Please contact support.` };
         }
         
-        if (providerData.status === 'approved' && providerData.loginPinHash) {
+        if (providerData.status === 'approved') {
             return { canLogin: true, message: null };
         }
 
@@ -55,7 +58,9 @@ export async function checkProviderForPinLogin(rawPhoneNumber: string): Promise<
     }
 }
 
-
+/**
+ * Updates an artisan's profile data.
+ */
 export async function updateProviderProfile(
     idToken: string,
     data: { name: string; whatsapp: string; digitalAddress: string; zone: string; }
@@ -74,22 +79,31 @@ export async function updateProviderProfile(
     const uid = decodedToken.uid;
 
     const providersRef = adminDb.collection('providers');
-    const snap = await providersRef.where('authUid', '==', uid).limit(1).get();
-
-    if (snap.empty) {
-      return { success: false, error: 'Provider not found.' };
+    
+    // Strategy 1: Direct lookup by ID (Most reliable as we use providerId as the UID)
+    let providerDoc = await providersRef.doc(uid).get();
+    
+    // Strategy 2: Fallback to authUid query
+    if (!providerDoc.exists) {
+        const snap = await providersRef.where('authUid', '==', uid).limit(1).get();
+        if (!snap.empty) {
+            providerDoc = snap.docs[0];
+        }
     }
 
-    const providerRef = snap.docs[0].ref;
-    const currentProviderData = snap.docs[0].data() as Provider;
+    if (!providerDoc.exists) {
+      return { success: false, error: 'Artisan profile not found. Please try logging in again.' };
+    }
 
-    // Sanitize and validate the input data
+    const providerRef = providerDoc.ref;
+    const currentProviderData = providerDoc.data() as any;
+
     const updateData: any = {
         name: data.name,
         whatsapp: data.whatsapp,
         digitalAddress: data.digitalAddress,
         location: {
-            ...currentProviderData.location,
+            ...(currentProviderData.location || { region: 'Bono Region', city: 'Berekum' }),
             zone: data.zone,
         },
         updatedAt: FieldValue.serverTimestamp(),
@@ -115,6 +129,6 @@ export async function updateProviderProfile(
     return { success: true };
   } catch (e: any) {
     console.error('Error updating provider profile:', e);
-    return { success: false, error: e.message || 'An unexpected error occurred.' };
+    return { success: false, error: e.message || 'An unexpected error occurred saving your changes.' };
   }
 }

@@ -6,8 +6,6 @@ import type { Provider } from '@/lib/types';
 /**
  * Securely fetches provider data from the server and links their Firebase Auth UID.
  * This is called from the client with the user's ID token.
- * @param idToken The Firebase ID token of the currently signed-in user.
- * @returns An object containing the provider data or an error.
  */
 export async function getProviderData(idToken: string): Promise<{ provider: Provider | null; error: string | null }> {
     if (!idToken) {
@@ -48,17 +46,26 @@ export async function getProviderData(idToken: string): Promise<{ provider: Prov
         }
 
         if (!providerDoc) {
-            return { provider: null, error: "We could not find an artisan account matching your login. Please ensure you have listed your business." };
+            return { provider: null, error: "Artisan profile not found. Please ensure your listing has been approved." };
         }
 
         const providerData = providerDoc.data();
         let categoryName = 'Artisan';
         
         if (providerData.serviceId) {
-            const serviceDoc = await adminDb.collection('services').doc(providerData.serviceId).get();
-            if (serviceDoc.exists) {
-                categoryName = serviceDoc.data()?.name || 'Artisan';
+            try {
+                const serviceDoc = await adminDb.collection('services').doc(providerData.serviceId).get();
+                if (serviceDoc.exists) {
+                    categoryName = serviceDoc.data()?.name || 'Artisan';
+                }
+            } catch (e) {
+                // Fallback if services collection is slow
             }
+        }
+        
+        // Ensure authUid is set for future updates
+        if (providerData.authUid !== uid) {
+            await providerDoc.ref.update({ authUid: uid }).catch(() => {});
         }
         
         const data = {
