@@ -72,7 +72,7 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
             }
         }
 
-        // 4. Map to final Provider type
+        // 4. Map to final Provider type and ensure serialization
         const providers = providersData.map(data => {
             let categoryName = servicesMap.get(data.serviceId);
             if (!categoryName) {
@@ -80,18 +80,25 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
                 categoryName = staticCat?.name || data.category || 'Artisan';
             }
 
-            let createdAt = new Date().toISOString();
-            try {
-                if (data.createdAt?.toDate) createdAt = data.createdAt.toDate().toISOString();
-                else if (data.createdAt) createdAt = new Date(data.createdAt).toISOString();
-            } catch (e) {}
-
             return {
-                ...data,
+                id: data.id,
+                authUid: data.authUid || '',
+                name: data.name || 'Unknown',
                 category: categoryName,
-                createdAt,
-                approvedAt: data.approvedAt?.toDate?.() ? data.approvedAt.toDate().toISOString() : undefined,
+                serviceId: data.serviceId || '',
+                phone: data.phone || '',
+                whatsapp: data.whatsapp || '',
+                digitalAddress: data.digitalAddress || '',
+                location: data.location || { region: 'Bono Region', city: 'Berekum', zone: 'Unknown' },
+                status: data.status || 'pending',
+                verified: !!data.verified,
+                isFeatured: !!data.isFeatured,
+                rating: data.rating || 0,
+                reviewCount: data.reviewCount || 0,
                 imageId: data.imageId || `provider${(Math.floor(Math.random() * 12) + 1)}`,
+                createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : (typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString()),
+                approvedAt: data.approvedAt?.toDate?.() ? data.approvedAt.toDate().toISOString() : (typeof data.approvedAt === 'string' ? data.approvedAt : undefined),
+                updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : (typeof data.updatedAt === 'string' ? data.updatedAt : undefined),
             } as Provider;
         });
 
@@ -121,8 +128,6 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
         }
 
         if (!data) {
-            // No need for fallback here usually as detailed view is less critical than listing,
-            // but for safety during development we can try client SDK
             return undefined;
         }
         
@@ -139,10 +144,23 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
 
         return {
             id: providerId,
-            ...data,
+            authUid: data.authUid || '',
+            name: data.name || 'Unknown',
             category: categoryName,
-            createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
-            approvedAt: data.approvedAt?.toDate?.() ? data.approvedAt.toDate().toISOString() : undefined,
+            serviceId: data.serviceId || '',
+            phone: data.phone || '',
+            whatsapp: data.whatsapp || '',
+            digitalAddress: data.digitalAddress || '',
+            location: data.location || { region: 'Bono Region', city: 'Berekum', zone: 'Unknown' },
+            status: data.status || 'pending',
+            verified: !!data.verified,
+            isFeatured: !!data.isFeatured,
+            rating: data.rating || 0,
+            reviewCount: data.reviewCount || 0,
+            imageId: data.imageId || `provider${(Math.floor(Math.random() * 12) + 1)}`,
+            createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : (typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString()),
+            approvedAt: data.approvedAt?.toDate?.() ? data.approvedAt.toDate().toISOString() : (typeof data.approvedAt === 'string' ? data.approvedAt : undefined),
+            updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : (typeof data.updatedAt === 'string' ? data.updatedAt : undefined),
         } as Provider;
     } catch (e) {
         console.error("Error in getProviderById:", e);

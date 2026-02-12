@@ -75,10 +75,21 @@ function ProvidersPage() {
           const data = doc.data();
           return {
             id: doc.id,
-            ...data,
+            authUid: data.authUid || '',
+            name: data.name || 'Unnamed',
+            phone: data.phone,
+            whatsapp: data.whatsapp,
+            digitalAddress: data.digitalAddress,
+            location: data.location || { region: 'Bono Region', city: 'Berekum', zone: 'Unknown' },
+            status: data.status || 'pending',
+            verified: !!data.verified,
+            serviceId: data.serviceId,
+            rating: data.rating || 0,
+            reviewCount: data.reviewCount || 0,
             category: servicesMap.get(data.serviceId) || 'N/A',
-            createdAt: data.createdAt?.toDate()?.toISOString(),
-            approvedAt: data.approvedAt?.toDate()?.toISOString(),
+            createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : (typeof data.createdAt === 'string' ? data.createdAt : undefined),
+            approvedAt: data.approvedAt?.toDate?.() ? data.approvedAt.toDate().toISOString() : (typeof data.approvedAt === 'string' ? data.approvedAt : undefined),
+            updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : (typeof data.updatedAt === 'string' ? data.updatedAt : undefined),
           } as Provider;
         });
 

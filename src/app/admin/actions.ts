@@ -108,7 +108,17 @@ export async function getSwappableArtisans(serviceType: string, excludedArtisanI
         }
 
         const artisans = providersSnap.docs
-            .map(doc => ({ id: doc.id, ...doc.data() } as Provider))
+            .map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    name: data.name || 'Unknown',
+                    phone: data.phone || '',
+                    serviceId: data.serviceId || '',
+                    status: data.status || 'approved',
+                    location: data.location || { region: 'Bono Region', city: 'Berekum', zone: 'Unknown' },
+                } as Provider;
+            })
             .filter(artisan => !excludedArtisanIds.includes(artisan.id));
 
         return { success: true, artisans: artisans };
