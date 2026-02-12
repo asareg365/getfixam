@@ -124,6 +124,7 @@ export async function updateProviderProfile(
     
     revalidatePath('/provider/profile');
     revalidatePath('/provider/dashboard');
+    revalidatePath(`/providers/${providerRef.id}`);
 
     return { success: true };
   } catch (e: any) {
@@ -182,6 +183,7 @@ export async function updateProviderServices(
     
     revalidatePath('/provider/services');
     revalidatePath('/provider/dashboard');
+    revalidatePath(`/providers/${providerRef.id}`);
 
     return { success: true };
   } catch (e: any) {
@@ -240,6 +242,7 @@ export async function updateProviderAvailability(
     
     revalidatePath('/provider/availability');
     revalidatePath('/provider/dashboard');
+    revalidatePath(`/providers/${providerRef.id}`);
 
     return { success: true };
   } catch (e: any) {

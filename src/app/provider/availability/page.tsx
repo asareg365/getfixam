@@ -45,10 +45,18 @@ export default function ProviderAvailabilityPage() {
                 const idToken = await currentUser.getIdToken();
                 const { provider: providerData, error } = await getProviderData(idToken);
                 if (error) throw new Error(error);
+                
                 if (providerData) {
                     setProvider(providerData);
+                    // Merge incoming data with defaults to ensure all days are represented correctly
                     if (providerData.availability && Object.keys(providerData.availability).length > 0) {
-                        setSchedule(providerData.availability as WeeklySchedule);
+                        const mergedSchedule = { ...DEFAULT_SCHEDULE };
+                        Object.keys(providerData.availability).forEach(day => {
+                            if (DAYS.includes(day)) {
+                                mergedSchedule[day] = providerData.availability![day] as DailySchedule;
+                            }
+                        });
+                        setSchedule(mergedSchedule);
                     }
                 }
             } catch (e: any) {
@@ -58,7 +66,7 @@ export default function ProviderAvailabilityPage() {
         setLoading(false);
     });
      return () => unsubscribe();
-  }, []);
+  }, [toast]);
 
   const handleToggleDay = (day: string) => {
       setSchedule(prev => ({
@@ -87,7 +95,7 @@ export default function ProviderAvailabilityPage() {
 
             if (res.success) {
                 toast({ title: 'Schedule Updated', description: 'Your working hours have been saved.' });
-                // Force Next.js to clear the client router cache for this page
+                // Force data re-fetch and clear router cache
                 router.refresh();
             } else {
                 throw new Error(res.error || 'An unknown error occurred.');
@@ -114,9 +122,14 @@ export default function ProviderAvailabilityPage() {
   
   if (!provider) {
       return (
-        <Card>
+        <Card className="max-w-2xl mx-auto mt-12">
             <CardHeader><CardTitle>Account Not Found</CardTitle></CardHeader>
             <CardContent><p>Please log in to manage your availability.</p></CardContent>
+            <CardFooter>
+                <Button asChild variant="outline">
+                    <Link href="/provider/login">Sign In</Link>
+                </Button>
+            </CardFooter>
         </Card>
       );
   }
@@ -227,8 +240,8 @@ export default function ProviderAvailabilityPage() {
                 </Card>
 
                 <div className="p-8 bg-primary/5 rounded-[32px] border-2 border-dashed border-primary/20 text-center">
-                    <p className="text-primary font-bold text-sm">Need help?</p>
-                    <p className="text-xs text-muted-foreground mt-1">Changes are applied immediately to your profile after saving.</p>
+                    <p className="text-primary font-bold text-sm">Real-time Updates</p>
+                    <p className="text-xs text-muted-foreground mt-1">Changes are applied immediately to your public profile after saving.</p>
                 </div>
             </div>
         </div>

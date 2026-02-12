@@ -84,6 +84,8 @@ export async function getProviderData(idToken: string): Promise<{ provider: Prov
             serviceId: providerData.serviceId ?? '',
             category: categoryName,
             services: providerData.services || [],
+            // CRITICAL FIX: Ensure availability is mapped as an object, not an empty array fallback
+            availability: (providerData.availability && typeof providerData.availability === 'object' && !Array.isArray(providerData.availability)) ? providerData.availability : {},
             createdAt: providerData.createdAt?.toDate?.() ? providerData.createdAt.toDate().toISOString() : (typeof providerData.createdAt === 'string' ? providerData.createdAt : new Date(0).toISOString()),
             approvedAt: providerData.approvedAt?.toDate?.() ? providerData.approvedAt.toDate().toISOString() : undefined,
         } as Provider;
