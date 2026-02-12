@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, orderBy, getCountFromServer } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import type { Review } from '@/lib/types';
 import { ReviewsTable } from './_components/reviews-table';
 import { ReviewTabs } from './_components/review-tabs';
@@ -25,12 +26,11 @@ function ReviewsPage() {
       try {
         const providersRef = collection(db, 'providers');
         const providersSnap = await getDocs(providersRef).catch(async (err) => {
-            if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
-                const permissionError = new FirestorePermissionError({
+            if (err.code === 'permission-denied') {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
                     path: providersRef.path,
                     operation: 'list',
-                } satisfies SecurityRuleContext);
-                errorEmitter.emit('permission-error', permissionError);
+                } satisfies SecurityRuleContext));
                 return null;
             }
             throw err;
@@ -45,19 +45,13 @@ function ReviewsPage() {
         providersSnap.forEach(doc => providersMap.set(doc.id, doc.data().name));
 
         const reviewsRef = collection(db, 'reviews');
-        let q = query(reviewsRef, orderBy('createdAt', 'desc'));
-
-        if (currentStatus !== 'all') {
-          q = query(reviewsRef, where('status', '==', currentStatus), orderBy('createdAt', 'desc'));
-        }
-
-        const snap = await getDocs(q).catch(async (err) => {
-            if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
-                const permissionError = new FirestorePermissionError({
+        // Simple collection query to avoid index errors
+        const snap = await getDocs(reviewsRef).catch(async (err) => {
+            if (err.code === 'permission-denied') {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
                     path: reviewsRef.path,
                     operation: 'list',
-                } satisfies SecurityRuleContext);
-                errorEmitter.emit('permission-error', permissionError);
+                } satisfies SecurityRuleContext));
                 return null;
             }
             throw err;
@@ -68,41 +62,34 @@ function ReviewsPage() {
             return;
         }
 
-        const reviewsData = snap.docs.map(doc => {
+        const allReviews = snap.docs.map(doc => {
           const data = doc.data();
           return {
             id: doc.id,
             ...data,
             providerName: providersMap.get(data.providerId) || 'Unknown Provider',
-            createdAt: data.createdAt?.toDate()?.toISOString(),
+            createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : new Date(0).toISOString(),
           } as (Review & { providerName: string });
         });
 
-        setReviews(reviewsData);
+        // Client-side filter and sort for reliability
+        const filteredReviews = allReviews
+            .filter(r => currentStatus === 'all' ? true : r.status === currentStatus)
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-        // Counts
-        const statuses = ['pending', 'approved', 'rejected'];
-        const newCounts: Record<string, number> = {};
-        
-        await Promise.all(statuses.map(async (s) => {
-          try {
-            const countSnap = await getCountFromServer(query(reviewsRef, where('status', '==', s)));
-            newCounts[s] = countSnap.data().count;
-          } catch (e) {
-            newCounts[s] = 0;
-          }
-        }));
-        
-        try {
-            const allCountSnap = await getCountFromServer(reviewsRef);
-            newCounts['all'] = allCountSnap.data().count;
-        } catch (e) {
-            newCounts['all'] = reviewsData.length;
-        }
-        
+        setReviews(filteredReviews);
+
+        // Calculate counts client-side to save requests and avoid index errors
+        const newCounts: Record<string, number> = {
+            all: allReviews.length,
+            pending: allReviews.filter(r => r.status === 'pending').length,
+            approved: allReviews.filter(r => r.status === 'approved').length,
+            rejected: allReviews.filter(r => r.status === 'rejected').length,
+        };
         setCounts(newCounts);
+        
       } catch (err) {
-        // Non-permission errors handled silently
+        // Handle unexpected errors
       } finally {
         setLoading(false);
       }

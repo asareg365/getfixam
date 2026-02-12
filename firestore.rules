@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -16,7 +17,7 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Admin Profiles: Allow users to manage their own admin status during initialization
+    // Admin Profiles
     match /admins/{adminId} {
       allow get: if isSignedIn() && request.auth.uid == adminId;
       allow list: if isSignedIn();
@@ -24,46 +25,46 @@ service cloud.firestore {
       allow update: if isAdmin();
     }
 
-    // Providers: Publicly readable, owner or admin can edit
+    // Providers: Publicly readable
     match /providers/{providerId} {
-      allow get, list: if true;
+      allow read: if true;
       allow create: if true;
       allow update, delete: if isAdmin() || (isSignedIn() && resource.data.authUid == request.auth.uid);
     }
 
-    // WhatsApp Events: Internal logs for bot monitoring
+    // WhatsApp Events
     match /whatsapp_events/{eventId} {
       allow list, get: if isAdmin();
       allow create: if true; 
     }
 
-    // Services: Publicly readable categories and pricing
+    // Services: Publicly readable
     match /services/{serviceId} {
-      allow get, list: if true;
+      allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Reviews: Publicly readable, anyone can submit (moderated)
+    // Reviews: Publicly readable
     match /reviews/{reviewId} {
-      allow get, list: if true;
+      allow read: if true;
       allow create: if true;
       allow update, delete: if isAdmin();
     }
 
-    // Audit Logs: System-wide activity tracking
+    // Audit Logs
     match /auditLogs/{logId} {
       allow list, get: if isAdmin();
-      allow create: if isSignedIn(); // Allow logging during auth events
+      allow create: if isSignedIn();
     }
 
-    // Jobs: Customer service requests
+    // Jobs
     match /jobs/{jobId} {
       allow list, get: if isAdmin();
       allow create: if true; 
       allow update: if isAdmin();
     }
 
-    // System Settings: Lockouts and global overrides
+    // System Settings
     match /system_settings/{settingId} {
       allow get: if true; 
       allow write: if isAdmin();

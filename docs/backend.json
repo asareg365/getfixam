@@ -30,6 +30,49 @@
         "createdAt": { "type": "string", "format": "date-time" }
       }
     },
+    "Review": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Review",
+      "type": "object",
+      "description": "A customer review for a provider.",
+      "properties": {
+        "id": { "type": "string" },
+        "providerId": { "type": "string" },
+        "userName": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "userImageId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["providerId", "userName", "rating", "comment", "status", "createdAt"]
+    },
+    "Service": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Service",
+      "type": "object",
+      "description": "A category of artisan service.",
+      "properties": {
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "icon": { "type": "string" },
+        "active": { "type": "boolean" },
+        "basePrice": { "type": "number" }
+      }
+    },
+    "Job": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Job",
+      "type": "object",
+      "description": "A service request or assignment.",
+      "properties": {
+        "serviceType": { "type": "string" },
+        "area": { "type": "string" },
+        "status": { "type": "string" },
+        "providerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
     "WhatsAppEvent": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "WhatsAppEvent",
@@ -87,6 +130,27 @@
         "definition": {
           "entityName": "Provider",
           "description": "Service providers/artisans."
+        }
+      },
+      {
+        "path": "/reviews/{reviewId}",
+        "definition": {
+          "entityName": "Review",
+          "description": "Customer feedback and ratings."
+        }
+      },
+      {
+        "path": "/services/{serviceId}",
+        "definition": {
+          "entityName": "Service",
+          "description": "Service categories."
+        }
+      },
+      {
+        "path": "/jobs/{jobId}",
+        "definition": {
+          "entityName": "Job",
+          "description": "Customer job requests."
         }
       },
       {
