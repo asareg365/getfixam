@@ -13,69 +13,68 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
       return { error: 'Enter a valid Ghanaian phone number starting with 0.' };
     }
 
-    // In a prototype environment where Admin SDK might not be initialized, 
-    // we provide a safe fallback or error message.
+    // Check if the admin services are available
     if (!adminDb || !adminAuth) {
-      console.error('Firebase Admin not initialized.');
-      return { error: 'Authentication service is currently unavailable. Please check system configuration.' };
+      console.error('[Artisan Login] Admin services are null.');
+      return { error: 'The authentication server is temporarily unavailable. Please try again in a few minutes.' };
     }
 
-    // Check system-wide security settings
-    const settingsRef = adminDb.collection('system_settings').doc('admin');
-    const settingsSnap = await settingsRef.get();
-    const settings = settingsSnap.data();
-
-    console.log('Admin Locked:', settings?.adminLocked);
-    console.log('Provider Logins Disabled:', settings?.providerLoginsDisabled);
-
-    if (settings?.adminLocked === true) {
-      return { error: 'The system is currently locked for maintenance. Please try again later.' };
+    // 1. Check system-wide security settings (Lockouts)
+    try {
+      const settingsRef = adminDb.collection('system_settings').doc('admin');
+      const settingsSnap = await settingsRef.get();
+      
+      if (settingsSnap.exists) {
+        const settings = settingsSnap.data();
+        if (settings?.adminLocked === true) {
+          return { error: 'The system is currently locked for maintenance. Please try again later.' };
+        }
+        if (settings?.providerLoginsDisabled === true) {
+          return { error: 'Artisan logins are temporarily disabled by an administrator.' };
+        }
+      }
+    } catch (e) {
+      // If settings don't exist yet, we continue (graceful degradation)
+      console.warn('[Artisan Login] Could not verify system settings, proceeding anyway.');
     }
 
-    if (settings?.providerLoginsDisabled === true) {
-      return { error: 'Provider logins are temporarily disabled by an administrator.' };
-    }
-
-    // Find the provider by phone number
+    // 2. Find the provider by phone number
     const providersRef = adminDb.collection('providers');
     const query = providersRef.where('phone', '==', phone).limit(1);
     const snapshot = await query.get();
 
     if (snapshot.empty) {
-      return { error: 'No account found with this phone number.' };
+      return { error: 'No account found with this phone number. Please register your business first.' };
     }
 
     const providerDoc = snapshot.docs[0];
     const providerData = providerDoc.data();
     const providerId = providerDoc.id;
 
-    // Verify account status
+    // 3. Verify account status
     if (providerData.status !== 'approved') {
       if (providerData.status === 'suspended') {
-        return { error: 'Your account has been suspended. Please contact support.' };
+        return { error: 'Your account has been suspended. Please contact GetFixam support.' };
       }
       if (providerData.status === 'rejected') {
-        return { error: 'Your account application was rejected.' };
+        return { error: 'Your business application was not approved.' };
       }
-      return { error: 'Your account is not yet approved for login.' };
+      return { error: 'Your account is still pending review. You will be notified via WhatsApp once approved.' };
     }
 
-    // Verify PIN exists (Prototype uses 'loginPin' stored directly)
+    // 4. Verify PIN
     if (!providerData.loginPin) {
-      return { error: 'No PIN has been set for your account. Please contact support to get one.' };
+      return { error: 'A login PIN has not been set for your account. Please contact GetFixam Admin.' };
     }
 
-    // Simple comparison for prototype
-    const isPinValid = providerData.loginPin === pin;
-
-    if (!isPinValid) {
-      return { error: 'The PIN you entered is incorrect. Please try again.' };
+    if (providerData.loginPin !== pin) {
+      return { error: 'The PIN you entered is incorrect.' };
     }
 
-    // Generate a custom Firebase token for the client-side sign-in
+    // 5. Generate Custom Token
     const customToken = await adminAuth.createCustomToken(providerId);
 
-    // Log the successful login attempt
+    // 6. Log Success
     const headersList = await headers();
     const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown';
     const userAgent = headersList.get('user-agent') || 'unknown';
@@ -90,7 +89,7 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
     return { success: true, token: customToken };
 
   } catch (error: any) {
-    console.error('Error during PIN login:', error || 'The error object was null.');
-    return { error: 'An unexpected server error occurred during login.' };
+    console.error('[Artisan Login] Critical Error:', error);
+    return { error: 'An unexpected error occurred. Please contact support if this persists.' };
   }
 }

@@ -6,31 +6,46 @@ import { firebaseConfig } from '@/firebase/config';
 let adminAuth: any = null;
 let adminDb: any = null;
 
-try {
-  let app: App;
-
-  if (!getApps().length) {
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-      const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
-      app = initializeApp({
-        credential: cert(serviceAccount),
-        projectId: firebaseConfig.projectId,
-      });
-    } else {
-      // Attempt initialization with explicit project ID for better stability in workstations
-      app = initializeApp({
-        projectId: firebaseConfig.projectId,
-      });
-    }
-  } else {
-    app = getApps()[0];
+/**
+ * Robust initialization for Firebase Admin SDK.
+ * Favors environment variables, but falls back to project defaults for workstation stability.
+ */
+function getAdminApp(): App {
+  if (getApps().length > 0) {
+    return getApps()[0];
   }
 
+  const projectId = firebaseConfig.projectId;
+
+  try {
+    // Attempt 1: Using the provided service account environment variable
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+      const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+      return initializeApp({
+        credential: cert(serviceAccount),
+        projectId,
+      });
+    }
+  } catch (e) {
+    console.error('[Firebase Admin] Failed to initialize with service account JSON:', e);
+  }
+
+  try {
+    // Attempt 2: Initializing with just the Project ID (Standard for Workstations)
+    return initializeApp({ projectId });
+  } catch (e) {
+    console.error('[Firebase Admin] Failed to initialize with Project ID:', e);
+    // Final attempt: No-args initialization (picks up environment defaults)
+    return initializeApp();
+  }
+}
+
+try {
+  const app = getAdminApp();
   adminAuth = getAuth(app);
   adminDb = getFirestore(app);
 } catch (error) {
-  // Graceful degradation during prototyping
-  console.warn('[Firebase Admin] Initialization skipped or failed. Admin-only features might be limited.', error);
+  console.error('[Firebase Admin] Critical Error: Admin services could not be established.', error);
 }
 
 export { adminAuth, adminDb };
