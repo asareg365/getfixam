@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import { onIdTokenChanged, type User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { getProviderData } from '@/lib/provider';
 import { updateProviderProfile } from '../actions';
 import type { Provider } from '@/lib/types';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,7 @@ function ProfileSkeleton() {
 
 export default function ProviderProfilePage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [provider, setProvider] = useState<Provider | null>(null);
   const [formState, setFormState] = useState({ name: '', whatsapp: '', zone: '', digitalAddress: '' });
@@ -50,7 +52,7 @@ export default function ProviderProfilePage() {
   const [isSaving, startSavingTransition] = useTransition();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribe = onIdTokenChanged(auth, async (currentUser) => {
         if (currentUser) {
             setUser(currentUser);
             try {
@@ -73,7 +75,7 @@ export default function ProviderProfilePage() {
         setLoading(false);
     });
      return () => unsubscribe();
-  }, [toast]);
+  }, []);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const { name, value } = e.target;
@@ -93,6 +95,7 @@ export default function ProviderProfilePage() {
 
             if (res.success) {
                 toast({ title: 'Profile Updated', description: 'Your changes have been saved successfully.' });
+                router.refresh();
             } else {
                 throw new Error(res.error || 'An unknown error occurred.');
             }

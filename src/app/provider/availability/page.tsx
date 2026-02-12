@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import { onIdTokenChanged, type User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { getProviderData } from '@/lib/provider';
 import { updateProviderAvailability } from '../actions';
 import type { Provider } from '@/lib/types';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ const DEFAULT_SCHEDULE: WeeklySchedule = DAYS.reduce((acc, day) => ({
 
 export default function ProviderAvailabilityPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [provider, setProvider] = useState<Provider | null>(null);
   const [schedule, setSchedule] = useState<WeeklySchedule>(DEFAULT_SCHEDULE);
@@ -36,7 +38,7 @@ export default function ProviderAvailabilityPage() {
   const [isSaving, startSavingTransition] = useTransition();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribe = onIdTokenChanged(auth, async (currentUser) => {
         if (currentUser) {
             setUser(currentUser);
             try {
@@ -56,7 +58,7 @@ export default function ProviderAvailabilityPage() {
         setLoading(false);
     });
      return () => unsubscribe();
-  }, [toast]);
+  }, []);
 
   const handleToggleDay = (day: string) => {
       setSchedule(prev => ({
@@ -85,6 +87,8 @@ export default function ProviderAvailabilityPage() {
 
             if (res.success) {
                 toast({ title: 'Schedule Updated', description: 'Your working hours have been saved.' });
+                // Force Next.js to clear the client router cache for this page
+                router.refresh();
             } else {
                 throw new Error(res.error || 'An unknown error occurred.');
             }
