@@ -1,3 +1,5 @@
+import { adminDb } from './firebase-admin';
+
 export type Category = {
   id: string;
   name: string;
@@ -14,7 +16,30 @@ export const CATEGORIES: Category[] = [
   { id: 'phone-repair', name: 'Phone Repair', slug: 'phone-repair', icon: 'Smartphone' },
 ];
 
+/**
+ * Fetches categories, merging Firestore 'services' with static defaults.
+ */
 export async function getCategories(): Promise<Category[]> {
+  if (adminDb && typeof adminDb.collection === 'function') {
+    try {
+      const snap = await adminDb.collection('services').where('active', '==', true).get();
+      if (!snap.empty) {
+        const dbCategories = snap.docs.map(doc => ({
+          id: doc.id,
+          name: doc.data().name,
+          slug: doc.data().slug,
+          icon: doc.data().icon
+        }));
+        
+        // Merge: prefer DB categories if slugs match, otherwise keep static ones
+        const dbSlugs = new Set(dbCategories.map(c => c.slug));
+        const filteredStatic = CATEGORIES.filter(c => !dbSlugs.has(c.slug));
+        return [...dbCategories, ...filteredStatic];
+      }
+    } catch (e) {
+      console.warn("Could not fetch categories from Firestore, using defaults.", e);
+    }
+  }
   return CATEGORIES;
 }
 

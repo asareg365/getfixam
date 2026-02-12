@@ -39,7 +39,7 @@ export async function addProviderAction(prevState: any, formData: FormData) {
     }
 
     const categories = await getCategories();
-    const category = categories.find(cat => cat.id === serviceId);
+    const category = categories.find(cat => cat.id === serviceId || cat.slug === serviceId);
 
     if (!category) {
       return { success: false, message: 'Invalid service category selected.' };
@@ -52,8 +52,8 @@ export async function addProviderAction(prevState: any, formData: FormData) {
       whatsapp,
       digitalAddress,
       location: {
-        region: 'National',
-        city: 'Local',
+        region: 'Bono Region',
+        city: 'Berekum',
         zone,
       },
       status: 'pending',
@@ -67,9 +67,10 @@ export async function addProviderAction(prevState: any, formData: FormData) {
     await adminDb.collection('providers').add(newProvider);
     
     revalidatePath('/admin/providers');
+    revalidatePath('/category/all');
     revalidatePath('/');
     
-    return { success: true, message: 'Your business has been submitted for review! Our team will contact you shortly.' };
+    return { success: true, message: 'Your business has been submitted for review! It will appear in the directory shortly.' };
 
   } catch (error: any) {
     console.error('Error adding provider:', error);
