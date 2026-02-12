@@ -1,6 +1,7 @@
 import { initializeApp, getApps, App, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
+import { firebaseConfig } from '@/firebase/config';
 
 let adminAuth: any = null;
 let adminDb: any = null;
@@ -13,10 +14,13 @@ try {
       const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
       app = initializeApp({
         credential: cert(serviceAccount),
+        projectId: firebaseConfig.projectId,
       });
     } else {
-      // Attempt default initialization (works in App Hosting/Cloud Run)
-      app = initializeApp();
+      // Attempt initialization with explicit project ID for better stability in workstations
+      app = initializeApp({
+        projectId: firebaseConfig.projectId,
+      });
     }
   } else {
     app = getApps()[0];

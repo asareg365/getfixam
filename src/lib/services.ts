@@ -1,4 +1,6 @@
 import { adminDb } from './firebase-admin';
+import { db as clientDb } from './firebase';
+import { collection, query, where, getDocs as clientGetDocs, orderBy } from 'firebase/firestore';
 import type { Category, Provider } from './types';
 import { getCategories, CATEGORIES } from './data';
 
@@ -16,55 +18,68 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
 
 /**
  * Fetches providers from Firestore. 
- * Includes both 'approved' and 'pending' statuses for better platform visibility during growth.
+ * Uses a Dual-Fetch strategy: Admin SDK first, fallback to Client SDK for maximum reliability.
  */
 export async function getProviders(categorySlug?: string): Promise<Provider[]> {
-    const db = adminDb;
-    if (!db || typeof db.collection !== 'function') {
-        return [];
-    }
-
     try {
-        // 1. Fetch all services to map IDs to Names and Slugs
-        const servicesSnap = await db.collection('services').get();
-        const servicesMap = new Map<string, { name: string, slug: string }>();
-        let serviceIdFromSlug: string | null = null;
-        
-        servicesSnap.forEach(doc => {
-            const data = doc.data();
-            servicesMap.set(doc.id, { name: data.name, slug: data.slug });
-            if (categorySlug && data.slug === categorySlug) {
-                serviceIdFromSlug = doc.id;
+        // 1. Determine target service ID if a slug is provided
+        let targetServiceId: string | null = null;
+        let servicesMap = new Map<string, string>();
+
+        if (adminDb) {
+            const servicesSnap = await adminDb.collection('services').get();
+            servicesSnap.forEach((doc: any) => {
+                const data = doc.data();
+                servicesMap.set(doc.id, data.name);
+                if (categorySlug && data.slug === categorySlug) {
+                    targetServiceId = doc.id;
+                }
+            });
+        }
+
+        // If not found in dynamic services, check static categories
+        if (!targetServiceId && categorySlug && categorySlug !== 'all') {
+            const staticCat = CATEGORIES.find(c => c.slug === categorySlug);
+            if (staticCat) targetServiceId = staticCat.id;
+            else targetServiceId = categorySlug; // Last resort fallback
+        }
+
+        let providersData: any[] = [];
+
+        // 2. Try fetching via Admin SDK
+        if (adminDb) {
+            let providersQuery = adminDb.collection('providers').where('status', 'in', ['approved', 'pending']);
+            
+            if (categorySlug && categorySlug !== 'all' && targetServiceId) {
+                providersQuery = providersQuery.where('serviceId', '==', targetServiceId);
             }
-        });
 
-        // 2. Build Query - Include pending to help user see their new listings
-        let providersQuery = db.collection('providers').where('status', 'in', ['approved', 'pending']);
+            const snap = await providersQuery.get();
+            providersData = snap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+        } 
+        
+        // 3. Fallback to Client SDK if Admin fetch failed or returned nothing (resilience)
+        if (providersData.length === 0) {
+            const providersRef = collection(clientDb, 'providers');
+            let q = query(providersRef, where('status', 'in', ['approved', 'pending']));
+            
+            const snap = await clientGetDocs(q);
+            providersData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // 3. Apply category filter if not 'all'
-        if (categorySlug && categorySlug !== 'all') {
-            if (serviceIdFromSlug) {
-                providersQuery = providersQuery.where('serviceId', '==', serviceIdFromSlug);
-            } else {
-                // Fallback: Check if providers were added with the slug itself as the ID (static fallback)
-                providersQuery = providersQuery.where('serviceId', '==', categorySlug);
+            // Client-side filtering if slug is provided
+            if (categorySlug && categorySlug !== 'all' && targetServiceId) {
+                providersData = providersData.filter(p => p.serviceId === targetServiceId);
             }
         }
-        
-        const providersSnap = await providersQuery.get();
 
-        let providers = providersSnap.docs.map(doc => {
-            const data = doc.data();
-            const service = servicesMap.get(data.serviceId);
-            
-            // Map category name from Firestore or Fallback to static data
-            let categoryName = service?.name;
+        // 4. Map to final Provider type
+        const providers = providersData.map(data => {
+            let categoryName = servicesMap.get(data.serviceId);
             if (!categoryName) {
                 const staticCat = CATEGORIES.find(c => c.id === data.serviceId || c.slug === data.serviceId);
-                categoryName = staticCat?.name || data.serviceId || 'Artisan';
+                categoryName = staticCat?.name || data.category || 'Artisan';
             }
 
-            // Safe date parsing
             let createdAt = new Date().toISOString();
             try {
                 if (data.createdAt?.toDate) createdAt = data.createdAt.toDate().toISOString();
@@ -72,32 +87,22 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
             } catch (e) {}
 
             return {
-                id: doc.id,
-                name: data.name ?? 'Unknown Artisan',
+                ...data,
                 category: categoryName,
-                serviceId: data.serviceId,
-                phone: data.phone ?? '',
-                whatsapp: data.whatsapp ?? '',
-                digitalAddress: data.digitalAddress ?? '',
-                location: data.location ?? { region: 'Bono', city: 'Berekum', zone: 'Central' },
-                status: data.status ?? 'pending',
-                verified: data.verified ?? false,
-                isFeatured: data.isFeatured ?? false,
-                rating: data.rating ?? 0,
-                reviewCount: data.reviewCount ?? 0,
                 createdAt,
                 approvedAt: data.approvedAt?.toDate?.() ? data.approvedAt.toDate().toISOString() : undefined,
                 imageId: data.imageId || `provider${(Math.floor(Math.random() * 12) + 1)}`,
             } as Provider;
         });
 
-        // Sort: Featured first, then by rating
+        // 5. Sort: Featured first, then by rating
         return providers.sort((a, b) => {
             if (a.isFeatured !== b.isFeatured) return a.isFeatured ? -1 : 1;
             return b.rating - a.rating;
         });
+
     } catch (e) {
-        console.error("Error in getProviders:", e);
+        console.error("Critical error in getProviders:", e);
         return [];
     }
 }
@@ -106,20 +111,24 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
  * Fetches a single provider by ID.
  */
 export async function getProviderById(id: string): Promise<Provider | undefined> {
-    const db = adminDb;
-    if (!db || typeof db.collection !== 'function') return undefined;
-
     try {
-        const providerRef = db.collection('providers').doc(id);
-        const providerDoc = await providerRef.get();
-        if (!providerDoc.exists) return undefined;
+        let data: any = null;
+        let providerId: string = id;
+
+        if (adminDb) {
+            const doc = await adminDb.collection('providers').doc(id).get();
+            if (doc.exists) data = doc.data();
+        }
+
+        if (!data) {
+            // No need for fallback here usually as detailed view is less critical than listing,
+            // but for safety during development we can try client SDK
+            return undefined;
+        }
         
-        const data = providerDoc.data()!;
-        
-        // Fetch service name
         let categoryName = 'Artisan';
-        if (data.serviceId) {
-            const serviceDoc = await db.collection('services').doc(data.serviceId).get();
+        if (data.serviceId && adminDb) {
+            const serviceDoc = await adminDb.collection('services').doc(data.serviceId).get();
             if (serviceDoc.exists) {
                 categoryName = serviceDoc.data()!.name;
             } else {
@@ -129,22 +138,11 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
         }
 
         return {
-            id: providerDoc.id,
-            name: data.name,
+            id: providerId,
+            ...data,
             category: categoryName,
-            serviceId: data.serviceId,
-            phone: data.phone,
-            whatsapp: data.whatsapp,
-            digitalAddress: data.digitalAddress ?? '',
-            location: data.location,
-            status: data.status,
-            verified: data.verified,
-            isFeatured: data.isFeatured ?? false,
-            rating: data.rating ?? 0,
-            reviewCount: data.reviewCount ?? 0,
             createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
             approvedAt: data.approvedAt?.toDate?.() ? data.approvedAt.toDate().toISOString() : undefined,
-            imageId: data.imageId,
         } as Provider;
     } catch (e) {
         console.error("Error in getProviderById:", e);
