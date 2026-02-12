@@ -5,12 +5,14 @@ import { getProviderData } from '@/lib/provider';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import type { Provider } from '@/lib/types';
+import Link from 'next/link';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import ProviderReviews from '@/components/ProviderReviews';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Star, MessageSquare } from 'lucide-react';
+import { Star, MessageSquare, ArrowLeft } from 'lucide-react';
 
 function ReviewsLoading() {
     return (
@@ -61,24 +63,43 @@ export default function ProviderReviewsPage() {
 
   if (error || !provider) {
     return (
-        <Card className="max-w-2xl mx-auto border-none shadow-xl rounded-[32px]">
-            <CardHeader>
-                <CardTitle className="text-destructive font-headline">Could Not Load Reviews</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <Alert variant="destructive" className="rounded-2xl">
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>
-                        {error || "Could not find provider data. Please ensure you are logged in correctly."}
-                    </AlertDescription>
-                </Alert>
-            </CardContent>
-        </Card>
+        <div className="space-y-6">
+            <div className="flex items-center">
+                <Button variant="ghost" asChild className="-ml-4 text-muted-foreground hover:text-primary">
+                    <Link href="/provider/dashboard">
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to Dashboard
+                    </Link>
+                </Button>
+            </div>
+            <Card className="max-w-2xl mx-auto border-none shadow-xl rounded-[32px]">
+                <CardHeader>
+                    <CardTitle className="text-destructive font-headline">Could Not Load Reviews</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Alert variant="destructive" className="rounded-2xl">
+                        <AlertTitle>Error</AlertTitle>
+                        <AlertDescription>
+                            {error || "Could not find provider data. Please ensure you are logged in correctly."}
+                        </AlertDescription>
+                    </Alert>
+                </CardContent>
+            </Card>
+        </div>
     );
   }
 
   return (
     <div className="space-y-10">
+        <div className="flex items-center">
+            <Button variant="ghost" asChild className="-ml-4 text-muted-foreground hover:text-primary">
+                <Link href="/provider/dashboard">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Dashboard
+                </Link>
+            </Button>
+        </div>
+
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h1 className="text-4xl font-black font-headline tracking-tight">Customer Feedback</h1>
