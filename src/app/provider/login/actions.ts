@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs';
 
 /**
  * Verifies the artisan's PIN and returns a custom Firebase token if valid.
+ * This function is hardened to prevent crashes from misconfigured signing keys.
  */
 export async function loginWithPin(phone: string, pin: string): Promise<{ success: true; token: string } | { error: string }> {
   try {
@@ -91,17 +92,19 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
     // 5. Generate Custom Token
     let customToken: string;
     try {
-      // providerId is guaranteed to be a string here
+      // CRITICAL: createCustomToken can throw "payload must be of type object" if signing keys are missing.
       customToken = await adminAuth.createCustomToken(providerId);
     } catch (tokenErr: any) {
       console.error('[Artisan Login] Token Generation Error:', tokenErr);
-      if (tokenErr.message?.includes('payload')) {
-          return { error: 'Security configuration error. The server lacks the required keys to sign your session.' };
+      
+      // Specifically catch the "payload" signing error which indicates missing private keys in the Admin SDK
+      if (tokenErr.message?.toLowerCase().includes('payload') || tokenErr.message?.toLowerCase().includes('object')) {
+          return { error: 'Security configuration error: The server lacks the required keys to sign your session. Please contact support.' };
       }
       return { error: 'The authentication server failed to generate your session. Please try again.' };
     }
 
-    // 6. Log Success
+    // 6. Log Success (Non-blocking)
     try {
         const headersList = await headers();
         const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown';
@@ -121,6 +124,12 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
 
   } catch (error: any) {
     console.error('[Artisan Login] Critical Error:', error);
+    
+    // Final safety check for the payload error in the outer catch block
+    if (error.message?.toLowerCase().includes('payload')) {
+        return { error: 'Security error: Invalid authentication keys. Please contact GetFixam Admin.' };
+    }
+    
     return { error: 'An unexpected error occurred during login. Please contact support.' };
   }
 }
