@@ -31,8 +31,10 @@ export default function SecurityForm({
 }: SecurityFormProps) {
   const { toast } = useToast();
   const [isPending, setIsPending] = useState(false);
-  const [adminLocked, setAdminLocked] = useState(!initialLocked); // UI shows "Toggle" state
-  const [providerLoginsDisabled, setProviderLoginsDisabled] = useState(!initialDisabled);
+  
+  // The state reflects whether the lock is ACTIVE
+  const [adminLocked, setAdminLocked] = useState(initialLocked);
+  const [providerLoginsDisabled, setProviderLoginsDisabled] = useState(initialDisabled);
   const [reason, setReason] = useState('');
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -48,8 +50,8 @@ export default function SecurityForm({
 
     const settingsRef = doc(db, 'system_settings', 'admin');
     const updateData = {
-        adminLocked: !adminLocked, // Inverting because the switch label is "Enable/Unlock"
-        providerLoginsDisabled: !providerLoginsDisabled,
+        adminLocked: adminLocked,
+        providerLoginsDisabled: providerLoginsDisabled,
         reason: reason || 'Manual update via admin dashboard.',
         updatedBy: user.email,
         updatedAt: serverTimestamp(),
@@ -62,7 +64,8 @@ export default function SecurityForm({
                 title: 'Settings Updated',
                 description: 'System security preferences have been applied.',
             });
-            window.location.reload(); // Refresh to show latest status
+            // Give Firestore a moment to sync before reload
+            setTimeout(() => window.location.reload(), 500);
         })
         .catch(async (serverError) => {
             const permissionError = new FirestorePermissionError({
@@ -79,10 +82,10 @@ export default function SecurityForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-10">
-      {initialLocked ? (
+      {initialLocked || initialDisabled ? (
         <Alert variant="destructive" className="rounded-[24px] border-2 bg-destructive/5">
           <ShieldAlert className="h-6 w-6" />
-          <AlertTitle className="text-lg font-bold">Admin Access is DISABLED</AlertTitle>
+          <AlertTitle className="text-lg font-bold">System Restrictions Active</AlertTitle>
           <AlertDescription className="text-base mt-1">
             Access is currently restricted. Changed by <b>{updatedBy}</b> on {updatedAt}.
             <div className="mt-2 text-sm italic">"{initialReason}"</div>
@@ -101,27 +104,27 @@ export default function SecurityForm({
       <div className="space-y-6">
         <div className="flex items-center justify-between p-6 rounded-3xl bg-muted/30 border border-muted-foreground/10">
             <div className="space-y-1">
-                <Label htmlFor="adminLocked" className="text-lg font-bold">Admin Portal Access</Label>
-                <p className="text-sm text-muted-foreground">When disabled, only Super Admins can log in.</p>
+                <Label htmlFor="adminLocked" className="text-lg font-bold">Lock Admin Portal</Label>
+                <p className="text-sm text-muted-foreground">When enabled, only Super Admins can log in.</p>
             </div>
             <Switch
                 id="adminLocked"
                 checked={adminLocked}
                 onCheckedChange={setAdminLocked}
-                className="data-[state=checked]:bg-primary"
+                className="data-[state=checked]:bg-destructive"
             />
         </div>
         
         <div className="flex items-center justify-between p-6 rounded-3xl bg-muted/30 border border-muted-foreground/10">
             <div className="space-y-1">
-                <Label htmlFor="providerLoginsDisabled" className="text-lg font-bold">Artisan Logins</Label>
+                <Label htmlFor="providerLoginsDisabled" className="text-lg font-bold">Disable Artisan Logins</Label>
                 <p className="text-sm text-muted-foreground">Temporarily disable all artisan app access.</p>
             </div>
             <Switch
                 id="providerLoginsDisabled"
                 checked={providerLoginsDisabled}
                 onCheckedChange={setProviderLoginsDisabled}
-                className="data-[state=checked]:bg-primary"
+                className="data-[state=checked]:bg-destructive"
             />
         </div>
       </div>
@@ -132,7 +135,7 @@ export default function SecurityForm({
           id="reason"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          placeholder="Why are you changing these settings?"
+          placeholder="e.g. Scheduled maintenance"
           className="rounded-2xl min-h-[120px] border-muted-foreground/20 text-lg"
           required
         />
@@ -142,10 +145,10 @@ export default function SecurityForm({
         type="submit" 
         className="w-full h-16 rounded-2xl text-xl font-bold shadow-xl" 
         disabled={isPending}
-        variant={initialLocked ? "default" : "destructive"}
+        variant={(adminLocked || providerLoginsDisabled) ? "destructive" : "default"}
       >
         {isPending ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : null}
-        Apply Security Override
+        Save Security Settings
       </Button>
     </form>
   );

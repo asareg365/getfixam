@@ -7,7 +7,6 @@ import bcrypt from 'bcryptjs';
 
 /**
  * Verifies the artisan's PIN and returns a custom Firebase token if valid.
- * This function is hardened to prevent crashes from misconfigured signing keys.
  */
 export async function loginWithPin(phone: string, pin: string): Promise<{ success: true; token: string } | { error: string }> {
   try {
@@ -31,6 +30,7 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
       
       if (settingsSnap.exists) {
         const settings = settingsSnap.data();
+        // Only enforce if explicitly set to true
         if (settings?.adminLocked === true) {
           return { error: 'The system is locked for maintenance. Please try again later.' };
         }
@@ -39,7 +39,7 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
         }
       }
     } catch (e) {
-      // Ignore settings check failures during prototyping if the collection doesn't exist
+      // Ignore settings check failures during prototyping
     }
 
     // 3. Find the provider by phone number
@@ -86,17 +86,15 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
     // 6. Generate Custom Token
     let customToken: string;
     try {
-      // This is where the "payload must be of type object" error happens if keys are missing
       customToken = await adminAuth.createCustomToken(providerId);
     } catch (tokenErr: any) {
-      // Trap the specific crypto/signing error to prevent red-screen crashes
       if (tokenErr.message?.toLowerCase().includes('payload')) {
-          return { error: 'Authentication Error: The server is missing valid security keys to sign your session. Please contact GetFixam support.' };
+          return { error: 'Maintenance: The security server is temporarily unable to sign tokens. Please try again later.' };
       }
       return { error: 'The server failed to create a secure session. Please try again.' };
     }
 
-    // 7. Log Success (Non-blocking)
+    // 7. Log Success
     try {
         const headersList = await headers();
         const ipAddress = headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown';
@@ -115,7 +113,10 @@ export async function loginWithPin(phone: string, pin: string): Promise<{ succes
     return { success: true, token: customToken };
 
   } catch (error: any) {
-    // Final catch-all to prevent server crash
-    return { error: 'An unexpected error occurred. Please contact support.' };
+    // Final safety check for the payload error in the outer catch block
+    if (error.message?.toLowerCase().includes('payload')) {
+        return { error: 'Maintenance: Authentication service is temporarily unavailable.' };
+    }
+    return { error: 'An unexpected error occurred during login. Please contact support.' };
   }
 }

@@ -3,6 +3,9 @@ import { adminDb } from '@/lib/firebase-admin';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Emergency Master Reset: Enables all logins and clears lockouts.
+ */
 export async function GET() {
   try {
     if (!adminDb) {
@@ -11,13 +14,16 @@ export async function GET() {
 
     const settingsRef = adminDb.collection('system_settings').doc('admin');
     await settingsRef.set({
-      providerLoginsDisabled: false
+      providerLoginsDisabled: false,
+      adminLocked: false,
+      reason: 'Emergency master reset via API route.',
+      updatedAt: new Date().toISOString()
     }, { merge: true });
 
-    return NextResponse.json({ success: true, message: 'Provider logins have been enabled.' });
+    return NextResponse.json({ success: true, message: 'All logins have been re-enabled and lockouts cleared.' });
 
   } catch (error) {
-    console.error("Error enabling provider logins:", error);
-    return NextResponse.json({ success: false, message: 'Failed to enable provider logins.' }, { status: 500 });
+    console.error("Error enabling logins:", error);
+    return NextResponse.json({ success: false, message: 'Failed to enable logins.' }, { status: 500 });
   }
 }
