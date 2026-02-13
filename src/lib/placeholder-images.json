@@ -80,39 +80,39 @@
     },
     {
       "id": "user1",
-      "description": "A smiling woman.",
-      "imageUrl": "https://images.unsplash.com/photo-1557053910-d9eadeed1c58?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx3b21hbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc2OTUxMzQyMXww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "woman portrait"
+      "description": "Female avatar",
+      "imageUrl": "https://img.icons8.com/color/48/000000/female-avatar.png",
+      "imageHint": "female avatar"
     },
     {
       "id": "user2",
-      "description": "A man with glasses.",
-      "imageUrl": "https://images.unsplash.com/photo-1607031542107-f6f46b5d54e9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxtYW4lMjBwb3J0cmFpdHxlbnwwfHx8fDE3Njk1MzA5ODJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "man portrait"
+      "description": "Male avatar",
+      "imageUrl": "https://img.icons8.com/color/48/000000/user-male-circle.png",
+      "imageHint": "male avatar"
     },
     {
       "id": "user3",
-      "description": "A man smiling.",
-      "imageUrl": "https://images.unsplash.com/photo-1623184663110-89ba5b565eb6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxtYW4lMjBzbWlsaW5nfGVufDB8fHx8MTc2OTUwMTUwNHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "man smiling"
+      "description": "Male avatar",
+      "imageUrl": "https://img.icons8.com/color/48/000000/user-male-circle.png",
+      "imageHint": "male avatar"
     },
     {
       "id": "user4",
-      "description": "A woman in a headscarf.",
-      "imageUrl": "https://images.unsplash.com/photo-1736342181249-9e81c11737b8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHx3b21hbiUyMGhlYWRzY2FyZnxlbnwwfHx8fDE3Njk1NjMxMTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "woman headscarf"
+      "description": "Female avatar",
+      "imageUrl": "https://img.icons8.com/color/48/000000/female-avatar.png",
+      "imageHint": "female avatar"
     },
     {
       "id": "user5",
-      "description": "A young man looking at the camera.",
-      "imageUrl": "https://images.unsplash.com/photo-1536548665027-b96d34a005ae?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx5b3VuZyUyMG1hbnxlbnwwfHx8fDE3Njk1NjMxMTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "young man"
+      "description": "Male avatar",
+      "imageUrl": "https://img.icons8.com/color/48/000000/user-male-circle.png",
+      "imageHint": "male avatar"
     },
     {
       "id": "user6",
-      "description": "A smiling man with a beard.",
-      "imageUrl": "https://images.unsplash.com/photo-1653071163015-11cbda52d897?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxtYW4lMjBiZWFyZHxlbnwwfHx8fDE3Njk0OTg5ODZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "man beard"
+      "description": "Male avatar",
+      "imageUrl": "https://img.icons8.com/color/48/000000/user-male-circle.png",
+      "imageHint": "male avatar"
     }
   ]
 }

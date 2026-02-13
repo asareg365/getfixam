@@ -2,8 +2,8 @@ import * as functions from 'firebase-functions';
 import next from 'next';
 import { Request, Response } from 'express';
 
-const dev = process.env.NODE_ENV !== 'production';
-const app = next({ dev, conf: { distDir: '.next' } });
+const dev = false; // Firebase functions should always be in production mode
+const app = next({ dev, conf: { distDir: '../.next' } });
 const handle = app.getRequestHandler();
 
 export const nextApp = functions.https.onRequest(async (req: Request, res: Response) => {

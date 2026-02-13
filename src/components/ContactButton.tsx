@@ -7,7 +7,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import type { Provider } from '@/lib/types';
 
-interface ContactButtonProps extends ButtonProps {
+interface ContactButtonProps extends Omit<ButtonProps, 'type'> {
   provider: Provider;
   type: 'call' | 'whatsapp';
   children: React.ReactNode;

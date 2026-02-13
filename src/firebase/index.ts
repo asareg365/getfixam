@@ -2,31 +2,32 @@
 
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore'
+import { getAuth, Auth } from 'firebase/auth';
+import { getFirestore, Firestore } from 'firebase/firestore';
 
 /**
  * Initializes the Firebase SDKs for the client.
- * It favors the explicit config object to ensure reliability.
+ * This is the source of truth for initialization to prevent circular dependencies.
  */
 export function initializeFirebase() {
+  let firebaseApp: FirebaseApp;
+  
   if (!getApps().length) {
-    let firebaseApp: FirebaseApp;
-    
-    // In this environment, we favor the provided firebaseConfig object 
-    // to avoid issues with missing environment variables.
     try {
       firebaseApp = initializeApp(firebaseConfig);
     } catch (e) {
       console.error('Firebase initialization failed:', e);
-      // Fallback to empty init which might pick up hosting vars if they exist
       firebaseApp = initializeApp();
     }
-
-    return getSdks(firebaseApp);
+  } else {
+    firebaseApp = getApp();
   }
 
-  return getSdks(getApp());
+  return {
+    firebaseApp,
+    auth: getAuth(firebaseApp),
+    firestore: getFirestore(firebaseApp)
+  };
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
@@ -37,11 +38,10 @@ export function getSdks(firebaseApp: FirebaseApp) {
   };
 }
 
-export * from './provider';
-export * from './client-provider';
-export * from './firestore/use-collection';
-export * from './firestore/use-doc';
-export * from './non-blocking-updates';
-export * from './non-blocking-login';
-export * from './errors';
-export * from './error-emitter';
+// Re-export core hooks and components
+export { FirebaseProvider, useFirebase, useAuth, useFirestore, useFirebaseApp, useMemoFirebase, useUser } from './provider';
+export { FirebaseClientProvider } from './client-provider';
+export { useCollection } from './firestore/use-collection';
+export { useDoc } from './firestore/use-doc';
+export { errorEmitter } from './error-emitter';
+export { FirestorePermissionError } from './errors';

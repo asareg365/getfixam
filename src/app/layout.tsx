@@ -9,6 +9,9 @@ const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space
 export const metadata = {
   title: 'GetFixam - Trusted Local Artisans',
   description: 'Connect directly with verified professionals for repairs and services in your neighborhood.',
+  icons: {
+    icon: '/logo.png',
+  },
 };
 
 export default function RootLayout({

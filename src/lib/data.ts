@@ -1,6 +1,7 @@
 import { adminDb } from './firebase-admin';
 import { CATEGORIES } from './constants';
 import type { Category } from './types';
+import { QueryDocumentSnapshot } from 'firebase-admin/firestore';
 
 /**
  * Server-side utility to fetch categories, merging Firestore 'services' with static defaults.
@@ -11,7 +12,7 @@ export async function getCategories(): Promise<Category[]> {
     try {
       const snap = await adminDb.collection('services').where('active', '==', true).get();
       if (!snap.empty) {
-        const dbCategories = snap.docs.map(doc => ({
+        const dbCategories = snap.docs.map((doc: QueryDocumentSnapshot) => ({
           id: doc.id,
           name: doc.data().name,
           slug: doc.data().slug,
@@ -19,7 +20,7 @@ export async function getCategories(): Promise<Category[]> {
         }));
         
         // Merge: prefer DB categories if slugs match, otherwise keep static ones
-        const dbSlugs = new Set(dbCategories.map(c => c.slug));
+        const dbSlugs = new Set(dbCategories.map((c: { slug: any; }) => c.slug));
         const filteredStatic = CATEGORIES.filter(c => !dbSlugs.has(c.slug));
         return [...dbCategories, ...filteredStatic];
       }

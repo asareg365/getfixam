@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers';
 import { adminDb } from '@/lib/firebase-admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
@@ -108,7 +108,7 @@ export async function getSwappableArtisans(serviceType: string, excludedArtisanI
         }
 
         const artisans = providersSnap.docs
-            .map(doc => {
+            .map((doc: QueryDocumentSnapshot) => {
                 const data = doc.data();
                 return {
                     id: doc.id,
@@ -119,7 +119,7 @@ export async function getSwappableArtisans(serviceType: string, excludedArtisanI
                     location: data.location || { region: 'Bono Region', city: 'Berekum', zone: 'Unknown' },
                 } as Provider;
             })
-            .filter(artisan => !excludedArtisanIds.includes(artisan.id));
+            .filter((artisan: Provider) => !excludedArtisanIds.includes(artisan.id));
 
         return { success: true, artisans: artisans };
     } catch (error: any) {
@@ -140,7 +140,7 @@ export async function swapStandbyArtisan(artisanToRemoveId: string, artisanToAdd
 
         const standbyRef = adminDb.collection('standby').doc('tomorrow');
         
-        await adminDb.runTransaction(async (transaction) => {
+        await adminDb.runTransaction(async (transaction: { get: (arg0: any) => any; update: (arg0: any, arg1: { artisans: string[]; }) => void; }) => {
             const standbyDoc = await transaction.get(standbyRef);
             if (!standbyDoc.exists) {
                 throw new Error("Standby document not found.");

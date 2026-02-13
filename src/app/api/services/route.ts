@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import type { Service } from '@/lib/types';
+import { QueryDocumentSnapshot } from 'firebase-admin/firestore';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,7 @@ export async function GET() {
     }
 
     // Assuming the Service type includes the document ID.
-    const services: Service[] = snapshot.docs.map(doc => {
+    const services: Service[] = snapshot.docs.map((doc: QueryDocumentSnapshot) => {
       return {
         id: doc.id,
         ...doc.data(),

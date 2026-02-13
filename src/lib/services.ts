@@ -103,11 +103,10 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
 
         // 4. Map to final Provider type and ensure serialization
         const providers = providersData.map(data => {
-            let categoryName = servicesMap.get(data.serviceId);
-            if (!categoryName) {
-                const staticCat = CATEGORIES.find(c => c.id === data.serviceId || c.slug === data.serviceId);
-                categoryName = staticCat?.name || data.category || 'Artisan';
-            }
+            const categoryName = servicesMap.get(data.serviceId) ||
+                                 CATEGORIES.find(c => c.id === data.serviceId || c.slug === data.serviceId)?.name ||
+                                 data.category ||
+                                 'Artisan';
 
             return {
                 id: data.id,
@@ -163,12 +162,9 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
         let categoryName = 'Artisan';
         if (data.serviceId && adminDb) {
             const serviceDoc = await adminDb.collection('services').doc(data.serviceId).get();
-            if (serviceDoc.exists) {
-                categoryName = serviceDoc.data()!.name;
-            } else {
-                const staticCat = CATEGORIES.find(c => c.id === data.serviceId || c.slug === data.serviceId);
-                categoryName = staticCat?.name || data.serviceId;
-            }
+            const serviceName = serviceDoc.exists ? serviceDoc.data()!.name : undefined;
+            const staticCatName = CATEGORIES.find(c => c.id === data.serviceId || c.slug === data.serviceId)?.name;
+            categoryName = serviceName || staticCatName || data.serviceId;
         }
 
         return {
