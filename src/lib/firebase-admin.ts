@@ -3,16 +3,22 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { firebaseConfig } from '@/firebase/config';
 
-// Import the service account directly from the project root
-// In this environment, this file contains the required private_key for token signing
-import serviceAccountData from '../../service-account.json';
+// Load service account from environment variable instead of file
+let serviceAccountData: any = null;
+try {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    serviceAccountData = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+  }
+} catch (e) {
+  console.warn('[Firebase Admin] Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON');
+}
 
 let adminAuth: any = null;
 let adminDb: any = null;
 
 /**
  * Robust initialization for Firebase Admin SDK.
- * Prioritizes the local service-account.json to ensure signing capabilities (createCustomToken).
+ * Prioritizes the service account from environment variable to ensure signing capabilities (createCustomToken).
  */
 function getAdminApp(): App {
   if (getApps().length > 0) {
@@ -21,7 +27,7 @@ function getAdminApp(): App {
 
   const projectId = firebaseConfig.projectId;
 
-  // Strategy 1: Use the explicit service-account.json file if available
+  // Strategy 1: Use the environment variable (CI/CD or production)
   try {
     if (serviceAccountData && (serviceAccountData as any).private_key) {
       return initializeApp({
@@ -30,10 +36,10 @@ function getAdminApp(): App {
       });
     }
   } catch (e) {
-    // Silent catch during strategy check
+    console.warn('[Firebase Admin] Strategy 1 failed:', e);
   }
 
-  // Strategy 2: Use environment variable
+  // Strategy 2: Use legacy GOOGLE_APPLICATION_CREDENTIALS_JSON if available
   try {
     const credsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
     if (credsJson && credsJson !== 'null' && credsJson !== 'undefined' && credsJson.length > 10) {
@@ -46,7 +52,7 @@ function getAdminApp(): App {
       }
     }
   } catch (e) {
-    // Silent catch
+    console.warn('[Firebase Admin] Strategy 2 failed:', e);
   }
 
   // Strategy 3: Project ID fallback (Limited functionality - createCustomToken will likely fail)
