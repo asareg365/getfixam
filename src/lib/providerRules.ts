@@ -60,6 +60,6 @@ export async function executeProviderAction(providerId: string, status: RuleStat
     });
 
   } catch (error) {
-    console.error(`Failed to execute action '${status}' for provider ${providerId}:`, error);
+    console.error("Failed to execute action '%s' for provider %s:", status, providerId, error);
   }
 }
