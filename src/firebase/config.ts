@@ -1,3 +1,4 @@
+// Reads from .env in development, from GitHub secret in CI/CD
 export const firebaseConfig = {
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,

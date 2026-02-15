@@ -8,6 +8,7 @@ let adminDb: any = null;
 
 /**
  * Robust initialization for Firebase Admin SDK.
+ * Prioritizes the service account from environment variable to ensure signing capabilities (createCustomToken).
  */
 function getAdminApp(): App {
   if (getApps().length > 0) {
@@ -16,7 +17,7 @@ function getAdminApp(): App {
 
   const projectId = firebaseConfig.projectId;
 
-  // Strategy 1: Use SERVICE_ACCOUNT_JSON environment variable
+  // Strategy 1: Use the environment variable (CI/CD or production)
   try {
     const serviceAccountJson = process.env.SERVICE_ACCOUNT_JSON;
     if (serviceAccountJson) {
@@ -29,10 +30,10 @@ function getAdminApp(): App {
       }
     }
   } catch (e) {
-    console.error('Failed to parse SERVICE_ACCOUNT_JSON', e);
+    console.warn('[Firebase Admin] Strategy 1 failed:', e);
   }
 
-  // Strategy 2: Use GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable
+  // Strategy 2: Use legacy GOOGLE_APPLICATION_CREDENTIALS_JSON if available
   try {
     const credsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
     if (credsJson && credsJson !== 'null' && credsJson !== 'undefined' && credsJson.length > 10) {
@@ -45,7 +46,7 @@ function getAdminApp(): App {
       }
     }
   } catch (e) {
-    // Silent catch
+    console.warn('[Firebase Admin] Strategy 2 failed:', e);
   }
 
   // Strategy 3: Project ID fallback (Limited functionality - createCustomToken will likely fail)
