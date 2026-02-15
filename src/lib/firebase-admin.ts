@@ -3,16 +3,11 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { firebaseConfig } from '@/firebase/config';
 
-// Import the service account directly from the project root
-// In this environment, this file contains the required private_key for token signing
-import serviceAccountData from '../../service-account.json';
-
 let adminAuth: any = null;
 let adminDb: any = null;
 
 /**
  * Robust initialization for Firebase Admin SDK.
- * Prioritizes the local service-account.json to ensure signing capabilities (createCustomToken).
  */
 function getAdminApp(): App {
   if (getApps().length > 0) {
@@ -21,19 +16,23 @@ function getAdminApp(): App {
 
   const projectId = firebaseConfig.projectId;
 
-  // Strategy 1: Use the explicit service-account.json file if available
+  // Strategy 1: Use SERVICE_ACCOUNT_JSON environment variable
   try {
-    if (serviceAccountData && (serviceAccountData as any).private_key) {
-      return initializeApp({
-        credential: cert(serviceAccountData as any),
-        projectId,
-      });
+    const serviceAccountJson = process.env.SERVICE_ACCOUNT_JSON;
+    if (serviceAccountJson) {
+      const serviceAccount = JSON.parse(serviceAccountJson);
+      if (serviceAccount && serviceAccount.private_key) {
+        return initializeApp({
+          credential: cert(serviceAccount),
+          projectId,
+        });
+      }
     }
   } catch (e) {
-    // Silent catch during strategy check
+    console.error('Failed to parse SERVICE_ACCOUNT_JSON', e);
   }
 
-  // Strategy 2: Use environment variable
+  // Strategy 2: Use GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable
   try {
     const credsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
     if (credsJson && credsJson !== 'null' && credsJson !== 'undefined' && credsJson.length > 10) {
