@@ -1,55 +1,47 @@
-import { getCategoryBySlug, getProviders } from '@/lib/services';
-import { getNeighborhoods } from '@/lib/data';
-import { notFound } from 'next/navigation';
-import type { Provider } from '@/lib/types';
-import Link from 'next/link';
-import { Home } from 'lucide-react';
-import PublicLayout from '@/components/layout/PublicLayout';
-import ProviderList from './ProviderList';
+''''use client'; // ⚠️ Make this a client component
 
-export const dynamic = "force-dynamic";
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { getProvidersByCategory } from '@/firebase/services';
+import ProviderCard from '@/components/ProviderCard';
+import { Provider } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
-export default async function CategoryPage(props: { params: Promise<{ slug: string }> }) {
-  const params = await props.params;
-  let categoryName = 'All Providers';
-  let providers: Provider[] = [];
-  const zones = await getNeighborhoods();
+export default function CategoryPage() {
+  const params = useParams();
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  try {
-    if (params.slug === 'all') {
-      providers = await getProviders();
-    } else {
-      const category = await getCategoryBySlug(params.slug);
-      if (!category) notFound();
-      categoryName = category.name;
-      providers = await getProviders(params.slug);
-    }
-  } catch (err) {
-    console.error('Error fetching providers or category:', err);
-    providers = [];
-  }
+  useEffect(() => {
+    if (!params.slug) return;
+
+    setLoading(true);
+
+    getProvidersByCategory(params.slug as string)
+      .then((data) => setProviders(data))
+      .catch((err) => {
+        console.error('Error fetching providers:', err);
+        toast({
+          title: 'Failed to load providers',
+          description: err.message || 'Something went wrong.',
+          variant: 'destructive',
+        });
+      })
+      .finally(() => setLoading(false));
+  }, [params.slug, toast]);
+
+  if (loading) return <p className="text-center py-8">Loading providers...</p>;
+
+  if (providers.length === 0)
+    return <p className="text-center py-8">No providers found in this category.</p>;
 
   return (
-    <PublicLayout>
-      <div className="bg-secondary/20 min-h-[calc(100vh-4rem)]">
-        <div className="container mx-auto px-4 md:px-6 py-12 md:py-16">
-          <div className="mb-12">
-            <div className="flex items-center text-sm text-muted-foreground mb-4">
-              <Link href="/" className="hover:text-primary transition-colors flex items-center">
-                <Home className="h-4 w-4 mr-2" />
-                Home
-              </Link>
-              <span className="mx-2">/</span>
-              <span>{categoryName}</span>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">{categoryName}</h1>
-            <p className="mt-2 text-lg text-foreground/80">
-              Browse artisans and filter by location and verification status.
-            </p>
-          </div>
-          <ProviderList initialProviders={providers} zones={zones} />
-        </div>
-      </div>
-    </PublicLayout>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 p-4">
+      {providers.map((provider) => (
+        <ProviderCard key={provider.id} provider={provider} />
+      ))}
+    </div>
   );
 }
+'''
