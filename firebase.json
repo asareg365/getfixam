@@ -1,7 +1,4 @@
 {
-  "hosting": {
-    "public": "public"
-  },
   "apphosting": {
     "backendId": "studio",
     "rootDir": ".",
