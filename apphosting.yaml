@@ -1,27 +1,46 @@
 # Settings for Backend (on Cloud Run).
-# See https://firebase.google.com/docs/app-hosting/configure#cloud-run
 runConfig:
   minInstances: 0
-  # maxInstances: 100
-  # concurrency: 80
-  # cpu: 1
-  # memoryMiB: 512
 
-# Environment variables and secrets.
-# env:
-  # Configure environment variables.
-  # See https://firebase.google.com/docs/app-hosting/configure#user-defined-environment
-  # - variable: MESSAGE
-  #   value: Hello world!
-  #   availability:
-  #     - BUILD
-  #     - RUNTIME
+env:
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "AIzaSyBCRE7JyMb48zdoffrQ1LfDZ8kfV5Gbj0A"
+    availability:
+      - BUILD
+      - RUNTIME
 
-  # Grant access to secrets in Cloud Secret Manager.
-  # See https://firebase.google.com/docs/app-hosting/configure#secret-parameters
-  # - variable: MY_SECRET
-  #   secret: mySecretRef
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "studio-1004537855-178e0.firebaseapp.com"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "studio-1004537855-178e0"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "studio-1004537855-178e0.firebasestorage.app"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "38469851703"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:38469851703:web:51c25e3dafdaed0743bdb2"
+    availability:
+      - BUILD
+      - RUNTIME
+
 build:
   run: npm run build
+
 run:
   run: npm run start
