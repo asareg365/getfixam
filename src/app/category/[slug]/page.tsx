@@ -1,47 +1,30 @@
-''''use client'; // ⚠️ Make this a client component
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { getProvidersByCategory } from '@/firebase/services';
-import ProviderCard from '@/components/ProviderCard';
-import { Provider } from '@/lib/types';
-import { useToast } from '@/hooks/use-toast';
+import ProviderList from '@/components/ProviderList';
+import { getCategoryBySlug } from '@/lib/services';
+import { notFound } from 'next/navigation';
+import PublicLayout from '@/components/layout/PublicLayout';
 
-export default function CategoryPage() {
-  const params = useParams();
-  const [providers, setProviders] = useState<Provider[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+export const dynamic = 'force-dynamic';
 
-  useEffect(() => {
-    if (!params.slug) return;
+export default async function CategoryPage(props: { params: Promise<{ slug: string }> }) {
+    const params = await props.params;
+    const category = await getCategoryBySlug(params.slug);
 
-    setLoading(true);
+    if (!category) {
+        notFound();
+    }
 
-    getProvidersByCategory(params.slug as string)
-      .then((data) => setProviders(data))
-      .catch((err) => {
-        console.error('Error fetching providers:', err);
-        toast({
-          title: 'Failed to load providers',
-          description: err.message || 'Something went wrong.',
-          variant: 'destructive',
-        });
-      })
-      .finally(() => setLoading(false));
-  }, [params.slug, toast]);
-
-  if (loading) return <p className="text-center py-8">Loading providers...</p>;
-
-  if (providers.length === 0)
-    return <p className="text-center py-8">No providers found in this category.</p>;
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 p-4">
-      {providers.map((provider) => (
-        <ProviderCard key={provider.id} provider={provider} />
-      ))}
-    </div>
-  );
+    return (
+        <PublicLayout>
+            <div className="container mx-auto px-4 py-12">
+                <div className="text-center mb-12">
+                    <h1 className="text-4xl font-bold font-headline text-primary">{category.name}</h1>
+                    <p className="text-lg text-muted-foreground mt-2">
+                        Browse through the best artisans in {category.name.toLowerCase()}.
+                    </p>
+                </div>
+                <ProviderList slug={params.slug} />
+            </div>
+        </PublicLayout>
+    );
 }
-'''

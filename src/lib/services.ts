@@ -1,6 +1,5 @@
+
 import { adminDb } from './firebase-admin';
-import { db as clientDb } from './firebase';
-import { collection, query, where, getDocs as clientGetDocs, orderBy } from 'firebase/firestore';
 import type { Category, Provider } from './types';
 import { getCategories } from './data';
 import { CATEGORIES } from './constants';
@@ -46,12 +45,10 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
 }
 
 /**
- * Fetches providers from Firestore. 
- * Uses a Dual-Fetch strategy: Admin SDK first, fallback to Client SDK for maximum reliability.
+ * Fetches providers from Firestore using the Admin SDK.
  */
 export async function getProviders(categorySlug?: string): Promise<Provider[]> {
     try {
-        // 1. Determine target service ID if a slug is provided
         let targetServiceId: string | null = null;
         let servicesMap = new Map<string, string>();
 
@@ -66,43 +63,22 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
             });
         }
 
-        // If not found in dynamic services, check static categories
         if (!targetServiceId && categorySlug && categorySlug !== 'all') {
             const staticCat = CATEGORIES.find(c => c.slug === categorySlug);
             if (staticCat) targetServiceId = staticCat.id;
-            else targetServiceId = categorySlug; // Last resort fallback
+            else targetServiceId = categorySlug;
         }
 
-        let providersData: any[] = [];
-
-        // 2. Try fetching via Admin SDK
-        if (adminDb) {
-            let providersQuery = adminDb.collection('providers').where('status', 'in', ['approved', 'pending']);
-            
-            if (categorySlug && categorySlug !== 'all' && targetServiceId) {
-                providersQuery = providersQuery.where('serviceId', '==', targetServiceId);
-            }
-
-            const snap = await providersQuery.get();
-            providersData = snap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
-        } 
+        let providersQuery = adminDb.collection('providers').where('status', 'in', ['approved', 'pending']);
         
-        // 3. Fallback to Client SDK if Admin fetch failed or returned nothing (resilience)
-        if (providersData.length === 0) {
-            const providersRef = collection(clientDb, 'providers');
-            let q = query(providersRef, where('status', 'in', ['approved', 'pending']));
-            
-            const snap = await clientGetDocs(q);
-            providersData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-            // Client-side filtering if slug is provided
-            if (categorySlug && categorySlug !== 'all' && targetServiceId) {
-                providersData = providersData.filter(p => p.serviceId === targetServiceId);
-            }
+        if (categorySlug && categorySlug !== 'all' && targetServiceId) {
+            providersQuery = providersQuery.where('serviceId', '==', targetServiceId);
         }
 
-        // 4. Map to final Provider type and ensure serialization
-        const providers = providersData.map(data => {
+        const snap = await providersQuery.get();
+        const providersData = snap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+
+        const providers = providersData.map((data: any) => {
             const categoryName = servicesMap.get(data.serviceId) ||
                                  CATEGORIES.find(c => c.id === data.serviceId || c.slug === data.serviceId)?.name ||
                                  data.category ||
@@ -130,8 +106,7 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
             } as Provider;
         });
 
-        // 5. Sort: Featured first, then by rating
-        return providers.sort((a, b) => {
+        return providers.sort((a: Provider, b: Provider) => {
             if (a.isFeatured !== b.isFeatured) return a.isFeatured ? -1 : 1;
             return b.rating - a.rating;
         });
@@ -143,24 +118,21 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
 }
 
 /**
- * Fetches a single provider by ID.
+ * Fetches a single provider by ID using the Admin SDK.
  */
 export async function getProviderById(id: string): Promise<Provider | undefined> {
     try {
         let data: any = null;
         let providerId: string = id;
 
-        if (adminDb) {
-            const doc = await adminDb.collection('providers').doc(id).get();
-            if (doc.exists) data = doc.data();
-        }
-
-        if (!data) {
+        const doc = await adminDb.collection('providers').doc(id).get();
+        if (!doc.exists) {
             return undefined;
         }
+        data = doc.data();
         
         let categoryName = 'Artisan';
-        if (data.serviceId && adminDb) {
+        if (data.serviceId) {
             const serviceDoc = await adminDb.collection('services').doc(data.serviceId).get();
             const serviceName = serviceDoc.exists ? serviceDoc.data()!.name : undefined;
             const staticCatName = CATEGORIES.find(c => c.id === data.serviceId || c.slug === data.serviceId)?.name;
