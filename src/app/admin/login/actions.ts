@@ -1,4 +1,3 @@
-
 'use server';
 
 import { cookies } from 'next/headers';
@@ -7,7 +6,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { logAdminAction } from '@/lib/audit-log';
 
 /**
- * Establishes a secure admin session.
+ * Establishes a secure admin session by setting an encrypted cookie.
  */
 export async function setAdminSessionAction(uid: string, email: string | null, role: string) {
   if (!email) {
@@ -24,17 +23,19 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
     
     const cookieStore = await cookies();
     
-    // Always use secure cookies in production environments
+    // Check environment: Studio/Dev environments may use HTTP locally
     const isProd = process.env.NODE_ENV === 'production';
 
+    // Set the __session cookie (required name for Firebase App Hosting)
     cookieStore.set('__session', token, {
       httpOnly: true,
-      secure: true, 
+      secure: isProd, // Only true in production to avoid issues in dev previews
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24, // 24 hours
     });
 
+    // Log the successful login event if DB is available
     if (adminDb && typeof adminDb.collection === 'function') {
       logAdminAction({
           adminEmail: email,

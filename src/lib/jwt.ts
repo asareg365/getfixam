@@ -1,5 +1,3 @@
-'use server';
-
 import { SignJWT, jwtVerify } from 'jose';
 
 // Robust, consistent secret key for cross-portal session verification.
@@ -15,8 +13,11 @@ export type AdminJWTPayload = {
   iat: number;
 };
 
+/**
+ * Signs a payload into a JWT.
+ * Used for server-side session management.
+ */
 export async function signToken(payload: Omit<AdminJWTPayload, 'iat' | 'exp'>): Promise<string> {
-  // Defensive check: typeof null is 'object', so we must be explicit.
   if (!payload || typeof payload !== 'object' || payload === null) {
     throw new Error('JWT Payload must be a valid non-null object');
   }
@@ -24,10 +25,14 @@ export async function signToken(payload: Omit<AdminJWTPayload, 'iat' | 'exp'>): 
   return await new SignJWT(payload as any)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('2h')
+    .setExpirationTime('24h') // Increased session duration
     .sign(key);
 }
 
+/**
+ * Verifies a JWT and returns its payload.
+ * Returns null if verification fails.
+ */
 export async function verifyToken(token: string): Promise<AdminJWTPayload | null> {
   if (!token) return null;
   
@@ -38,6 +43,7 @@ export async function verifyToken(token: string): Promise<AdminJWTPayload | null
 
     return payload as unknown as AdminJWTPayload;
   } catch (error) {
+    // Silently fail verification to allow middleware to handle redirects
     return null;
   }
 }

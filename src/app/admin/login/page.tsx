@@ -33,12 +33,12 @@ export default function AdminLoginPage() {
     setError(null);
 
     try {
+      // 1. Authenticate with Firebase Auth
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
+      // 2. Verify Admin Status in Firestore
       const adminDocRef = doc(db, 'admins', user.uid);
-      
-      // Attempt to read the admin document with contextual error handling
       const adminDoc = await getDoc(adminDocRef).catch(async (err) => {
         if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
           const permissionError = new FirestorePermissionError({
@@ -58,8 +58,8 @@ export default function AdminLoginPage() {
 
       let role = 'admin';
 
+      // 3. Handle First-Admin Bootstrapping
       if (!adminDoc.exists()) {
-        // Check if this is the first ever admin
         const adminsCollectionRef = collection(db, 'admins');
         const firstAdminQuery = query(adminsCollectionRef, limit(1));
         
@@ -89,17 +89,7 @@ export default function AdminLoginPage() {
             createdAt: serverTimestamp(),
           };
 
-          // Initialize system with first admin
-          await setDoc(adminDocRef, newAdminData).catch(async (serverError) => {
-                const permissionError = new FirestorePermissionError({
-                    path: adminDocRef.path,
-                    operation: 'create',
-                    requestResourceData: newAdminData,
-                } satisfies SecurityRuleContext);
-                errorEmitter.emit('permission-error', permissionError);
-                throw new Error('Failed to initialize administrator account.');
-            });
-          
+          await setDoc(adminDocRef, newAdminData);
           toast({ title: 'System Initialized', description: 'You have been granted Super Admin access.' });
         } else {
           throw new Error('Authenticated but not authorized as an administrator.');
@@ -112,6 +102,7 @@ export default function AdminLoginPage() {
         role = adminData.role;
       }
 
+      // 4. Finalize the secure session
       await finalizeSession(user.uid, user.email!, role);
       
     } catch (err: any) {
@@ -131,7 +122,10 @@ export default function AdminLoginPage() {
         throw new Error(sessionResult.error || 'Failed to establish session.');
     }
     toast({ title: 'Success', description: 'Redirecting to dashboard...' });
-    window.location.href = '/admin';
+    
+    // Use router for a smoother transition
+    router.push('/admin');
+    router.refresh();
   }
 
   return (
