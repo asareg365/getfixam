@@ -19,7 +19,7 @@ function getImageForProvider(id: string, categoryName: string, existingImageId?:
     if (cat.includes('electric')) return getImageFromPool(['provider1', 'provider7']);
     if (cat.includes('plumb')) return getImageFromPool(['provider2', 'provider8']);
     if (cat.includes('phone') || cat.includes('mobile') || cat.includes('repair')) {
-        if (cat.includes('phone') || cat.includes('mobile')) return getImageFromPool(['provider3', 'provider9']);
+        return getImageFromPool(['provider3', 'provider9']);
     }
     if (cat.includes('mechanic') || cat.includes('car') || cat.includes('auto')) return getImageFromPool(['provider4', 'provider10']);
     if (cat.includes('hair') || cat.includes('beauty') || cat.includes('salon') || cat.includes('beautician')) return getImageFromPool(['provider5', 'provider12']);
@@ -43,7 +43,7 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
 
 /**
  * Fetches providers from Firestore using the Admin SDK.
- * Returns an empty array gracefully if the database is not configured.
+ * Handles category filtering and name mapping robustly.
  */
 export async function getProviders(categorySlug?: string): Promise<Provider[]> {
     if (!adminDb) {
@@ -51,41 +51,35 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
     }
 
     try {
+        const categories = await getCategories();
         let targetServiceId: string | null = null;
-        let servicesMap = new Map<string, string>();
+        const servicesMap = new Map<string, string>();
 
-        const servicesSnap = await adminDb.collection('services').get();
-        servicesSnap.forEach((doc: any) => {
-            const data = doc.data();
-            servicesMap.set(doc.id, data.name);
-            if (categorySlug && data.slug === categorySlug) {
-                targetServiceId = doc.id;
+        // Build a map of all known category IDs/names for lookup
+        categories.forEach(cat => {
+            servicesMap.set(cat.id, cat.name);
+            if (categorySlug && cat.slug === categorySlug) {
+                targetServiceId = cat.id;
             }
         });
 
-        if (!targetServiceId && categorySlug && categorySlug !== 'all') {
-            const staticCat = CATEGORIES.find(c => c.slug === categorySlug);
-            if (staticCat) targetServiceId = staticCat.id;
-            else targetServiceId = categorySlug;
-        }
-
         let providersQuery = adminDb.collection('providers').where('status', 'in', ['approved', 'pending']);
         
+        // If specific category requested, filter by its canonical ID
         if (categorySlug && categorySlug !== 'all' && targetServiceId) {
             providersQuery = providersQuery.where('serviceId', '==', targetServiceId);
         }
 
         const snap = await providersQuery.get();
-        const providersData = snap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
-
-        const providers = providersData.map((data: any) => {
-            const categoryName = servicesMap.get(data.serviceId) ||
-                                 CATEGORIES.find(c => c.id === data.serviceId || c.slug === data.serviceId)?.name ||
-                                 data.category ||
-                                 'Artisan';
+        
+        const providers = snap.docs.map((doc: any) => {
+            const data = doc.data();
+            
+            // Map the serviceId to a readable name using our merged map
+            let categoryName = servicesMap.get(data.serviceId) || data.category || 'Artisan';
 
             return {
-                id: data.id,
+                id: doc.id,
                 authUid: data.authUid || '',
                 name: data.name || 'Unknown',
                 category: categoryName,
@@ -99,20 +93,22 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
                 isFeatured: !!data.isFeatured,
                 rating: data.rating || 0,
                 reviewCount: data.reviewCount || 0,
-                imageId: getImageForProvider(data.id, categoryName, data.imageId),
+                imageId: getImageForProvider(doc.id, categoryName, data.imageId),
                 createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : (typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString()),
-                approvedAt: data.approvedAt?.toDate?.() ? data.approvedAt.toDate().toISOString() : (typeof data.approvedAt === 'string' ? data.approvedAt : undefined),
-                updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : (typeof data.updatedAt === 'string' ? data.updatedAt : undefined),
+                approvedAt: data.approvedAt?.toDate?.() ? data.approvedAt.toDate().toISOString() : undefined,
+                updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : undefined,
+                services: data.services || []
             } as Provider;
         });
 
+        // Sort by featured first, then by rating
         return providers.sort((a: Provider, b: Provider) => {
             if (a.isFeatured !== b.isFeatured) return a.isFeatured ? -1 : 1;
             return b.rating - a.rating;
         });
 
     } catch (e: any) {
-        console.warn("[Services] Could not fetch providers. Reason:", e.message || 'Auth Error');
+        console.warn("[Services] Could not fetch providers. Reason:", e.message);
         return [];
     }
 }
@@ -128,13 +124,14 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
         if (!doc.exists) return undefined;
         
         const data = doc.data();
-        let categoryName = 'Artisan';
+        const categories = await getCategories();
         
-        if (data.serviceId) {
-            const serviceDoc = await adminDb.collection('services').doc(data.serviceId).get();
-            const serviceName = serviceDoc.exists ? serviceDoc.data()!.name : undefined;
-            const staticCatName = CATEGORIES.find(c => c.id === data.serviceId || c.slug === data.serviceId)?.name;
-            categoryName = serviceName || staticCatName || data.serviceId;
+        let categoryName = 'Artisan';
+        const matchedCat = categories.find(c => c.id === data.serviceId || c.slug === data.serviceId);
+        if (matchedCat) {
+            categoryName = matchedCat.name;
+        } else if (data.category) {
+            categoryName = data.category;
         }
 
         return {
@@ -154,11 +151,12 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
             reviewCount: data.reviewCount || 0,
             imageId: getImageForProvider(doc.id, categoryName, data.imageId),
             createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : (typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString()),
-            approvedAt: data.approvedAt?.toDate?.() ? data.approvedAt.toDate().toISOString() : (typeof data.approvedAt === 'string' ? data.approvedAt : undefined),
-            updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : (typeof data.updatedAt === 'string' ? data.updatedAt : undefined),
+            approvedAt: data.approvedAt?.toDate?.() ? data.approvedAt.toDate().toISOString() : undefined,
+            updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : undefined,
+            services: data.services || []
         } as Provider;
     } catch (e: any) {
-        console.warn("[Services] Could not fetch provider by ID. Reason:", e.message || 'Auth Error');
+        console.warn("[Services] Could not fetch provider by ID. Reason:", e.message);
         return undefined;
     }
 }

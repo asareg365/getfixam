@@ -2,7 +2,7 @@ import type { Category } from './types';
 
 /**
  * Static Artisan Categories
- * These are used as defaults and fallbacks throughout the system.
+ * Expanded and sorted alphabetically as requested.
  */
 export const CATEGORIES: Category[] = [
   { id: 'architectures', name: "Architectures'", slug: 'architectures', icon: 'Hammer' },
@@ -27,51 +27,48 @@ export const CATEGORIES: Category[] = [
 ];
 
 /**
- * Geographic regions supported by the platform.
+ * Neighborhoods/Zones in Berekum.
+ * Sorted alphabetically as requested.
  */
+export const NEIGHBORHOODS = [
+  "Adom",
+  "Adom Newtown",
+  "Ahenbronoso",
+  "Amomaso",
+  "Anyimon",
+  "Ayakorase",
+  "Benkasa",
+  "Berekum Central",
+  "Biadan",
+  "Brenyekwa",
+  "Fetentaa",
+  "Jamdede",
+  "Jinijini",
+  "Kato",
+  "Koraso",
+  "Kyeritwedie",
+  "Magazine",
+  "Mpatapo",
+  "Mpatasie",
+  "Nanasuano",
+  "New Biadan",
+  "Nsapor",
+  "Nyamebekyere",
+  "Nyametease",
+  "Senase",
+  "Sofokyere",
+  "World of Friends",
+  "Zongo"
+];
+
 export async function getRegions(): Promise<string[]> {
   return ["Bono Region"];
 }
 
-/**
- * Neighborhoods/Zones in Berekum.
- */
 export async function getNeighborhoods(): Promise<string[]> {
-    return [
-        "Adom",
-        "Adom Newtown",
-        "Ahenbronoso",
-        "Amomaso",
-        "Anyimon",
-        "Ayakorase",
-        "Benkasa",
-        "Berekum Central",
-        "Biadan",
-        "Brenyekwa",
-        "Fetentaa",
-        "Jamdede",
-        "Jinijini",
-        "Kato",
-        "Koraso",
-        "Kyeritwedie",
-        "Magazine",
-        "Mpatapo",
-        "Mpatasie",
-        "Nanasuano",
-        "New Biadan",
-        "Nsapor",
-        "Nyamebekyere",
-        "Nyametease",
-        "Senase",
-        "Sofokyere",
-        "World of Friends",
-        "Zongo"
-    ];
+  return NEIGHBORHOODS;
 }
 
-/**
- * Alias for neighborhoods used by the provider registration flow.
- */
 export async function getZones(): Promise<string[]> {
-    return getNeighborhoods();
+  return NEIGHBORHOODS;
 }
