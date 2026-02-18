@@ -11,7 +11,7 @@ import { adminDb } from '@/lib/firebase-admin';
  */
 export async function setAdminSessionAction(uid: string, email: string, role: string) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const cookieDomain = process.env.NODE_ENV === 'production' ? '.getfixam.com' : undefined;
 
     // 1. Generate a custom JWT containing essential user info
