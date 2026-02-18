@@ -30,10 +30,13 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
      */
     cookieStore.set('__session', token, {
       httpOnly: true,
-      secure: true, 
+      secure: true,
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24, // 24 hours
+      maxAge: 60 * 60 * 24,
+      domain: process.env.NODE_ENV === 'production'
+        ? '.getfixam.com'
+        : undefined,
     });
 
     // Log the successful login event
