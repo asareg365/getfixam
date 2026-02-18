@@ -15,14 +15,13 @@ import { headers } from 'next/headers';
 /** ----- AUTH ACTIONS ----- */
 export async function logoutAction() {
   const cookieStore = await cookies();
-  
-  // Force delete by setting empty value and max-age 0
-  cookieStore.set('__session', '', { 
-    maxAge: 0, 
+  const cookieDomain = process.env.NODE_ENV === 'production' ? '.getfixam.com' : undefined;
+
+  // Overwrite the cookie with an empty value and past expiration date
+  cookieStore.delete({ 
+    name: '__session',
+    domain: cookieDomain,
     path: '/',
-    httpOnly: true,
-    secure: true,
-    sameSite: 'lax'
   });
   
   // Next.js redirects by throwing an error, which must happen OUTSIDE try/catch blocks
