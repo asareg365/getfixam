@@ -1,4 +1,3 @@
-
 import { adminDb } from './firebase-admin';
 import type { Category, Provider } from './types';
 import { getCategories } from './data';
@@ -8,7 +7,6 @@ import { CATEGORIES } from './constants';
  * Helper to pick a relevant image based on the category name.
  */
 function getImageForProvider(id: string, categoryName: string, existingImageId?: string): string {
-    // If they already have a custom image ID that isn't one of our auto-placeholders, keep it
     if (existingImageId && !existingImageId.startsWith('provider')) return existingImageId;
     
     const cat = categoryName.toLowerCase();
@@ -27,7 +25,6 @@ function getImageForProvider(id: string, categoryName: string, existingImageId?:
     if (cat.includes('hair') || cat.includes('beauty') || cat.includes('salon') || cat.includes('beautician')) return getImageFromPool(['provider5', 'provider12']);
     if (cat.includes('carpenter') || cat.includes('wood') || cat.includes('furniture')) return getImageFromPool(['provider6', 'provider11']);
     
-    // Default to a random provider image if no match
     const randomIndex = (id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 12) + 1;
     return `provider${randomIndex}`;
 }
@@ -46,22 +43,25 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
 
 /**
  * Fetches providers from Firestore using the Admin SDK.
+ * Returns an empty array gracefully if the database is not configured.
  */
 export async function getProviders(categorySlug?: string): Promise<Provider[]> {
+    if (!adminDb) {
+        return [];
+    }
+
     try {
         let targetServiceId: string | null = null;
         let servicesMap = new Map<string, string>();
 
-        if (adminDb) {
-            const servicesSnap = await adminDb.collection('services').get();
-            servicesSnap.forEach((doc: any) => {
-                const data = doc.data();
-                servicesMap.set(doc.id, data.name);
-                if (categorySlug && data.slug === categorySlug) {
-                    targetServiceId = doc.id;
-                }
-            });
-        }
+        const servicesSnap = await adminDb.collection('services').get();
+        servicesSnap.forEach((doc: any) => {
+            const data = doc.data();
+            servicesMap.set(doc.id, data.name);
+            if (categorySlug && data.slug === categorySlug) {
+                targetServiceId = doc.id;
+            }
+        });
 
         if (!targetServiceId && categorySlug && categorySlug !== 'all') {
             const staticCat = CATEGORIES.find(c => c.slug === categorySlug);
@@ -111,8 +111,8 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
             return b.rating - a.rating;
         });
 
-    } catch (e) {
-        console.error("Critical error in getProviders:", e);
+    } catch (e: any) {
+        console.warn("[Services] Could not fetch providers. Reason:", e.message || 'Auth Error');
         return [];
     }
 }
@@ -121,17 +121,15 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
  * Fetches a single provider by ID using the Admin SDK.
  */
 export async function getProviderById(id: string): Promise<Provider | undefined> {
-    try {
-        let data: any = null;
-        let providerId: string = id;
+    if (!adminDb) return undefined;
 
+    try {
         const doc = await adminDb.collection('providers').doc(id).get();
-        if (!doc.exists) {
-            return undefined;
-        }
-        data = doc.data();
+        if (!doc.exists) return undefined;
         
+        const data = doc.data();
         let categoryName = 'Artisan';
+        
         if (data.serviceId) {
             const serviceDoc = await adminDb.collection('services').doc(data.serviceId).get();
             const serviceName = serviceDoc.exists ? serviceDoc.data()!.name : undefined;
@@ -140,7 +138,7 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
         }
 
         return {
-            id: providerId,
+            id: doc.id,
             authUid: data.authUid || '',
             name: data.name || 'Unknown',
             category: categoryName,
@@ -154,13 +152,13 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
             isFeatured: !!data.isFeatured,
             rating: data.rating || 0,
             reviewCount: data.reviewCount || 0,
-            imageId: getImageForProvider(providerId, categoryName, data.imageId),
+            imageId: getImageForProvider(doc.id, categoryName, data.imageId),
             createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : (typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString()),
             approvedAt: data.approvedAt?.toDate?.() ? data.approvedAt.toDate().toISOString() : (typeof data.approvedAt === 'string' ? data.approvedAt : undefined),
             updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : (typeof data.updatedAt === 'string' ? data.updatedAt : undefined),
         } as Provider;
-    } catch (e) {
-        console.error("Error in getProviderById:", e);
+    } catch (e: any) {
+        console.warn("[Services] Could not fetch provider by ID. Reason:", e.message || 'Auth Error');
         return undefined;
     }
 }

@@ -9,58 +9,53 @@ let adminDb: any = null;
 /**
  * Robust initialization for Firebase Admin SDK.
  * Prioritizes the service account from environment variable to ensure signing capabilities (createCustomToken).
+ * If no valid credentials are found, it remains null to allow graceful fallbacks to static data.
  */
-function getAdminApp(): App {
+function getAdminApp(): App | null {
   if (getApps().length > 0) {
     return getApps()[0];
   }
 
   const projectId = firebaseConfig.projectId;
+  if (!projectId) return null;
 
-  // Strategy 1: Use the environment variable (CI/CD or production)
-  try {
-    const serviceAccountJson = process.env.SERVICE_ACCOUNT_JSON;
-    if (serviceAccountJson) {
-      const serviceAccount = JSON.parse(serviceAccountJson);
+  // Combine strategies with robust string validation
+  const saJson = process.env.SERVICE_ACCOUNT_JSON || process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+  
+  if (saJson && saJson !== 'null' && saJson !== 'undefined' && saJson.trim().startsWith('{')) {
+    try {
+      const serviceAccount = JSON.parse(saJson);
       if (serviceAccount && serviceAccount.private_key) {
         return initializeApp({
           credential: cert(serviceAccount),
           projectId,
         });
       }
+    } catch (e) {
+      console.warn('[Firebase Admin] Failed to parse Service Account JSON. Admin features will be limited.');
     }
-  } catch (e) {
-    console.warn('[Firebase Admin] Strategy 1 failed:', e);
   }
 
-  // Strategy 2: Use legacy GOOGLE_APPLICATION_CREDENTIALS_JSON if available
-  try {
-    const credsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
-    if (credsJson && credsJson !== 'null' && credsJson !== 'undefined' && credsJson.length > 10) {
-      const serviceAccount = JSON.parse(credsJson);
-      if (serviceAccount && serviceAccount.private_key) {
-        return initializeApp({
-          credential: cert(serviceAccount),
-          projectId,
-        });
+  // Strategy 3: Local Prototyping Fallback (No Credentials)
+  // We only attempt this if we are not in a production-like environment to avoid "payload null" crashes
+  // deep in the Google Auth library when performing Firestore operations.
+  if (process.env.NODE_ENV === 'development') {
+      try {
+          return initializeApp({ projectId });
+      } catch (e) {
+          return null;
       }
-    }
-  } catch (e) {
-    console.warn('[Firebase Admin] Strategy 2 failed:', e);
   }
 
-  // Strategy 3: Project ID fallback (Limited functionality - createCustomToken will likely fail)
-  try {
-    return initializeApp({ projectId });
-  } catch (e) {
-    return initializeApp();
-  }
+  return null;
 }
 
 try {
   const app = getAdminApp();
-  adminAuth = getAuth(app);
-  adminDb = getFirestore(app);
+  if (app) {
+    adminAuth = getAuth(app);
+    adminDb = getFirestore(app);
+  }
 } catch (error) {
   console.error('[Firebase Admin] Critical initialization error:', error);
 }

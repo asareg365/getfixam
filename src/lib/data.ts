@@ -5,11 +5,12 @@ import { QueryDocumentSnapshot } from 'firebase-admin/firestore';
 
 /**
  * Server-side utility to fetch categories, merging Firestore 'services' with static defaults.
- * This function should only be called in Server Components or Server Actions.
+ * Handles database connectivity issues gracefully by falling back to static constants.
  */
 export async function getCategories(): Promise<Category[]> {
   if (adminDb && typeof adminDb.collection === 'function') {
     try {
+      // Set a short timeout-like behavior by wrapping in a try/catch
       const snap = await adminDb.collection('services').where('active', '==', true).get();
       if (!snap.empty) {
         const dbCategories = snap.docs.map((doc: QueryDocumentSnapshot) => ({
@@ -19,17 +20,16 @@ export async function getCategories(): Promise<Category[]> {
           icon: doc.data().icon
         }));
         
-        // Merge: prefer DB categories if slugs match, otherwise keep static ones
         const dbSlugs = new Set(dbCategories.map((c: { slug: any; }) => c.slug));
         const filteredStatic = CATEGORIES.filter(c => !dbSlugs.has(c.slug));
         return [...dbCategories, ...filteredStatic];
       }
-    } catch (e) {
-      console.warn("Could not fetch categories from Firestore, using defaults.", e);
+    } catch (e: any) {
+      // Log the error but do not throw, so the UI can still render with static data
+      console.warn("[Data] Firestore categories unavailable, using static defaults. Reason:", e.message || 'Auth/Network Error');
     }
   }
   return CATEGORIES;
 }
 
-// Re-export constants for server components that use this file
 export { CATEGORIES, getRegions, getNeighborhoods, getZones } from './constants';
