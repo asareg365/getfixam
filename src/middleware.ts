@@ -9,6 +9,7 @@ import { verifyToken } from '@/lib/jwt';
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const session = req.cookies.get('__session')?.value;
+  const cookieDomain = process.env.NODE_ENV === 'production' ? '.getfixam.com' : undefined;
 
   // 1. Admin Portal Protection
   if (pathname.startsWith('/admin')) {
@@ -35,7 +36,9 @@ export async function middleware(req: NextRequest) {
     if (!payload || payload.portal !== 'admin') {
       const response = NextResponse.redirect(new URL('/admin/login', req.url));
       // Only delete the cookie if it existed but was invalid to avoid loops
-      if (session) response.cookies.delete('__session');
+      if (session) {
+        response.cookies.delete('__session', { domain: cookieDomain });
+      }
       return response;
     }
 
@@ -54,7 +57,7 @@ export async function middleware(req: NextRequest) {
     const payload = await verifyToken(session);
     if (!payload) {
         const response = NextResponse.redirect(new URL('/provider/login', req.url));
-        response.cookies.delete('__session');
+        response.cookies.delete('__session', { domain: cookieDomain });
         return response;
     }
   }
