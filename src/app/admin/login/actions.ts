@@ -1,7 +1,7 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { createSessionCookie } from '@/lib/jwt';
+import { signToken } from '@/lib/jwt';
 import { logAdminAction } from '@/lib/audit-log';
 import { adminDb } from '@/lib/firebase-admin';
 
@@ -15,9 +15,10 @@ export async function setAdminSessionAction(uid: string, email: string, role: st
     const cookieDomain = process.env.NODE_ENV === 'production' ? '.getfixam.com' : undefined;
 
     // 1. Generate a custom JWT containing essential user info
-    const token = await createSessionCookie(uid, {
+    const token = await signToken({
+      uid,
       email,
-      role,
+      role: role as 'admin' | 'super_admin',
       portal: 'admin',
     });
 
@@ -28,7 +29,7 @@ export async function setAdminSessionAction(uid: string, email: string, role: st
       maxAge: 60 * 60 * 24, // 24 hours
       path: '/',
       sameSite: 'lax',
-      domain: cookieDomain, // <-- The critical fix!
+      domain: cookieDomain,
     });
 
     // Log the successful login event
