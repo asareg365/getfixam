@@ -23,28 +23,33 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
     
     const cookieStore = await cookies();
     
-    // Check environment: Studio/Dev environments may use HTTP locally
-    const isProd = process.env.NODE_ENV === 'production';
-
-    // Set the __session cookie (required name for Firebase App Hosting)
+    /**
+     * CRITICAL: Set __session cookie. 
+     * In modern browsers and proxied environments (like Studio or App Hosting),
+     * 'secure: true' is required for reliable session persistence over HTTPS.
+     */
     cookieStore.set('__session', token, {
       httpOnly: true,
-      secure: isProd, // Only true in production to avoid issues in dev previews
+      secure: true, 
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24, // 24 hours
     });
 
-    // Log the successful login event if DB is available
-    if (adminDb && typeof adminDb.collection === 'function') {
-      logAdminAction({
-          adminEmail: email,
-          action: 'ADMIN_LOGIN_SUCCESS',
-          targetType: 'system',
-          targetId: uid,
-          ipAddress: 'server-action',
-          userAgent: 'server-action',
-      }).catch(() => {});
+    // Log the successful login event
+    if (adminDb) {
+      try {
+        await logAdminAction({
+            adminEmail: email,
+            action: 'ADMIN_LOGIN_SUCCESS',
+            targetType: 'system',
+            targetId: uid,
+            ipAddress: 'server-action',
+            userAgent: 'server-action',
+        });
+      } catch (logErr) {
+        // Log error ignored to prevent login blockage
+      }
     }
 
     return { success: true };

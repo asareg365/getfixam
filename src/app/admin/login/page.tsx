@@ -103,7 +103,15 @@ export default function AdminLoginPage() {
       }
 
       // 4. Finalize the secure session
-      await finalizeSession(user.uid, user.email!, role);
+      const sessionResult = await setAdminSessionAction(user.uid, user.email!, role);
+      if (!sessionResult.success) {
+          throw new Error(sessionResult.error || 'Failed to establish session.');
+      }
+
+      toast({ title: 'Success', description: 'Redirecting to dashboard...' });
+      
+      // 5. HARD REDIRECT: Ensure the cookie is picked up by middleware on the next request
+      window.location.href = '/admin';
       
     } catch (err: any) {
       const isPermissionError = err.message?.includes('Missing or insufficient permissions') || 
@@ -114,18 +122,6 @@ export default function AdminLoginPage() {
       }
       setLoading(false);
     }
-  }
-
-  async function finalizeSession(uid: string, email: string, role: string) {
-    const sessionResult = await setAdminSessionAction(uid, email, role);
-    if (!sessionResult.success) {
-        throw new Error(sessionResult.error || 'Failed to establish session.');
-    }
-    toast({ title: 'Success', description: 'Redirecting to dashboard...' });
-    
-    // Use router for a smoother transition
-    router.push('/admin');
-    router.refresh();
   }
 
   return (

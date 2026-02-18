@@ -17,7 +17,7 @@ export async function middleware(req: NextRequest) {
       if (session) {
         const payload = await verifyToken(session);
         if (payload && payload.portal === 'admin') {
-          // If already logged in, skip the login page
+          // If already logged in, redirect to dashboard
           return NextResponse.redirect(new URL('/admin', req.url));
         }
       }
@@ -30,10 +30,12 @@ export async function middleware(req: NextRequest) {
     }
 
     const payload = await verifyToken(session);
+    
+    // If verification fails or it's not an admin session
     if (!payload || payload.portal !== 'admin') {
-      // Invalid session or wrong portal: clear cookie and redirect
       const response = NextResponse.redirect(new URL('/admin/login', req.url));
-      response.cookies.delete('__session');
+      // Only delete the cookie if it existed but was invalid to avoid loops
+      if (session) response.cookies.delete('__session');
       return response;
     }
 
@@ -55,9 +57,6 @@ export async function middleware(req: NextRequest) {
         response.cookies.delete('__session');
         return response;
     }
-    
-    // Note: We currently allow any valid session to access the provider portal base,
-    // as provider IDs are used as the UID.
   }
 
   return NextResponse.next();
