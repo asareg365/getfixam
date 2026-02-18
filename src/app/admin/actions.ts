@@ -1,3 +1,4 @@
+
 'use server';
 
 import { cookies } from 'next/headers';
@@ -14,7 +15,15 @@ import { headers } from 'next/headers';
 
 /** ----- AUTH ACTIONS ----- */
 export async function logoutAction() {
-  (await cookies()).delete('__session');
+  const cookieStore = await cookies();
+  // Set cookie to expire immediately
+  cookieStore.set('__session', '', { 
+    maxAge: 0, 
+    path: '/',
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax'
+  });
   redirect('/admin/login');
 }
 

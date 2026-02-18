@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -5,8 +6,7 @@ import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Users, BarChart3, MessageSquare, Settings, LogOut, Wrench, Menu, X, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { logoutAction } from './actions';
+import { LogoutButton } from './LogoutButton';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -73,12 +73,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div className="p-6 border-t mt-auto">
-            <form action={logoutAction}>
-              <Button type="submit" variant="ghost" className="w-full justify-start text-destructive hover:bg-destructive/5 hover:text-destructive rounded-2xl px-4 py-6 font-bold">
-                <LogOut className="mr-3 h-5 w-5" />
-                Sign Out
-              </Button>
-            </form>
+            <LogoutButton />
           </div>
         </nav>
       </aside>

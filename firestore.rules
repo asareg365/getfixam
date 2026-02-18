@@ -1,7 +1,7 @@
 
 rules_version = '2';
 
-// Last Updated: 2024-05-22T10:00:00Z - Triggering Security Rules Redeploy
+// Last Updated: 2024-05-22T14:30:00Z - Fixing Admin Initialization & Logout
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -18,11 +18,10 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Admin Profiles: Admins can manage themselves, Super Admins manage all
+    // Admin Profiles: Allow list/get for signed-in users to facilitate initial setup and auth verification
     match /admins/{adminId} {
-      allow get: if isSignedIn() && (request.auth.uid == adminId || isAdmin());
-      allow list: if isAdmin();
-      allow create: if isSignedIn(); // Allow initial setup, though usually restricted by app logic
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn(); 
       allow update: if isAdmin();
     }
 

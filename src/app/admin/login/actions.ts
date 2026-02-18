@@ -1,3 +1,4 @@
+
 'use server';
 
 import { cookies } from 'next/headers';
@@ -23,13 +24,12 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
     
     const cookieStore = await cookies();
     
-    // secure: true is required for live HTTPS environments.
-    // We use a environment check to ensure compatibility with both local and production.
+    // Always use secure cookies in production environments
     const isProd = process.env.NODE_ENV === 'production';
 
     cookieStore.set('__session', token, {
       httpOnly: true,
-      secure: isProd, 
+      secure: true, 
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24, // 24 hours
