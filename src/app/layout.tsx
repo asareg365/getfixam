@@ -10,7 +10,8 @@ export const metadata = {
   title: 'GetFixam - Trusted Local Artisans',
   description: 'Connect directly with verified professionals for repairs and services in your neighborhood.',
   icons: {
-    icon: '/logo.png',
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
 };
 
