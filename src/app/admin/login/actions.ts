@@ -1,42 +1,34 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { signToken } from '@/lib/jwt';
-import { adminDb } from '@/lib/firebase-admin';
+import { createSessionCookie } from '@/lib/jwt';
 import { logAdminAction } from '@/lib/audit-log';
+import { adminDb } from '@/lib/firebase-admin';
 
 /**
- * Establishes a secure admin session by setting an encrypted cookie.
+ * Server action to create a secure session cookie for an authenticated admin.
+ * This is the crucial step that bridges Firebase client-side auth with the server-side session.
  */
-export async function setAdminSessionAction(uid: string, email: string | null, role: string) {
-  if (!email) {
-    return { success: false, error: 'Email is required for admin access.' };
-  }
-
+export async function setAdminSessionAction(uid: string, email: string, role: string) {
   try {
-    const token = await signToken({ 
-      uid, 
-      email, 
-      role: role as 'admin' | 'super_admin', 
-      portal: 'admin' 
+    const cookieStore = cookies();
+    const cookieDomain = process.env.NODE_ENV === 'production' ? '.getfixam.com' : undefined;
+
+    // 1. Generate a custom JWT containing essential user info
+    const token = await createSessionCookie(uid, {
+      email,
+      role,
+      portal: 'admin',
     });
-    
-    const cookieStore = await cookies();
-    
-    /**
-     * CRITICAL: Set __session cookie. 
-     * In modern browsers and proxied environments (like Studio or App Hosting),
-     * 'secure: true' is required for reliable session persistence over HTTPS.
-     */
+
+    // 2. Set the token in a secure, HTTP-only cookie
     cookieStore.set('__session', token, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24, // 24 hours
       path: '/',
-      maxAge: 60 * 60 * 24,
-      domain: process.env.NODE_ENV === 'production'
-        ? '.getfixam.com'
-        : undefined,
+      sameSite: 'lax',
+      domain: cookieDomain, // <-- The critical fix!
     });
 
     // Log the successful login event
@@ -47,7 +39,7 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
             action: 'ADMIN_LOGIN_SUCCESS',
             targetType: 'system',
             targetId: uid,
-            ipAddress: 'server-action',
+            ipAddress: 'server-action', // Note: IP from server action is less reliable
             userAgent: 'server-action',
         });
       } catch (logErr) {
