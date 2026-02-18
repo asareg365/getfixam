@@ -4,7 +4,7 @@ import { verifyToken } from '@/lib/jwt';
 
 /**
  * Unified Routing Security Layer for FixAm Ghana.
- * Handles access control for Admin and Provider portals.
+ * Consolidates all access control logic for Admin and Provider portals.
  */
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -17,10 +17,11 @@ export async function middleware(req: NextRequest) {
         try {
           const payload = await verifyToken(session);
           if (payload && payload.portal === 'admin') {
+            // If already logged in as admin, skip login page
             return NextResponse.redirect(new URL('/admin', req.url));
           }
         } catch (e) {
-          // Invalid token, allow access to login page
+          // Token invalid, allow landing on login page
         }
       }
       return NextResponse.next();
@@ -54,16 +55,18 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/provider/login', req.url));
     }
     
-    // Optional: Basic validation of session for provider portal
     try {
         const payload = await verifyToken(session);
+        // Providers can be checked here if we add specific roles later
         if (!payload) {
             const response = NextResponse.redirect(new URL('/provider/login', req.url));
             response.cookies.delete('__session');
             return response;
         }
     } catch (e) {
-        return NextResponse.redirect(new URL('/provider/login', req.url));
+        const response = NextResponse.redirect(new URL('/provider/login', req.url));
+        response.cookies.delete('__session');
+        return response;
     }
   }
 
@@ -72,14 +75,7 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (e.g. logo.png)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico|logo.png).*)',
+    '/admin/:path*',
+    '/provider/:path*',
   ],
 };

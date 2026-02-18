@@ -1,4 +1,3 @@
-
 'use server';
 
 import { cookies } from 'next/headers';
@@ -16,7 +15,8 @@ import { headers } from 'next/headers';
 /** ----- AUTH ACTIONS ----- */
 export async function logoutAction() {
   const cookieStore = await cookies();
-  // Set cookie to expire immediately
+  
+  // Force delete by setting empty value and max-age 0
   cookieStore.set('__session', '', { 
     maxAge: 0, 
     path: '/',
@@ -24,6 +24,8 @@ export async function logoutAction() {
     secure: true,
     sameSite: 'lax'
   });
+  
+  // Next.js redirects by throwing an error, which must happen OUTSIDE try/catch blocks
   redirect('/admin/login');
 }
 
@@ -39,16 +41,14 @@ const serviceSchema = z.object({
 
 export async function addServiceAction(prevState: any, formData: FormData) {
     try {
-        // Ensure user is admin before processing anything
         const adminContext = await requireAdmin();
-
         const validatedFields = serviceSchema.safeParse(Object.fromEntries(formData.entries()));
 
         if (!validatedFields.success) {
             return { success: false, errors: validatedFields.error.flatten().fieldErrors };
         }
   
-        if (!adminDb || typeof adminDb.collection !== 'function') {
+        if (!adminDb) {
             throw new Error('Database connection not available.');
         }
 
@@ -67,7 +67,6 @@ export async function addServiceAction(prevState: any, formData: FormData) {
 
         const newServiceRef = await adminDb.collection('services').add(serviceData);
         
-        // Log the admin action
         const headersList = await headers();
         await logAdminAction({
             adminEmail: adminContext.email!,
@@ -82,9 +81,7 @@ export async function addServiceAction(prevState: any, formData: FormData) {
         revalidatePath('/admin/audit-logs');
         return { success: true, message: 'Service added successfully.' };
     } catch (error: any) {
-        // Next.js redirect errors should be allowed to propagate
         if (error.digest?.includes('NEXT_REDIRECT')) throw error;
-        
         console.error('Error adding service:', error);
         return { success: false, message: error.message || 'Failed to add service.' };
     }
@@ -96,7 +93,7 @@ export async function getSwappableArtisans(serviceType: string, excludedArtisanI
     try {
         await requireAdmin();
         
-        if (!adminDb || typeof adminDb.collection !== 'function') {
+        if (!adminDb) {
             throw new Error('Database connection not available.');
         }
 
@@ -133,7 +130,6 @@ export async function getSwappableArtisans(serviceType: string, excludedArtisanI
         return { success: true, artisans: artisans };
     } catch (error: any) {
         if (error.digest?.includes('NEXT_REDIRECT')) throw error;
-        console.error("Error getting swappable artisans:", error);
         return { success: false, message: error.message || 'Failed to fetch artisans.' };
     }
 }
@@ -143,13 +139,13 @@ export async function swapStandbyArtisan(artisanToRemoveId: string, artisanToAdd
      try {
         await requireAdmin();
 
-        if (!adminDb || typeof adminDb.runTransaction !== 'function') {
+        if (!adminDb) {
             throw new Error('Database connection not available.');
         }
 
         const standbyRef = adminDb.collection('standby').doc('tomorrow');
         
-        await adminDb.runTransaction(async (transaction: { get: (arg0: any) => any; update: (arg0: any, arg1: { artisans: string[]; }) => void; }) => {
+        await adminDb.runTransaction(async (transaction: any) => {
             const standbyDoc = await transaction.get(standbyRef);
             if (!standbyDoc.exists) {
                 throw new Error("Standby document not found.");
@@ -157,10 +153,7 @@ export async function swapStandbyArtisan(artisanToRemoveId: string, artisanToAdd
             const currentArtisans = standbyDoc.data()?.artisans as string[] || [];
             const index = currentArtisans.indexOf(artisanToRemoveId);
             
-            if (index === -1) {
-                console.log(`Artisan ${artisanToRemoveId} not found in standby list.`);
-                return;
-            }
+            if (index === -1) return;
 
             const newArtisans = [...currentArtisans];
             newArtisans[index] = artisanToAddId;
@@ -172,7 +165,6 @@ export async function swapStandbyArtisan(artisanToRemoveId: string, artisanToAdd
         return { success: true };
     } catch (error: any) {
         if (error.digest?.includes('NEXT_REDIRECT')) throw error;
-        console.error("Error swapping standby artisan:", error);
         return { success: false, message: error.message || 'Failed to swap artisan.' };
     }
 }
@@ -180,16 +172,12 @@ export async function swapStandbyArtisan(artisanToRemoveId: string, artisanToAdd
 export async function overrideStandbyPool(): Promise<{ success: boolean; message?: string; }> {
     try {
         await requireAdmin();
-
-        if (!adminDb || typeof adminDb.collection !== 'function') {
-            throw new Error('Database connection not available.');
-        }
+        if (!adminDb) throw new Error('Database connection not available.');
         await adminDb.collection('standby').doc('tomorrow').delete();
         revalidatePath('/admin/dashboard');
         return { success: true };
     } catch (error: any) {
         if (error.digest?.includes('NEXT_REDIRECT')) throw error;
-        console.error("Error overriding standby pool:", error);
         return { success: false, message: error.message || 'Failed to override standby pool.' };
     }
 }
