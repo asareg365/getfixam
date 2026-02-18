@@ -20,10 +20,11 @@ export async function POST(req: NextRequest) {
 
     const response = NextResponse.json({ success: true });
     
-    // secure: false ensures compatibility with the http://localhost:9002 preview environment.
+    const isProd = process.env.NODE_ENV === 'production';
+
     response.cookies.set('__session', sessionCookie, {
       httpOnly: true,
-      secure: false,
+      secure: isProd,
       maxAge: expiresIn,
       sameSite: 'lax',
       path: '/',

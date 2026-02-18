@@ -23,11 +23,13 @@ export async function setAdminSessionAction(uid: string, email: string | null, r
     
     const cookieStore = await cookies();
     
-    // IMPORTANT: secure: false is required for standard http access in the workstation environment.
-    // sameSite: 'lax' is used to ensure the cookie is sent during the initial redirect back to /admin.
+    // secure: true is required for live HTTPS environments.
+    // We use a environment check to ensure compatibility with both local and production.
+    const isProd = process.env.NODE_ENV === 'production';
+
     cookieStore.set('__session', token, {
       httpOnly: true,
-      secure: false, 
+      secure: isProd, 
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24, // 24 hours

@@ -6,6 +6,7 @@ import { LayoutDashboard, Users, BarChart3, MessageSquare, Settings, LogOut, Wre
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { logoutAction } from './actions';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -72,12 +73,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div className="p-6 border-t mt-auto">
-            <Button variant="ghost" className="w-full justify-start text-destructive hover:bg-destructive/5 hover:text-destructive rounded-2xl px-4 py-6 font-bold" asChild>
-              <Link href="/admin/login">
+            <form action={logoutAction}>
+              <Button type="submit" variant="ghost" className="w-full justify-start text-destructive hover:bg-destructive/5 hover:text-destructive rounded-2xl px-4 py-6 font-bold">
                 <LogOut className="mr-3 h-5 w-5" />
                 Sign Out
-              </Link>
-            </Button>
+              </Button>
+            </form>
           </div>
         </nav>
       </aside>
