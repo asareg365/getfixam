@@ -37,7 +37,7 @@ export async function middleware(req: NextRequest) {
       const response = NextResponse.redirect(new URL('/admin/login', req.url));
       // Only delete the cookie if it existed but was invalid to avoid loops
       if (session) {
-        response.cookies.delete('__session', { domain: cookieDomain });
+        response.cookies.delete({ name: '__session', domain: cookieDomain, path: '/' });
       }
       return response;
     }
@@ -57,7 +57,7 @@ export async function middleware(req: NextRequest) {
     const payload = await verifyToken(session);
     if (!payload) {
         const response = NextResponse.redirect(new URL('/provider/login', req.url));
-        response.cookies.delete('__session', { domain: cookieDomain });
+        response.cookies.delete({ name: '__session', domain: cookieDomain, path: '/' });
         return response;
     }
   }
