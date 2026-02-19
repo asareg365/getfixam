@@ -19,12 +19,10 @@ export async function POST(req: NextRequest) {
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
 
     const response = NextResponse.json({ success: true });
-    
-    const isProd = process.env.NODE_ENV === 'production';
 
     response.cookies.set('__session', sessionCookie, {
       httpOnly: true,
-      secure: isProd,
+      secure: process.env.NODE_ENV === 'production',
       maxAge: expiresIn,
       sameSite: 'lax',
       path: '/',

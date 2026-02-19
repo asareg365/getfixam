@@ -1,11 +1,10 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Wrench, ShieldCheck, Smartphone, ArrowRight, Search, MapPin, CheckCircle2, Facebook, Instagram, MessageCircle, Star } from 'lucide-react';
+import { Wrench, ShieldCheck, Smartphone, ArrowRight, CheckCircle2, Facebook, Instagram, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { CATEGORIES } from '@/lib/constants';
 import CategoryCard from '@/components/CategoryCard';
-import { searchAction } from './actions';
+import LandingSearchForm from '@/components/LandingSearchForm';
 
 export default function LandingPage() {
   return (
@@ -41,29 +40,8 @@ export default function LandingPage() {
               Connect directly with verified plumbers, electricians, and professionals in your neighborhood. Wo hia mmoa anaa? Find the best artisan here.
             </p>
             
-            <div className="w-full max-w-3xl mx-auto flex flex-col md:flex-row gap-3 p-3 bg-white rounded-[32px] shadow-2xl border border-primary/10 mb-12">
-              <form action={searchAction} className="flex-1 flex flex-col md:flex-row gap-3">
-                <div className="flex-1 flex items-center px-4 border-b md:border-b-0 md:border-r border-muted">
-                  <Search className="h-5 w-5 text-muted-foreground mr-3" />
-                  <Input 
-                    name="query"
-                    className="border-none bg-transparent focus-visible:ring-0 text-lg h-12" 
-                    placeholder="Service (e.g. Plumber)" 
-                  />
-                </div>
-                <div className="flex-1 flex items-center px-4">
-                  <MapPin className="h-5 w-5 text-muted-foreground mr-3" />
-                  <Input 
-                    name="location"
-                    className="border-none bg-transparent focus-visible:ring-0 text-lg h-12" 
-                    placeholder="Area (e.g. Kato)" 
-                  />
-                </div>
-                <Button type="submit" size="lg" className="rounded-2xl h-14 px-10 shrink-0 font-bold text-lg">
-                  Find Help
-                </Button>
-              </form>
-            </div>
+            {/* NEW INTELLIGENT SEARCH FORM */}
+            <LandingSearchForm />
           </div>
           
           <div className="absolute top-1/4 -left-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />

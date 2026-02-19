@@ -1,8 +1,12 @@
 import { SignJWT, jwtVerify } from 'jose';
 
-// Robust, consistent secret key for cross-portal session verification.
-const SECRET_KEY = 'fixam-ghana-v1-stable-security-key-2024-standard-unified-v3';
-const key = new TextEncoder().encode(SECRET_KEY);
+const secret = process.env.JWT_SECRET;
+
+if (!secret) {
+  throw new Error("JWT_SECRET is not defined");
+}
+
+export const key = new TextEncoder().encode(secret);
 
 export type AdminJWTPayload = {
   uid: string;

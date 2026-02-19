@@ -2,6 +2,18 @@ runConfig:
   minInstances: 0
 
 env:
+  - variable: SERVICE_ACCOUNT_JSON
+    secret: SERVICE_ACCOUNT_JSON
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: JWT_SECRET
+    secret: JWT_SECRET
+    availability:
+      - BUILD
+      - RUNTIME
+
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     secret: NEXT_PUBLIC_FIREBASE_API_KEY
     availability:

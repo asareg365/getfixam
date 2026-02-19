@@ -13,6 +13,9 @@ export default function Header() {
         <Link className="text-sm font-medium hover:text-primary transition-colors hidden sm:inline-block" href="/category/all">
           Browse Categories
         </Link>
+        <Link className="text-sm font-medium hover:text-primary transition-colors hidden sm:inline-block" href="/contact">
+          Contact Us
+        </Link>
         <Button asChild className="rounded-full font-bold">
           <Link href="/add-provider">
             <PlusCircle className="mr-2 h-4 w-4" />

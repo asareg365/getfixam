@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase-client';
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';

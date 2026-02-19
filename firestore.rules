@@ -1,4 +1,4 @@
-
+i
 rules_version = '2';
 
 // Last Updated: 2024-05-22T14:30:00Z - Fixing Admin Initialization & Logout
@@ -74,6 +74,11 @@ service cloud.firestore {
     match /provider_logs/{logId} {
       allow list, get: if isAdmin();
       allow create: if true;
+    }
+
+    // Engagements: Allow admins to read
+    match /engagements/{engagementId} {
+      allow read: if isAdmin();
     }
   }
 }

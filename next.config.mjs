@@ -7,6 +7,22 @@ const nextConfig = {
       { protocol: 'https', hostname: 'picsum.photos' }
     ],
   },
+  experimental: {
+    serverActions: true,
+  },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store',
+          },
+        ],
+      },
+    ]
+  },
 };
 
 export default nextConfig;
