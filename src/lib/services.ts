@@ -124,6 +124,8 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
         if (!doc.exists) return undefined;
         
         const data = doc.data();
+        if (!data) return undefined;
+
         const categories = await getCategories();
         
         let categoryName = 'Artisan';

@@ -17,6 +17,9 @@ export default function LandingPage() {
           <Link className="text-sm font-semibold hover:text-primary transition-colors hidden md:inline-block" href="/category/all">
             Browse Categories
           </Link>
+          <Link className="text-sm font-semibold hover:text-primary transition-colors hidden md:inline-block" href="/contact">
+            Contact Us
+          </Link>
           <Button asChild className="rounded-full px-6 font-bold shadow-lg shadow-primary/20">
             <Link href="/provider/login">
               Artisan Login

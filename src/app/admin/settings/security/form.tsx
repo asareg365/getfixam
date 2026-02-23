@@ -1,12 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { db, auth } from '@/lib/firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ShieldAlert, CheckCircle2 } from 'lucide-react';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { updateSecuritySettings } from './actions';
 
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -32,7 +29,6 @@ export default function SecurityForm({
   const { toast } = useToast();
   const [isPending, setIsPending] = useState(false);
   
-  // The state reflects whether the lock is ACTIVE
   const [adminLocked, setAdminLocked] = useState(initialLocked);
   const [providerLoginsDisabled, setProviderLoginsDisabled] = useState(initialDisabled);
   const [reason, setReason] = useState('');
@@ -41,43 +37,26 @@ export default function SecurityForm({
     e.preventDefault();
     setIsPending(true);
 
-    const user = auth.currentUser;
-    if (!user) {
-        toast({ title: 'Auth Error', description: 'You must be signed in.', variant: 'destructive' });
-        setIsPending(false);
-        return;
-    }
-
-    const settingsRef = doc(db, 'system_settings', 'admin');
-    const updateData = {
-        adminLocked: adminLocked,
-        providerLoginsDisabled: providerLoginsDisabled,
-        reason: reason || 'Manual update via admin dashboard.',
-        updatedBy: user.email,
-        updatedAt: serverTimestamp(),
-    };
-
-    // CRITICAL: Non-blocking mutation with contextual error emission
-    setDoc(settingsRef, updateData, { merge: true })
-        .then(() => {
-            toast({
-                title: 'Settings Updated',
-                description: 'System security preferences have been applied.',
-            });
-            // Give Firestore a moment to sync before reload
-            setTimeout(() => window.location.reload(), 500);
-        })
-        .catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({
-                path: settingsRef.path,
-                operation: 'update',
-                requestResourceData: updateData,
-            } satisfies SecurityRuleContext);
-            errorEmitter.emit('permission-error', permissionError);
-        })
-        .finally(() => {
-            setIsPending(false);
+    try {
+        await updateSecuritySettings({
+            adminLocked,
+            providerLoginsDisabled,
+            reason: reason || 'Manual update via admin dashboard.',
         });
+        toast({
+            title: 'Settings Updated',
+            description: 'System security preferences have been applied.',
+        });
+        setReason(''); // Clear reason after success
+    } catch (error) {
+        toast({ 
+            title: 'Error', 
+            description: 'Failed to update security settings. Please ensure you have permission.', 
+            variant: 'destructive' 
+        });
+    } finally {
+        setIsPending(false);
+    }
   }
 
   return (

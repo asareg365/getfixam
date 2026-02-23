@@ -311,6 +311,9 @@ export async function changeProviderPin(
     if (!providerDoc.exists) return { success: false, error: 'Artisan profile not found.' };
 
     const providerData = providerDoc.data();
+    if (!providerData) {
+        return { success: false, error: 'Artisan profile data could not be read.' };
+    }
     const pinHash = providerData.loginPinHash;
     const plainPin = providerData.loginPin;
 

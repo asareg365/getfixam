@@ -50,6 +50,9 @@ export async function getProviderData(idToken: string): Promise<{ provider: Prov
         }
 
         const providerData = providerDoc.data();
+        if (!providerData) {
+            return { provider: null, error: "Artisan profile data could not be read." };
+        }
         let categoryName = 'Artisan';
         
         if (providerData.serviceId) {

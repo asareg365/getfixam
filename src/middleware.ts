@@ -1,73 +1,66 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { verifyToken } from '@/lib/jwt';
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { verifyToken } from '@/lib/jwt'
 
-/**
- * Unified Routing Security Layer for FixAm Ghana.
- * Handles access control for Admin and Provider portals.
- */
 export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-  const session = req.cookies.get('__session')?.value;
-  const cookieDomain = process.env.NODE_ENV === 'production' ? '.getfixam.com' : undefined;
+  const { pathname } = req.nextUrl
+  const session = req.cookies.get('__session')?.value
 
-  // 1. Admin Portal Protection
+  // ADMIN PROTECTION
   if (pathname.startsWith('/admin')) {
-    // Allow the login page to load
     if (pathname === '/admin/login') {
-      if (session) {
-        const payload = await verifyToken(session);
-        if (payload && payload.portal === 'admin') {
-          // If already logged in, redirect to dashboard
-          return NextResponse.redirect(new URL('/admin', req.url));
-        }
-      }
-      return NextResponse.next();
+      return NextResponse.next()
     }
 
-    // Require session for all other /admin routes
     if (!session) {
-      return NextResponse.redirect(new URL('/admin/login', req.url));
+      return NextResponse.redirect(new URL('/admin/login', req.url))
     }
 
-    const payload = await verifyToken(session);
-    
-    // If verification fails or it's not an admin session
-    if (!payload || payload.portal !== 'admin') {
-      const response = NextResponse.redirect(new URL('/admin/login', req.url));
-      // Only delete the cookie if it existed but was invalid to avoid loops
-      if (session) {
-        response.cookies.delete({ name: '__session', domain: cookieDomain, path: '/' });
+    try {
+      const payload = await verifyToken(session)
+      if (!payload || payload.portal !== 'admin') {
+        throw new Error('Unauthorized')
       }
-      return response;
+      return NextResponse.next()
+    } catch {
+      const res = NextResponse.redirect(new URL('/admin/login', req.url))
+      res.cookies.delete('__session')
+      return res
     }
-
-    return NextResponse.next();
   }
 
-  // 2. Provider Portal Protection
+  // PROVIDER PROTECTION
   if (pathname.startsWith('/provider')) {
-    const publicRoutes = ['/provider/login', '/provider/pending', '/provider/logins-disabled'];
-    if (publicRoutes.includes(pathname)) return NextResponse.next();
+    const publicRoutes = [
+      '/provider/login',
+      '/provider/pending',
+      '/provider/logins-disabled'
+    ]
+
+    if (publicRoutes.includes(pathname)) {
+      return NextResponse.next()
+    }
 
     if (!session) {
-      return NextResponse.redirect(new URL('/provider/login', req.url));
+      return NextResponse.redirect(new URL('/provider/login', req.url))
     }
-    
-    const payload = await verifyToken(session);
-    if (!payload) {
-        const response = NextResponse.redirect(new URL('/provider/login', req.url));
-        response.cookies.delete({ name: '__session', domain: cookieDomain, path: '/' });
-        return response;
+
+    try {
+      const payload = await verifyToken(session)
+      if (!payload || (payload.portal !== 'provider' && payload.portal !== 'admin')) {
+        throw new Error('Unauthorized')
+      }
+      return NextResponse.next()
+    } catch {
+      const res = NextResponse.redirect(new URL('/provider/login', req.url))
+      res.cookies.delete('__session')
+      return res
     }
   }
 
-  return NextResponse.next();
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: [
-    '/admin/:path*',
-    '/provider/:path*',
-  ],
-};
+  matcher: ['/admin/:path*', '/provider/:path*'],
+}

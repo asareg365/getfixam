@@ -8,12 +8,6 @@ env:
       - BUILD
       - RUNTIME
 
-  - variable: JWT_SECRET
-    secret: JWT_SECRET
-    availability:
-      - BUILD
-      - RUNTIME
-
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     secret: NEXT_PUBLIC_FIREBASE_API_KEY
     availability:
@@ -46,6 +40,12 @@ env:
 
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
     secret: NEXT_PUBLIC_FIREBASE_APP_ID
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: JWT_SECRET
+    secret: JWT_SECRET
     availability:
       - BUILD
       - RUNTIME
