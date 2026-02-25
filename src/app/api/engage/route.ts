@@ -1,5 +1,5 @@
 
-import { adminDb } from '@/lib/firebase-admin';
+import { getAdminDb } from '@/lib/firebase-admin';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -14,6 +14,7 @@ const engageSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const adminDb = getAdminDb();
     const json = await request.json();
     const parsed = engageSchema.safeParse(json);
 

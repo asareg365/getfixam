@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { adminDb } from '@/lib/firebase-admin';
+import { getAdminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const reviewSchema = z.object({
@@ -21,9 +21,7 @@ export async function addReviewAction(prevState: any, formData: FormData) {
     };
   }
 
-  if (!adminDb) {
-    throw new Error('Admin DB is not initialized');
-  }
+  const adminDb = getAdminDb();
 
   // TODO: Replace with actual user image logic
   const randomUserImageId = `user${Math.floor(Math.random() * 6) + 1}`;

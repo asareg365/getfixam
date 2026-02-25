@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { getAdminDb } from '@/lib/firebase-admin';
 import type { Service } from '@/lib/types';
 import { QueryDocumentSnapshot } from 'firebase-admin/firestore';
 
@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    const adminDb = getAdminDb();
     if (!adminDb) {
       console.error('Firebase Admin DB not initialized.');
       return NextResponse.json({ error: 'Database not initialized' }, { status: 500 });

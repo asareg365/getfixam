@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers';
 import { signToken } from '@/lib/jwt';
 import { logAdminAction } from '@/lib/audit-log';
-import { adminDb } from '@/lib/firebase-admin';
+import { getAdminDb } from '@/lib/firebase-admin';
 
 /**
  * Server action to create a secure session cookie for an authenticated admin.
@@ -33,6 +33,7 @@ export async function setAdminSessionAction(uid: string, email: string, role: st
     });
 
     // Log the successful login event
+    const adminDb = getAdminDb();
     if (adminDb) {
       try {
         await logAdminAction({

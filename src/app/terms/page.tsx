@@ -25,8 +25,8 @@ export default function TermsPage() {
                         <section className="space-y-4">
                             <h2 className="text-2xl font-bold font-headline text-foreground">2. Use of the App</h2>
                             <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-                                <li>Users may browse, book, and review services provided by registered artisans.</li>
-                                <li>Artisans are required to provide accurate and up-to-date information about their services.</li>
+                                <li>Users may browse, book, and review services provided by registered providers.</li>
+                                <li>Providers are required to provide accurate and up-to-date information about their services.</li>
                                 <li>You are responsible for maintaining the confidentiality of your account credentials.</li>
                             </ul>
                         </section>
@@ -36,9 +36,9 @@ export default function TermsPage() {
                         <section className="space-y-4">
                             <h2 className="text-2xl font-bold font-headline text-foreground">3. Payments and Fees</h2>
                             <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-                                <li>Payments are made directly to the artisan or via approved payment methods.</li>
+                                <li>Payments are made directly to the provider or via approved payment methods.</li>
                                 <li>Any fees or commissions charged by GetFixam will be clearly communicated.</li>
-                                <li>Refunds are subject to individual artisan policies and applicable law.</li>
+                                <li>Refunds are subject to individual provider policies and applicable law.</li>
                             </ul>
                         </section>
 
@@ -47,7 +47,7 @@ export default function TermsPage() {
                         <section className="space-y-4">
                             <h2 className="text-2xl font-bold font-headline text-foreground">4. User Conduct</h2>
                             <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-                                <li>Users and artisans must act in good faith and refrain from fraudulent or harmful activity.</li>
+                                <li>Users and providers must act in good faith and refrain from fraudulent or harmful activity.</li>
                                 <li>Harassment, abuse, or posting offensive content is strictly prohibited.</li>
                                 <li>Violation of these terms may result in suspension or termination of your account.</li>
                             </ul>
@@ -58,7 +58,7 @@ export default function TermsPage() {
                         <section className="space-y-4">
                             <h2 className="text-2xl font-bold font-headline text-foreground">5. Limitation of Liability</h2>
                             <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-                                <li>GetFixam is a platform connecting users and artisans and does not provide the services itself.</li>
+                                <li>GetFixam is a platform connecting users and providers and does not provide the services itself.</li>
                                 <li>GetFixam is not responsible for service quality, timing, or safety.</li>
                                 <li>Users agree that use of the App is at their own risk.</li>
                             </ul>

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { loginWithPin } from './actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -27,7 +26,19 @@ export default function ProviderLoginPage() {
 
     try {
       // 1. Verify PIN on the server and get a custom Firebase token
-      const res = await loginWithPin(phone, pin);
+      const response = await fetch('/api/provider/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, pin }),
+      });
+      
+      const res = await response.json();
+      
+      if (!response.ok) {
+        toast({ title: 'Login failed', description: res.error, variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
 
       if ('error' in res) {
         toast({ title: 'Login failed', description: res.error, variant: 'destructive' });
@@ -36,11 +47,13 @@ export default function ProviderLoginPage() {
       }
 
       // 2. Sign in to Firebase Auth on the client using the custom token
-      const userCredential = await signInWithCustomToken(auth, res.token);
-      const user = userCredential.user;
+      await signInWithCustomToken(auth, res.token);
+
+      // REQUIRED so claims are included
+      await auth.currentUser?.getIdToken(true);
 
       // 3. Get the ID token from the signed-in user
-      const idToken = await user.getIdToken();
+      const idToken = await auth.currentUser?.getIdToken();
 
       // 4. Send the ID token to our session API to create a secure server-side cookie
       const sessionRes = await fetch('/api/session', {
@@ -62,7 +75,7 @@ export default function ProviderLoginPage() {
       console.error('Login error:', error);
       toast({ 
         title: 'Authentication Error', 
-        description: error.message || 'An error occurred during sign-in.', 
+        description: error.message || 'An error occurred during sign-in.',
         variant: 'destructive' 
       });
       setLoading(false);
@@ -133,11 +146,6 @@ export default function ProviderLoginPage() {
             </div>
           </form>
         </CardContent>
-        <div className="p-4 text-center text-sm">
-            <Link href="/admin/login" className="text-muted-foreground hover:text-primary transition-colors font-medium">
-            Admin Access
-            </Link>
-        </div>
       </Card>
     </div>
   );

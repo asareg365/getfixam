@@ -1,4 +1,4 @@
-import { adminDb } from './firebase-admin';
+import { getAdminDb } from './firebase-admin';
 import { CATEGORIES } from './constants';
 import type { Category } from './types';
 import { QueryDocumentSnapshot } from 'firebase-admin/firestore';
@@ -8,6 +8,7 @@ import { QueryDocumentSnapshot } from 'firebase-admin/firestore';
  * Handles database connectivity issues gracefully by falling back to static constants.
  */
 export async function getCategories(): Promise<Category[]> {
+  const adminDb = getAdminDb();
   if (adminDb && typeof adminDb.collection === 'function') {
     try {
       // Set a short timeout-like behavior by wrapping in a try/catch

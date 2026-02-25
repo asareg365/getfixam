@@ -1,15 +1,15 @@
 
-import { adminDb } from '@/lib/firebase-admin';
+import { getAdminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-guard';
 import { logAdminAction } from '@/lib/audit-log';
-import bcrypt from 'bcryptjs';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    const adminDb = getAdminDb();
     const adminUser = await requireAdmin();
     const { providerId } = await req.json();
 
@@ -29,14 +29,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Provider not found or not approved' }, { status: 404 });
     }
 
-    // Generate and hash a new PIN
+    // Generate a new PIN
     const pin = Math.floor(100000 + Math.random() * 900000).toString();
-    const saltRounds = 10;
-    const pinHash = await bcrypt.hash(pin, saltRounds);
 
     // Update the provider document
     await providerRef.update({
-      loginPinHash: pinHash,
+      loginPin: pin, // Store the plain pin
       loginPinCreatedAt: FieldValue.serverTimestamp(),
     });
 

@@ -1,12 +1,13 @@
 'use server';
 
-import { adminDb } from '@/lib/firebase-admin';
+import { getAdminDb } from '@/lib/firebase-admin';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/jwt';
 
 export async function getSecuritySettings() {
   try {
+    const adminDb = getAdminDb();
     const settingsRef = adminDb.collection('system_settings').doc('admin');
     const settingsSnap = await settingsRef.get();
     if (settingsSnap.exists) {
@@ -44,6 +45,7 @@ export async function updateSecuritySettings(settings: {
     reason: string;
 }) {
     try {
+        const adminDb = getAdminDb();
         const cookieStore = await cookies();
         const session = cookieStore.get('__session')?.value;
         if (!session) throw new Error('Unauthorized');

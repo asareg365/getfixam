@@ -1,12 +1,48 @@
-import { NextResponse } from 'next/server';
+ import { NextResponse } from "next/server";
+import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
+import bcrypt from "bcryptjs";
 
-/**
- * DEPRECATED: Moderate providers directly via client-side SDK to avoid environment-specific 
- * admin initialization issues. This handler is neutralized to stop 500 errors.
- */
-export async function POST() {
-  return NextResponse.json({ 
-    success: false, 
-    error: 'This action is now performed client-side. Please refresh your dashboard.' 
-  }, { status: 410 });
+export async function POST(req: Request) {
+  const { providerId } = await req.json();
+
+  const db = getAdminDb();
+  const auth = getAdminAuth();
+
+  const providerRef = db.collection("providers").doc(providerId);
+  const providerSnap = await providerRef.get();
+
+  if (!providerSnap.exists) {
+    return NextResponse.json({ error: "Provider not found" }, { status: 404 });
+  }
+
+  const provider = providerSnap.data()!;
+
+  if (provider.status === "approved") {
+    return NextResponse.json({ error: "Already approved" }, { status: 400 });
+  }
+
+  // Generate PIN
+  const pin = Math.floor(1000 + Math.random() * 9000).toString();
+  const pinHash = await bcrypt.hash(pin, 10);
+
+  // Create Firebase Auth user
+  const user = await auth.createUser({
+    phoneNumber: provider.phone,
+  });
+
+  // Set role claim
+  await auth.setCustomUserClaims(user.uid, {
+    role: "provider",
+  });
+
+  await providerRef.update({
+    status: "approved",
+    uid: user.uid,
+    pinHash,
+  });
+
+  return NextResponse.json({
+    success: true,
+    generatedPin: pin,
+  });
 }

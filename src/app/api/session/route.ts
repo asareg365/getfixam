@@ -1,4 +1,4 @@
-import { adminAuth } from '@/lib/firebase-admin';
+import { getAdminAuth } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'ID token is required.' }, { status: 400 });
     }
 
+    const adminAuth = getAdminAuth();
     if (!adminAuth) {
         return NextResponse.json({ success: false, error: 'Auth service not initialized' }, { status: 500 });
     }

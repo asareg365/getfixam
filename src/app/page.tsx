@@ -22,7 +22,7 @@ export default function LandingPage() {
           </Link>
           <Button asChild className="rounded-full px-6 font-bold shadow-lg shadow-primary/20">
             <Link href="/provider/login">
-              Artisan Login
+              Provider Login
             </Link>
           </Button>
         </nav>
@@ -34,7 +34,7 @@ export default function LandingPage() {
           <div className="container px-4 md:px-6 mx-auto relative z-10 text-center">
             <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary mb-8">
               <span className="flex h-2 w-2 rounded-full bg-primary mr-2 animate-pulse" />
-              Trusted Artisans you can find
+              Trusted artisans you can find
             </div>
             <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-primary font-headline max-w-5xl mx-auto leading-[1.1] mb-8">
              Adwumayɛfoɔ a wotumi de wo ho to wɔn so.

@@ -1,6 +1,6 @@
 'use server';
 
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { getAdminAuth, getAdminDb } from '@/lib/firebase-admin';
 import type { Provider } from '@/lib/types';
 
 /**
@@ -11,9 +11,8 @@ export async function getProviderData(idToken: string): Promise<{ provider: Prov
     if (!idToken) {
         return { provider: null, error: "Authentication token is missing." };
     }
-    if (!adminAuth || !adminDb) {
-        return { provider: null, error: "Firebase Admin is not initialized." };
-    }
+    const adminAuth = getAdminAuth();
+    const adminDb = getAdminDb();
 
     try {
         const decodedToken = await adminAuth.verifyIdToken(idToken);

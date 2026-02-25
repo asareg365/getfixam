@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { adminDb } from '@/lib/firebase-admin';
+import { getAdminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getCategories } from '@/lib/data';
 
@@ -29,9 +29,7 @@ export async function addProviderAction(prevState: any, formData: FormData) {
   const { name, serviceId, phone, whatsapp, zone, digitalAddress } = validatedFields.data;
 
   try {
-    if (!adminDb) {
-        throw new Error('System configuration error. Please try again later.');
-    }
+    const adminDb = getAdminDb();
 
     const existingProviderSnap = await adminDb.collection('providers').where('phone', '==', phone).limit(1).get();
     if (!existingProviderSnap.empty) {

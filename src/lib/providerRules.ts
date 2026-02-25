@@ -1,7 +1,7 @@
 'use server';
 
 import type { Provider } from './types';
-import { adminDb } from './firebase-admin';
+import { getAdminDb } from './firebase-admin';
 import { logProviderAction } from './audit-log';
 
 type RuleStatus = 'OK' | 'SUSPEND' | 'LOCK';
@@ -46,9 +46,7 @@ export async function executeProviderAction(providerId: string, status: RuleStat
   }
 
   try {
-    if (!adminDb) {
-      throw new Error("Firebase Admin DB not initialized");
-    }
+    const adminDb = getAdminDb();
 
     await adminDb.collection('providers').doc(providerId).update(updateData);
     

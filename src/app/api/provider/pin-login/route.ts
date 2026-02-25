@@ -1,7 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, adminAuth } from '@/lib/firebase-admin';
-import bcrypt from 'bcryptjs';
+import { getAdminDb, getAdminAuth } from '@/lib/firebase-admin';
 import { logProviderAction } from '@/lib/audit-log';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +13,8 @@ export async function POST(req: NextRequest) {
   };
 
   try {
+    const adminDb = getAdminDb();
+    const adminAuth = getAdminAuth();
     const { phone: rawPhone, pin } = await req.json();
 
     if (!rawPhone || !pin) {
@@ -41,12 +42,12 @@ export async function POST(req: NextRequest) {
     if (providerData.status !== 'approved') {
         return NextResponse.json({ success: false, message: `Your account is currently ${providerData.status}.` }, { status: 403 });
     }
-    if (!providerData.loginPinHash) {
+    if (!providerData.loginPin) {
         return NextResponse.json({ success: false, message: 'This account is not eligible for PIN login. This might be because you have already used your one-time PIN.' }, { status: 403 });
     }
 
     // Verify PIN
-    const pinMatch = await bcrypt.compare(pin, providerData.loginPinHash);
+    const pinMatch = providerData.loginPin === pin;
     const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
 
     // After successful PIN verification, nullify the PIN
     await providerDoc.ref.update({
-        loginPinHash: null,
+        loginPin: null,
         loginPinCreatedAt: null,
     });
     

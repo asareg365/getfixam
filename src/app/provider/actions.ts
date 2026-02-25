@@ -1,12 +1,11 @@
 'use server';
 
-import { adminDb, adminAuth } from '@/lib/firebase-admin';
+import { getAdminDb, getAdminAuth } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { Provider, ProviderSettings } from '@/lib/types';
 import { logProviderAction } from '@/lib/audit-log';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
-import bcrypt from 'bcryptjs';
 
 /**
  * Checks if a provider exists and is eligible for PIN login.
@@ -16,10 +15,7 @@ export async function checkProviderForPinLogin(rawPhoneNumber: string): Promise<
         return { canLogin: false, message: 'Please enter a valid 10-digit Ghanaian phone number starting with 0.' };
     }
 
-    if (!adminDb) {
-        console.error('Firebase Admin DB not initialized.');
-        return { canLogin: false, message: 'Database service is not available.' };
-    }
+    const adminDb = getAdminDb();
 
     try {
         const providersRef = adminDb.collection('providers');
@@ -40,13 +36,6 @@ export async function checkProviderForPinLogin(rawPhoneNumber: string): Promise<
             return { canLogin: false, message: `Your account is still pending approval. Please wait for an admin to verify your business.` };
         }
 
-        const pinHash = providerData.loginPinHash;
-        const plainPin = providerData.loginPin;
-
-        if (providerData.status === 'approved' && !pinHash && !plainPin) {
-             return { canLogin: true, message: null }; // Fallback allowing them to try login
-        }
-        
         if (providerData.status === 'approved') {
             return { canLogin: true, message: null };
         }
@@ -70,10 +59,8 @@ export async function updateProviderProfile(
     return { success: false, error: "Authentication required." };
   }
 
-  if (!adminDb || !adminAuth) {
-    console.error('Firebase Admin not initialized.');
-    return { success: false, error: 'Authentication or Database service is not available.' };
-  }
+  const adminDb = getAdminDb();
+  const adminAuth = getAdminAuth();
   
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
@@ -141,9 +128,8 @@ export async function updateProviderServices(
     return { success: false, error: "Authentication required." };
   }
 
-  if (!adminDb || !adminAuth) {
-    return { success: false, error: 'Authentication or Database service is not available.' };
-  }
+  const adminDb = getAdminDb();
+  const adminAuth = getAdminAuth();
   
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
@@ -200,9 +186,8 @@ export async function updateProviderAvailability(
     return { success: false, error: "Authentication required." };
   }
 
-  if (!adminDb || !adminAuth) {
-    return { success: false, error: 'Authentication or Database service is not available.' };
-  }
+  const adminDb = getAdminDb();
+  const adminAuth = getAdminAuth();
   
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
@@ -256,7 +241,8 @@ export async function updateProviderSettings(
     settings: ProviderSettings
 ) {
   if (!idToken) return { success: false, error: "Authentication required." };
-  if (!adminDb || !adminAuth) return { success: false, error: 'System services unavailable.' };
+  const adminDb = getAdminDb();
+  const adminAuth = getAdminAuth();
   
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
@@ -294,7 +280,8 @@ export async function changeProviderPin(
     newPin: string
 ) {
   if (!idToken) return { success: false, error: "Authentication required." };
-  if (!adminDb || !adminAuth) return { success: false, error: 'System services unavailable.' };
+  const adminDb = getAdminDb();
+  const adminAuth = getAdminAuth();
   
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
@@ -314,26 +301,14 @@ export async function changeProviderPin(
     if (!providerData) {
         return { success: false, error: 'Artisan profile data could not be read.' };
     }
-    const pinHash = providerData.loginPinHash;
-    const plainPin = providerData.loginPin;
 
-    // Verify old PIN
-    let isOldPinValid = false;
-    if (pinHash) {
-        isOldPinValid = await bcrypt.compare(oldPin, pinHash);
-    } else if (plainPin) {
-        isOldPinValid = plainPin === oldPin;
-    }
-
-    if (!isOldPinValid) {
+    if (providerData.loginPin !== oldPin) {
         return { success: false, error: "The current PIN you entered is incorrect." };
     }
 
-    // Hash and save new PIN
-    const newPinHash = await bcrypt.hash(newPin, 10);
+    // Save the new PIN
     await providerDoc.ref.update({
-        loginPinHash: newPinHash,
-        loginPin: FieldValue.delete(), // Always move away from plain text
+        loginPin: newPin,
         loginPinCreatedAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
     });

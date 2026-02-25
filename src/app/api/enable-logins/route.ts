@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { getAdminDb } from '@/lib/firebase-admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET() {
   try {
+    const adminDb = getAdminDb();
     if (!adminDb) {
       return NextResponse.json({ error: 'Admin DB not initialized' }, { status: 500 });
     }

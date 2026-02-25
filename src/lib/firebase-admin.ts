@@ -1,32 +1,35 @@
+import { initializeApp, getApps, cert } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
 
-import { initializeApp, getApps, App, cert } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+function getAdminApp() {
+  if (!getApps().length) {
+    const serviceAccountJson = process.env.SERVICE_ACCOUNT_JSON;
 
-function getAdminApp(): App {
-  if (getApps().length > 0) {
-    return getApps()[0];
-  }
+    if (!serviceAccountJson) {
+      console.error("SERVICE_ACCOUNT_JSON environment variable is not set.");
+      throw new Error("SERVICE_ACCOUNT_JSON environment variable is not set.");
+    }
 
-  const serviceAccountJson = process.env.SERVICE_ACCOUNT_JSON;
-
-  if (serviceAccountJson) {
     try {
       const serviceAccount = JSON.parse(serviceAccountJson);
-      return initializeApp({
+      initializeApp({
         credential: cert(serviceAccount),
+        projectId: serviceAccount.project_id,
       });
     } catch (error) {
-      console.error('Error parsing service account JSON:', error);
+      console.error("Error parsing SERVICE_ACCOUNT_JSON:", error);
+      throw new Error("Error parsing SERVICE_ACCOUNT_JSON.");
     }
   }
-  
-  // Fallback for Vercel deployment and local development
-  return initializeApp();
+
+  return getApps()[0];
 }
 
-const adminApp = getAdminApp();
-const adminAuth = getAuth(adminApp);
-const adminDb = getFirestore(adminApp);
+export function getAdminAuth() {
+  return getAuth(getAdminApp());
+}
 
-export { adminAuth, adminDb };
+export function getAdminDb() {
+  return getFirestore(getAdminApp());
+}
