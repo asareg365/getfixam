@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Wrench, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import UserNav from './UserNav'; // Import the new UserNav component
 
 export default function Header() {
   return (
@@ -22,6 +23,7 @@ export default function Header() {
             List Business
           </Link>
         </Button>
+        <UserNav />
       </nav>
     </header>
   );

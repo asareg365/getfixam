@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAdminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +9,6 @@ export const dynamic = 'force-dynamic';
  */
 async function areProviderLoginsDisabled(): Promise<boolean> {
   try {
-    const adminDb = getAdminDb();
     if (!adminDb) {
       // During development/prototyping, we allow logins even if adminDb isn't ready.
       return false;

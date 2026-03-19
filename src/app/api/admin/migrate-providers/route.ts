@@ -1,6 +1,6 @@
 
 import { NextResponse } from "next/server";
-import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
+import { adminAuth, adminDb } from "@/lib/firebase-admin";
 
 interface Result {
   id: string;
@@ -9,10 +9,7 @@ interface Result {
 }
 
 export async function POST() {
-  const db = getAdminDb();
-  const auth = getAdminAuth();
-
-  const snapshot = await db.collection("providers").get();
+  const snapshot = await adminDb.collection("providers").get();
 
   const results: Result[] = [];
 
@@ -32,17 +29,17 @@ export async function POST() {
 
     try {
       // Create Firebase Auth user
-      const user = await auth.createUser({
+      const user = await adminAuth.createUser({
         phoneNumber: `+233${provider.phone}`,
       });
 
       // Assign provider role
-      await auth.setCustomUserClaims(user.uid, {
+      await adminAuth.setCustomUserClaims(user.uid, {
         role: "provider",
       });
 
       // Update Firestore document with UID
-      await db.collection("providers").doc(doc.id).update({
+      await adminDb.collection("providers").doc(doc.id).update({
         uid: user.uid,
       });
 

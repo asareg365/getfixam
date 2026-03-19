@@ -1,10 +1,13 @@
-
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminDb, getAdminAuth } from '@/lib/firebase-admin';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import { logProviderAction } from '@/lib/audit-log';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Handles Artisan (Provider) login using a phone number and 6-digit PIN.
+ * This route verifies the PIN against Firestore and returns a Firebase Custom Token.
+ */
 export async function POST(req: NextRequest) {
   const formatPhoneNumber = (phone: string) => {
     if (phone.startsWith('+233')) return phone;
@@ -13,8 +16,6 @@ export async function POST(req: NextRequest) {
   };
 
   try {
-    const adminDb = getAdminDb();
-    const adminAuth = getAdminAuth();
     const { phone: rawPhone, pin } = await req.json();
 
     if (!rawPhone || !pin) {
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'Database not initialized' }, { status: 500 });
     }
     
-    // Find provider by phone number
+    // 1. Find the provider document associated with the phone number
     const providersRef = adminDb.collection('providers');
     const q = providersRef.where('phone', '==', rawPhone).limit(1);
     const providerSnap = await q.get();
@@ -38,15 +39,20 @@ export async function POST(req: NextRequest) {
     const providerDoc = providerSnap.docs[0];
     const providerData = providerDoc.data();
     
-    // Security checks
+    // 2. Status verification
     if (providerData.status !== 'approved') {
         return NextResponse.json({ success: false, message: `Your account is currently ${providerData.status}.` }, { status: 403 });
     }
+
+    // 3. PIN eligibility check
     if (!providerData.loginPin) {
-        return NextResponse.json({ success: false, message: 'This account is not eligible for PIN login. This might be because you have already used your one-time PIN.' }, { status: 403 });
+        return NextResponse.json({ 
+            success: false, 
+            message: 'This account is not configured for PIN login. Please contact an administrator to reset your PIN.' 
+        }, { status: 403 });
     }
 
-    // Verify PIN
+    // 4. Verify PIN
     const pinMatch = providerData.loginPin === pin;
     const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
@@ -56,34 +62,33 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, message: 'The PIN you entered is incorrect.' }, { status: 401 });
     }
     
-    // PIN is correct. Now, create a custom token.
+    // 5. Auth Integration: Get or create the Firebase Auth user
     const formattedPhone = formatPhoneNumber(rawPhone);
     let user;
 
-    // Get or create the Firebase Auth user associated with this phone number.
     try {
         user = await adminAuth.getUserByPhoneNumber(formattedPhone);
     } catch (error: any) {
         if (error.code === 'auth/user-not-found') {
+            // Auto-provision Auth account if it doesn't exist yet
             user = await adminAuth.createUser({ phoneNumber: formattedPhone, displayName: providerData.name });
+            // Ensure the user has the correct role claim
+            await adminAuth.setCustomUserClaims(user.uid, { role: 'provider' });
         } else {
-            throw error; // Re-throw other errors
+            throw error;
         }
     }
 
-    // If the authUid on the provider doc doesn't match the found user, update it.
+    // Link the Firestore document to the Auth UID for future queries
     if (providerData.authUid !== user.uid) {
         await providerDoc.ref.update({ authUid: user.uid });
     }
     
-    // Generate an ID token. We will create a session cookie from this on the client.
+    // 6. Generate Custom Token
     const customToken = await adminAuth.createCustomToken(user.uid);
 
-    // After successful PIN verification, nullify the PIN
-    await providerDoc.ref.update({
-        loginPin: null,
-        loginPinCreatedAt: null,
-    });
+    // LOGIC FIX: We no longer nullify the PIN here. 
+    // Artisans use their PIN as their primary dashboard access key.
     
     await logProviderAction({
         providerId: providerDoc.id,
@@ -92,8 +97,6 @@ export async function POST(req: NextRequest) {
         userAgent,
     });
     
-    // Instead of setting a cookie here, we return the custom token
-    // The client will sign in with it, get an ID token, and then call /api/session
     return NextResponse.json({ success: true, token: customToken });
 
   } catch (error: any) {

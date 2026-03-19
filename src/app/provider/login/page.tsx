@@ -3,7 +3,13 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -12,6 +18,26 @@ import Link from 'next/link';
 import { auth } from '@/lib/firebase';
 import { signInWithCustomToken } from 'firebase/auth';
 import Image from 'next/image';
+
+// Function to decode JWT payload
+function decodeJwt(token: string) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(function (c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        })
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    console.error('Failed to decode JWT:', e);
+    return null;
+  }
+}
 
 export default function ProviderLoginPage() {
   const router = useRouter();
@@ -26,22 +52,20 @@ export default function ProviderLoginPage() {
 
     try {
       // 1. Verify PIN on the server and get a custom Firebase token
-      const response = await fetch('/api/provider/login', {
+      const response = await fetch('/api/provider/pin-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, pin }),
       });
-      
-      const res = await response.json();
-      
-      if (!response.ok) {
-        toast({ title: 'Login failed', description: res.error, variant: 'destructive' });
-        setLoading(false);
-        return;
-      }
 
-      if ('error' in res) {
-        toast({ title: 'Login failed', description: res.error, variant: 'destructive' });
+      const res = await response.json();
+
+      if (!response.ok) {
+        toast({
+          title: 'Login failed',
+          description: res.message,
+          variant: 'destructive',
+        });
         setLoading(false);
         return;
       }
@@ -55,10 +79,15 @@ export default function ProviderLoginPage() {
       // 3. Get the ID token from the signed-in user
       const idToken = await auth.currentUser?.getIdToken();
 
+      if (!idToken) {
+        throw new Error('Could not get ID token.');
+      }
+
       // 4. Send the ID token to our session API to create a secure server-side cookie
       const sessionRes = await fetch('/api/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ idToken }),
       });
 
@@ -66,17 +95,26 @@ export default function ProviderLoginPage() {
         throw new Error('Failed to establish a secure session.');
       }
 
-      toast({ title: 'Welcome back!', description: 'Redirecting to your dashboard...' });
-      
-      // 5. Successful login, redirect to the dashboard
-      router.push('/provider/dashboard');
+      const claims = decodeJwt(idToken);
+
+      toast({
+        title: 'Welcome back!',
+        description: 'Redirecting to your dashboard...',
+      });
+
+      // 5. Successful login, redirect to the correct dashboard
+      if (claims && claims.admin) {
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/provider/dashboard');
+      }
       router.refresh();
     } catch (error: any) {
       console.error('Login error:', error);
-      toast({ 
-        title: 'Authentication Error', 
+      toast({
+        title: 'Authentication Error',
         description: error.message || 'An error occurred during sign-in.',
-        variant: 'destructive' 
+        variant: 'destructive',
       });
       setLoading(false);
     }
@@ -85,7 +123,12 @@ export default function ProviderLoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-secondary/30 p-4">
       <div className="w-full max-w-sm mb-6">
-        <Button variant="ghost" asChild size="sm" className="rounded-full text-muted-foreground hover:text-primary">
+        <Button
+          variant="ghost"
+          asChild
+          size="sm"
+          className="rounded-full text-muted-foreground hover:text-primary"
+        >
           <Link href="/">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Website
@@ -95,19 +138,30 @@ export default function ProviderLoginPage() {
 
       <Card className="w-full max-w-sm shadow-2xl border-none rounded-3xl">
         <CardHeader className="text-center space-y-4">
-           <Link href="/" className="flex justify-center items-center">
-                <Image src="/logo.png" alt="GetFixam Logo" width={250} height={100} />
-            </Link>
-            <div>
-                <CardTitle className="text-2xl font-bold font-headline">Artisan Login</CardTitle>
-                <CardDescription>Enter your phone number and 6-digit PIN.</CardDescription>
-            </div>
+          <Link href="/" className="flex justify-center items-center">
+            <Image
+              src="/logo.png"
+              alt="GetFixam Logo"
+              width={250}
+              height={100}
+            />
+          </Link>
+          <div>
+            <CardTitle className="text-2xl font-bold font-headline">
+              Artisan Login
+            </CardTitle>
+            <CardDescription>
+              Enter your phone number and 6-digit PIN.
+            </CardDescription>
+          </div>
         </CardHeader>
 
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="phone" className="font-semibold">Phone Number</Label>
+              <Label htmlFor="phone" className="font-semibold">
+                Phone Number
+              </Label>
               <Input
                 id="phone"
                 value={phone}
@@ -119,7 +173,9 @@ export default function ProviderLoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pin" className="font-semibold">6-Digit PIN</Label>
+              <Label htmlFor="pin" className="font-semibold">
+                6-Digit PIN
+              </Label>
               <Input
                 id="pin"
                 value={pin}
@@ -132,8 +188,16 @@ export default function ProviderLoginPage() {
               />
             </div>
 
-            <Button type="submit" className="w-full h-12 rounded-xl font-bold text-lg shadow-lg shadow-primary/20" disabled={loading}>
-              {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 'Sign In'}
+            <Button
+              type="submit"
+              className="w-full h-12 rounded-xl font-bold text-lg shadow-lg shadow-primary/20"
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                'Sign In'
+              )}
             </Button>
 
             <div className="text-center space-y-2">
@@ -141,7 +205,13 @@ export default function ProviderLoginPage() {
                 Forgot PIN? Contact GetFixam Admin for a reset.
               </p>
               <p className="text-xs">
-                Don't have an account? <Link href="/add-provider" className="text-primary font-bold hover:underline">List your business</Link>
+                Don't have an account?{' '}
+                <Link
+                  href="/add-provider"
+                  className="text-primary font-bold hover:underline"
+                >
+                  List your business
+                </Link>
               </p>
             </div>
           </form>

@@ -1,5 +1,6 @@
-import { getAdminAuth } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
+import { adminAuth } from '@/lib/firebase-admin';
+
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'ID token is required.' }, { status: 400 });
     }
 
-    const adminAuth = getAdminAuth();
     if (!adminAuth) {
         return NextResponse.json({ success: false, error: 'Auth service not initialized' }, { status: 500 });
     }
@@ -21,10 +21,10 @@ export async function POST(req: NextRequest) {
 
     const response = NextResponse.json({ success: true });
 
-    response.cookies.set('__session', sessionCookie, {
+    response.cookies.set('session', sessionCookie, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: expiresIn,
+      maxAge: expiresIn / 1000,
       sameSite: 'lax',
       path: '/',
     });
@@ -39,6 +39,6 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE() {
     const response = NextResponse.json({ success: true });
-    response.cookies.delete('__session');
+    response.cookies.delete('session');
     return response;
 }

@@ -7,7 +7,7 @@ import { Wrench, Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { auth, db } from '@/lib/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, getDocs, limit, query, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,93 +33,35 @@ export default function AdminLoginPage() {
     setError(null);
 
     try {
-      // 1. Authenticate with Firebase Auth
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Verify Admin Status in Firestore
       const adminDocRef = doc(db, 'admins', user.uid);
-      const adminDoc = await getDoc(adminDocRef).catch(async (err) => {
-        if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
-          const permissionError = new FirestorePermissionError({
-            path: adminDocRef.path,
-            operation: 'get',
-          } satisfies SecurityRuleContext);
-          errorEmitter.emit('permission-error', permissionError);
-          return null; 
-        }
-        throw err;
-      });
+      const adminDoc = await getDoc(adminDocRef);
 
-      if (!adminDoc) {
-          setLoading(false);
-          return;
-      }
-
-      let role = 'admin';
-
-      // 3. Handle First-Admin Bootstrapping
       if (!adminDoc.exists()) {
-        const adminsCollectionRef = collection(db, 'admins');
-        const firstAdminQuery = query(adminsCollectionRef, limit(1));
-        
-        const adminsSnap = await getDocs(firstAdminQuery).catch(async (err) => {
-            if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
-                const permissionError = new FirestorePermissionError({
-                    path: adminsCollectionRef.path,
-                    operation: 'list',
-                } satisfies SecurityRuleContext);
-                errorEmitter.emit('permission-error', permissionError);
-                return null;
-            }
-            throw err;
-        });
-
-        if (!adminsSnap) {
-            setLoading(false);
-            return;
-        }
-        
-        if (adminsSnap.empty) {
-          role = 'super_admin';
-          const newAdminData = {
-            email: user.email,
-            role: role,
-            active: true,
-            createdAt: serverTimestamp(),
-          };
-
-          await setDoc(adminDocRef, newAdminData);
-          toast({ title: 'System Initialized', description: 'You have been granted Super Admin access.' });
-        } else {
           throw new Error('Authenticated but not authorized as an administrator.');
-        }
-      } else {
-        const adminData = adminDoc.data();
-        if (!adminData?.active) {
-          throw new Error('Administrator account is inactive.');
-        }
-        role = adminData.role;
       }
 
-      // 4. Finalize the secure session
-      const sessionResult = await setAdminSessionAction(user.uid, user.email!, role);
+      const adminData = adminDoc.data();
+      if (!adminData?.active) {
+        throw new Error('Administrator account is inactive.');
+      }
+
+      const idToken = await user.getIdToken(true);
+      const sessionResult = await setAdminSessionAction(idToken);
+
       if (!sessionResult.success) {
           throw new Error(sessionResult.error || 'Failed to establish session.');
       }
 
       toast({ title: 'Success', description: 'Redirecting to dashboard...' });
       
-      // 5. HARD REDIRECT: Ensure the cookie is picked up by middleware on the next request
-      window.location.href = '/admin';
+      router.push('/admin/dashboard');
       
     } catch (err: any) {
-      const isPermissionError = err.message?.includes('Missing or insufficient permissions') || 
-                               err.message?.includes('denied by Firestore Security Rules');
-      
-      if (!isPermissionError) {
-        setError(err.message || 'Invalid credentials or unauthorized access.');
-      }
+      console.error('Login error:', err);
+      setError(err.message || 'Invalid credentials or unauthorized access.');
       setLoading(false);
     }
   }

@@ -1,11 +1,11 @@
 
 import { NextResponse } from 'next/server';
-import { getAdminAuth } from '@/lib/firebase-admin';
+import { adminAuth } from '@/lib/firebase-admin';
 
 // This is a temporary route to generate an admin session cookie.
 // It should be deleted after the one-time migration is complete.
 export async function GET() {
-  const auth = getAdminAuth();
+  const auth = adminAuth;
   
   // IMPORTANT: This UID must correspond to a user you have designated as an admin.
   const adminUid = '8YvzSpEGjKUVhJdu1RZZ0yywkkA3'; 

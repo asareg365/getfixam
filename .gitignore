@@ -4,7 +4,6 @@
 /node_modules
 /.pnp
 .pnp.js
-.pnp.loader.mjs
 
 # testing
 /coverage
@@ -33,9 +32,3 @@ yarn-error.log*
 
 # vercel
 .vercel
-
-# firebase
-.firebase
-
-# zip files
-*.zip

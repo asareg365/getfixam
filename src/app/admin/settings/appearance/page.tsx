@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import AppearanceForm from './form';
 import { getAppearanceSettings } from './actions';
 

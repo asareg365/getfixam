@@ -1,6 +1,6 @@
 'use server';
 
-import { getAdminDb, getAdminAuth } from '@/lib/firebase-admin';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { Provider, ProviderSettings } from '@/lib/types';
 import { logProviderAction } from '@/lib/audit-log';
@@ -14,8 +14,6 @@ export async function checkProviderForPinLogin(rawPhoneNumber: string): Promise<
     if (!rawPhoneNumber || !/^0[0-9]{9}$/.test(rawPhoneNumber)) {
         return { canLogin: false, message: 'Please enter a valid 10-digit Ghanaian phone number starting with 0.' };
     }
-
-    const adminDb = getAdminDb();
 
     try {
         const providersRef = adminDb.collection('providers');
@@ -59,9 +57,6 @@ export async function updateProviderProfile(
     return { success: false, error: "Authentication required." };
   }
 
-  const adminDb = getAdminDb();
-  const adminAuth = getAdminAuth();
-  
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const uid = decodedToken.uid;
@@ -128,9 +123,6 @@ export async function updateProviderServices(
     return { success: false, error: "Authentication required." };
   }
 
-  const adminDb = getAdminDb();
-  const adminAuth = getAdminAuth();
-  
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const uid = decodedToken.uid;
@@ -186,9 +178,6 @@ export async function updateProviderAvailability(
     return { success: false, error: "Authentication required." };
   }
 
-  const adminDb = getAdminDb();
-  const adminAuth = getAdminAuth();
-  
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const uid = decodedToken.uid;
@@ -241,8 +230,6 @@ export async function updateProviderSettings(
     settings: ProviderSettings
 ) {
   if (!idToken) return { success: false, error: "Authentication required." };
-  const adminDb = getAdminDb();
-  const adminAuth = getAdminAuth();
   
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
@@ -280,8 +267,6 @@ export async function changeProviderPin(
     newPin: string
 ) {
   if (!idToken) return { success: false, error: "Authentication required." };
-  const adminDb = getAdminDb();
-  const adminAuth = getAdminAuth();
   
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);

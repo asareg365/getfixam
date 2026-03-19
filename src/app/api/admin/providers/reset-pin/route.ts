@@ -1,5 +1,5 @@
 
-import { getAdminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-guard';
@@ -9,7 +9,6 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const adminDb = getAdminDb();
     const adminUser = await requireAdmin();
     const { providerId } = await req.json();
 

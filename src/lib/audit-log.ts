@@ -1,6 +1,6 @@
 'use server';
 
-import { getAdminDb } from './firebase-admin';
+import { adminDb } from './firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
 type LogAdminActionParams = {
@@ -17,7 +17,6 @@ type LogAdminActionParams = {
  * Safely handles cases where the Admin SDK is not initialized.
  */
 export async function logAdminAction(params: LogAdminActionParams) {
-  const adminDb = getAdminDb();
   if (!adminDb || typeof adminDb.collection !== 'function') {
     console.log("Audit Log (Simulated):", params);
     return;
@@ -51,7 +50,6 @@ type LogProviderActionParams = {
  * Logs a provider action to the provider_logs collection in Firestore.
  */
 export async function logProviderAction(params: LogProviderActionParams) {
-  const adminDb = getAdminDb();
   if (!adminDb || typeof adminDb.collection !== 'function') {
     console.log("Provider Log (Simulated):", params);
     return;

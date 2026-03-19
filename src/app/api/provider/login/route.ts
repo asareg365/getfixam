@@ -1,10 +1,9 @@
+
 import { NextResponse } from 'next/server';
-import { getAdminAuth, getAdminDb } from '@/lib/firebase-admin';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
 
 export async function POST(req: Request) {
   try {
-    const adminDb = getAdminDb();
-    const adminAuth = getAdminAuth();
     const { phone, pin } = await req.json();
 
     if (!phone || !pin) {
@@ -34,13 +33,15 @@ export async function POST(req: Request) {
     const providerDoc = snapshot.docs[0];
     const providerData = providerDoc.data();
 
-    // ✅ Correct field name
     if (providerData.loginPin !== pin) {
       return NextResponse.json(
         { error: 'Invalid phone number or PIN.' },
         { status: 401 }
       );
     }
+
+    // Set the custom claim before creating the token
+    await adminAuth.setCustomUserClaims(providerDoc.id, { role: 'provider' });
 
     const customToken = await adminAuth.createCustomToken(providerDoc.id);
 

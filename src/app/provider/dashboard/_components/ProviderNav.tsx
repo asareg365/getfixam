@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, User, Wrench, Calendar, Star, Settings } from 'lucide-react';
+import { LayoutDashboard, User, Wrench, Calendar, Star, Settings, Briefcase } from 'lucide-react';
 
 const navLinks = [
   { href: '/provider/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/provider/jobs', label: 'My Jobs', icon: Briefcase },
   { href: '/provider/profile', label: 'Profile', icon: User },
   { href: '/provider/services', label: 'My Services', icon: Wrench },
   { href: '/provider/availability', label: 'Availability', icon: Calendar },

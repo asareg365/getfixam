@@ -1,84 +1,135 @@
-i
 rules_version = '2';
 
-// Last Updated: 2024-05-22T14:30:00Z - Fixing Admin Initialization & Logout
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions for common security checks
+    /* -----------------------------
+       AUTH HELPERS
+    ------------------------------*/
+
     function isSignedIn() {
       return request.auth != null;
     }
 
     function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+    function isProvider(providerId) {
+      return isSignedIn() && request.auth.uid == providerId;
     }
 
-    // Admin Profiles: Allow list/get for signed-in users to facilitate initial setup and auth verification
+    /* -----------------------------
+       ADMINS
+    ------------------------------*/
+
     match /admins/{adminId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn(); 
-      allow update: if isAdmin();
-    }
 
-    // Providers: Publicly readable, managed by admins or the artisan themselves
-    match /providers/{providerId} {
-      allow read: if true;
-      allow create: if true;
-      allow update, delete: if isAdmin() || (isSignedIn() && resource.data.authUid == request.auth.uid);
-    }
-
-    // WhatsApp Events: Internal logs for debugging and AI tracking
-    match /whatsapp_events/{eventId} {
-      allow list, get: if isAdmin();
-      allow create: if true; 
-    }
-
-    // Services: Publicly readable directory categories
-    match /services/{serviceId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // Reviews: Publicly readable feedback
-    match /reviews/{reviewId} {
-      allow read: if true;
-      allow create: if true;
-      allow update, delete: if isAdmin();
-    }
-
-    // Audit Logs: System-wide transparency
-    match /auditLogs/{logId} {
-      allow list, get: if isAdmin();
-      allow create: if isSignedIn();
-    }
-
-    // Jobs: Operational tracking
-    match /jobs/{jobId} {
-      allow list, get: if isAdmin();
-      allow create: if true; 
-      allow update: if isAdmin();
-    }
-
-    // System Settings: Global configuration
-    match /system_settings/{settingId} {
-      allow get: if true; 
-      allow write: if isAdmin();
-    }
-
-    // Provider Action Logs: Tracking artisan dashboard activity
-    match /provider_logs/{logId} {
-      allow list, get: if isAdmin();
-      allow create: if true;
-    }
-
-    // Engagements: Allow admins to read
-    match /engagements/{engagementId} {
       allow read: if isAdmin();
+
+      allow write: if false; 
+      // Only server/admin SDK should modify admins
     }
+
+    /* -----------------------------
+       PROVIDERS
+    ------------------------------*/
+
+    match /providers/{providerId} {
+
+      allow read: if true;
+
+      allow create: if isAdmin();
+
+      allow update: if isAdmin() || isProvider(providerId);
+
+      allow delete: if isAdmin();
+
+      match /jobRequests/{jobId} {
+        allow read, write: if isProvider(providerId) || isAdmin();
+      }
+
+    }
+
+    /* -----------------------------
+       JOBS
+    ------------------------------*/
+
+    match /jobs/{jobId} {
+
+      allow read: if true;
+
+      allow create: if isAdmin();
+
+      allow update: if isAdmin();
+
+      allow delete: if isAdmin();
+    }
+
+    /* -----------------------------
+       ENGAGEMENTS (DISPATCH SYSTEM)
+    ------------------------------*/
+
+    match /engagements/{engagementId} {
+
+      allow read: if isSignedIn();
+
+      allow create: if isAdmin();
+
+      allow update: if isSignedIn();
+
+      allow delete: if isAdmin();
+    }
+
+    /* -----------------------------
+       REVIEWS
+    ------------------------------*/
+
+    match /reviews/{reviewId} {
+
+      allow read: if true;
+
+      allow create: if isSignedIn();
+
+      allow update: if isAdmin();
+
+      allow delete: if isAdmin();
+    }
+
+    /* -----------------------------
+       SERVICES
+    ------------------------------*/
+
+    match /services/{serviceId} {
+
+      allow read: if true;
+
+      allow write: if isAdmin();
+    }
+
+    /* -----------------------------
+       CATEGORIES
+    ------------------------------*/
+
+    match /categories/{categoryId} {
+
+      allow read: if true;
+
+      allow write: if isAdmin();
+    }
+
+    /* -----------------------------
+       SYSTEM SETTINGS
+    ------------------------------*/
+
+    match /system_settings/{settingId} {
+
+      allow read: if isAdmin();
+
+      allow write: if isAdmin();
+    }
+
   }
 }

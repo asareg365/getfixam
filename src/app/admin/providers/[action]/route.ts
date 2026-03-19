@@ -1,14 +1,11 @@
  import { NextResponse } from "next/server";
-import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
+import { adminAuth, adminDb } from "@/lib/firebase-admin";
 import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
   const { providerId } = await req.json();
 
-  const db = getAdminDb();
-  const auth = getAdminAuth();
-
-  const providerRef = db.collection("providers").doc(providerId);
+  const providerRef = adminDb.collection("providers").doc(providerId);
   const providerSnap = await providerRef.get();
 
   if (!providerSnap.exists) {
@@ -26,12 +23,12 @@ export async function POST(req: Request) {
   const pinHash = await bcrypt.hash(pin, 10);
 
   // Create Firebase Auth user
-  const user = await auth.createUser({
+  const user = await adminAuth.createUser({
     phoneNumber: provider.phone,
   });
 
   // Set role claim
-  await auth.setCustomUserClaims(user.uid, {
+  await adminAuth.setCustomUserClaims(user.uid, {
     role: "provider",
   });
 

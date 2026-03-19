@@ -1,14 +1,19 @@
 {
-  "apphosting": {
-    "backendId": "studio",
-    "rootDir": ".",
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "hosting": {
+    "public": ".next",
     "ignore": [
-      "node_modules",
-      ".git",
-      "firebase-debug.log",
-      "firebase-debug.*.log",
-      "functions"
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
     ],
-    "alwaysDeployFromSource": true
+    "rewrites": [
+      {
+        "source": "**",
+        "function": "nextServer"
+      }
+    ]
   }
 }

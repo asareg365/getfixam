@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import SecurityForm from './form';
 import { getSecuritySettings } from './actions';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';

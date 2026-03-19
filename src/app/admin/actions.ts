@@ -1,7 +1,7 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { getAdminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue, QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -10,7 +10,6 @@ import { requireAdmin } from '@/lib/admin-guard';
 import type { Provider } from '@/lib/types';
 import { logAdminAction } from '@/lib/audit-log';
 import { headers } from 'next/headers';
-
 
 /** ----- AUTH ACTIONS ----- */
 export async function logoutAction() {
@@ -40,7 +39,6 @@ const serviceSchema = z.object({
 
 export async function addServiceAction(prevState: any, formData: FormData) {
     try {
-        const adminDb = getAdminDb();
         const adminContext = await requireAdmin();
         const validatedFields = serviceSchema.safeParse(Object.fromEntries(formData.entries()));
 
@@ -91,7 +89,6 @@ export async function addServiceAction(prevState: any, formData: FormData) {
 
 export async function getSwappableArtisans(serviceType: string, excludedArtisanIds: string[]): Promise<{ success: boolean; artisans?: Provider[]; message?: string; }> {
     try {
-        const adminDb = getAdminDb();
         await requireAdmin();
         
         if (!adminDb) {
@@ -138,7 +135,6 @@ export async function getSwappableArtisans(serviceType: string, excludedArtisanI
 
 export async function swapStandbyArtisan(artisanToRemoveId: string, artisanToAddId: string): Promise<{ success: boolean; message?: string; }> {
      try {
-        const adminDb = getAdminDb();
         await requireAdmin();
 
         if (!adminDb) {
@@ -173,7 +169,6 @@ export async function swapStandbyArtisan(artisanToRemoveId: string, artisanToAdd
 
 export async function overrideStandbyPool(): Promise<{ success: boolean; message?: string; }> {
     try {
-        const adminDb = getAdminDb();
         await requireAdmin();
         if (!adminDb) throw new Error('Database connection not available.');
         await adminDb.collection('standby').doc('tomorrow').delete();

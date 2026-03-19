@@ -1,4 +1,4 @@
-import { getAdminDb } from './firebase-admin';
+import { adminDb } from './firebase-admin';
 import type { Category, Provider } from './types';
 import { getCategories } from './data';
 import { CATEGORIES } from './constants';
@@ -46,7 +46,6 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
  * Handles category filtering and name mapping robustly.
  */
 export async function getProviders(categorySlug?: string): Promise<Provider[]> {
-    const adminDb = getAdminDb();
     if (!adminDb) {
         return [];
     }
@@ -118,7 +117,6 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
  * Fetches a single provider by ID using the Admin SDK.
  */
 export async function getProviderById(id: string): Promise<Provider | undefined> {
-    const adminDb = getAdminDb();
     if (!adminDb) return undefined;
 
     try {

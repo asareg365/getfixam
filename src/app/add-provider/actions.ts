@@ -2,16 +2,16 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { getAdminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getCategories } from '@/lib/data';
+import { geohashForLocation } from 'geofire-common';
 
 const providerSchema = z.object({
   name: z.string().min(3, 'Business name must be at least 3 characters.'),
   serviceId: z.string({ required_error: 'Please select a service category.' }).min(1, 'Please select a service category.'),
   phone: z.string().regex(/^0[0-9]{9}$/, 'A valid 10-digit phone number is required.'),
   whatsapp: z.string().regex(/^0[0-9]{9}$/, 'A valid 10-digit WhatsApp number is required.'),
-  zone: z.string({ required_error: 'Please select an area.' }).min(1, 'Please select an area.'),
   digitalAddress: z.string().min(6, 'A valid digital address is required.'),
 });
 
@@ -26,11 +26,9 @@ export async function addProviderAction(prevState: any, formData: FormData) {
     };
   }
   
-  const { name, serviceId, phone, whatsapp, zone, digitalAddress } = validatedFields.data;
+  const { name, serviceId, phone, whatsapp, digitalAddress } = validatedFields.data;
 
   try {
-    const adminDb = getAdminDb();
-
     const existingProviderSnap = await adminDb.collection('providers').where('phone', '==', phone).limit(1).get();
     if (!existingProviderSnap.empty) {
         return { success: false, message: 'A provider with this phone number already exists.' };
@@ -42,6 +40,11 @@ export async function addProviderAction(prevState: any, formData: FormData) {
     if (!category) {
       return { success: false, message: 'Invalid service category selected.' };
     }
+    
+    // In a real app, you would get these from the user's location input
+    const lat = 0.0;
+    const lng = 0.0;
+    const geohash = geohashForLocation([lat, lng]);
 
     const newProvider = {
       name,
@@ -49,11 +52,13 @@ export async function addProviderAction(prevState: any, formData: FormData) {
       phone,
       whatsapp,
       digitalAddress,
-      location: {
-        region: 'Bono Region',
-        city: 'Berekum',
-        zone,
+      geo: { // New nested object for coordinates
+        lat,
+        lng,
       },
+      geohash, // Top-level geohash for fast querying
+      isOnline: false,
+      isAvailable: false, // Provider is offline by default
       status: 'pending',
       verified: false,
       isFeatured: false,

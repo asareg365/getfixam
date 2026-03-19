@@ -1,46 +1,69 @@
 'use server';
 
-import { getAdminAuth, getAdminDb } from '@/lib/firebase-admin';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import type { Provider } from '@/lib/types';
 
 /**
- * Securely fetches provider data from the server and links their Firebase Auth UID.
- * This is called from the client with the user's ID token.
+ * Securely fetches provider data from the server.
+ * Can be used in two modes:
+ * 1. Standard: Fetches the data for the authenticated user (via idToken).
+ * 2. Impersonation: Fetches data for a specific providerId, but only if the authenticated user is an admin.
  */
-export async function getProviderData(idToken: string): Promise<{ provider: Provider | null; error: string | null }> {
+export async function getProviderData(
+    idToken: string,
+    impersonatedProviderId?: string | null
+): Promise<{ provider: Provider | null; error: string | null }> {
     if (!idToken) {
         return { provider: null, error: "Authentication token is missing." };
     }
-    const adminAuth = getAdminAuth();
-    const adminDb = getAdminDb();
 
     try {
         const decodedToken = await adminAuth.verifyIdToken(idToken);
-        const uid = decodedToken.uid;
-        const phoneFromToken = decodedToken.phone_number;
+        const isAdmin = decodedToken.admin === true;
 
+        let providerDoc: FirebaseFirestore.DocumentSnapshot | null = null;
         const providersRef = adminDb.collection('providers');
-        
-        // Strategy 1: Direct lookup by ID (Since we use providerId as the UID in custom tokens)
-        const directDoc = await providersRef.doc(uid).get();
-        let providerDoc = directDoc.exists ? directDoc : null;
 
-        // Strategy 2: Fallback to query by authUid field (for historical compatibility)
-        if (!providerDoc) {
-            const authUidQuery = await providersRef.where('authUid', '==', uid).limit(1).get();
-            if (!authUidQuery.empty) {
-                providerDoc = authUidQuery.docs[0];
+        if (impersonatedProviderId) {
+            if (!isAdmin) {
+                return { provider: null, error: "You are not authorized to view this profile." };
             }
-        }
+            // Admin Impersonation Mode: Fetch by the provided ID
+            const doc = await providersRef.doc(impersonatedProviderId).get();
+            if (doc.exists) {
+                providerDoc = doc;
+            }
+        } else {
+            // Standard Mode: Fetch for the logged-in user
+            const uid = decodedToken.uid;
+            const phoneFromToken = decodedToken.phone_number;
 
-        // Strategy 3: Fallback to phone number if available in token
-        if (!providerDoc && phoneFromToken) {
-            const localPhone = phoneFromToken.startsWith('+233') ? '0' + phoneFromToken.substring(4) : phoneFromToken;
-            const phoneQuery = await providersRef.where('phone', '==', localPhone).limit(1).get();
-            if (!phoneQuery.empty) {
-                providerDoc = phoneQuery.docs[0];
-                // Link the UID for future direct lookups
-                await providerDoc.ref.update({ authUid: uid });
+            // Strategies to find the provider document
+            const strategies = [
+                () => providersRef.doc(uid).get(),
+                async () => {
+                    const query = await providersRef.where('authUid', '==', uid).limit(1).get();
+                    return query.empty ? null : query.docs[0];
+                },
+                async () => {
+                    if (!phoneFromToken) return null;
+                    const localPhone = phoneFromToken.startsWith('+233') ? '0' + phoneFromToken.substring(4) : phoneFromToken;
+                    const query = await providersRef.where('phone', '==', localPhone).limit(1).get();
+                    if (!query.empty) {
+                        // Link the UID for future direct lookups
+                        await query.docs[0].ref.update({ authUid: uid });
+                        return query.docs[0];
+                    }
+                    return null;
+                }
+            ];
+
+            for (const strategy of strategies) {
+                const doc = await strategy();
+                if (doc && doc.exists) {
+                    providerDoc = doc as FirebaseFirestore.DocumentSnapshot;
+                    break;
+                }
             }
         }
 
@@ -52,24 +75,15 @@ export async function getProviderData(idToken: string): Promise<{ provider: Prov
         if (!providerData) {
             return { provider: null, error: "Artisan profile data could not be read." };
         }
+
         let categoryName = 'Artisan';
-        
         if (providerData.serviceId) {
-            try {
-                const serviceDoc = await adminDb.collection('services').doc(providerData.serviceId).get();
-                if (serviceDoc.exists) {
-                    categoryName = serviceDoc.data()?.name || 'Artisan';
-                }
-            } catch (e) {
-                // Fallback if services collection is slow
+            const serviceDoc = await adminDb.collection('services').doc(providerData.serviceId).get();
+            if (serviceDoc.exists) {
+                categoryName = serviceDoc.data()?.name || 'Artisan';
             }
         }
-        
-        // Ensure authUid is set for future updates
-        if (providerData.authUid !== uid) {
-            await providerDoc.ref.update({ authUid: uid }).catch(() => {});
-        }
-        
+
         const data = {
             id: providerDoc.id,
             name: providerData.name ?? 'Unnamed Business',
@@ -86,12 +100,11 @@ export async function getProviderData(idToken: string): Promise<{ provider: Prov
             serviceId: providerData.serviceId ?? '',
             category: categoryName,
             services: providerData.services || [],
-            // CRITICAL FIX: Ensure availability is mapped as an object, not an empty array fallback
             availability: (providerData.availability && typeof providerData.availability === 'object' && !Array.isArray(providerData.availability)) ? providerData.availability : {},
-            createdAt: providerData.createdAt?.toDate?.() ? providerData.createdAt.toDate().toISOString() : (typeof providerData.createdAt === 'string' ? providerData.createdAt : new Date(0).toISOString()),
-            approvedAt: providerData.approvedAt?.toDate?.() ? providerData.approvedAt.toDate().toISOString() : undefined,
+            createdAt: providerData.createdAt?.toDate?.()?.toISOString() || new Date(0).toISOString(),
+            approvedAt: providerData.approvedAt?.toDate?.()?.toISOString(),
         } as Provider;
-        
+
         return { provider: data, error: null };
 
     } catch (e: any) {
