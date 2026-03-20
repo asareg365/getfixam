@@ -16,8 +16,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { setAdminSessionAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -32,36 +30,61 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError(null);
 
+    // Defensive check for initialized auth and valid API key
+    if (!auth || !auth.app.options.apiKey) {
+      setError("Firebase configuration is missing. Please ensure NEXT_PUBLIC_FIREBASE_API_KEY is set in your environment.");
+      setLoading(false);
+      return;
+    }
+
     try {
+      // 1. Sign in with Firebase Auth Client SDK
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
+      // 2. Verify admin document exists and is active
       const adminDocRef = doc(db, 'admins', user.uid);
       const adminDoc = await getDoc(adminDocRef);
 
       if (!adminDoc.exists()) {
-          throw new Error('Authenticated but not authorized as an administrator.');
+          // Check if this is the first login to bootstrap the system
+          // In a production app, you'd use a cloud function or manual entry
+          throw new Error('This account does not have administrator privileges.');
       }
 
       const adminData = adminDoc.data();
       if (!adminData?.active) {
-        throw new Error('Administrator account is inactive.');
+        throw new Error('Your administrator account is currently inactive.');
       }
 
+      // 3. Establish secure server-side session
       const idToken = await user.getIdToken(true);
       const sessionResult = await setAdminSessionAction(idToken);
 
       if (!sessionResult.success) {
-          throw new Error(sessionResult.error || 'Failed to establish session.');
+          throw new Error(sessionResult.error || 'Failed to establish secure session.');
       }
 
-      toast({ title: 'Success', description: 'Redirecting to dashboard...' });
+      toast({ title: 'Success', description: 'Redirecting to your dashboard...' });
       
-      router.push('/admin/dashboard');
+      // 4. Force a hard redirect to ensure middleware sees the new cookie
+      window.location.href = '/admin/dashboard';
       
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || 'Invalid credentials or unauthorized access.');
+      let message = 'Invalid credentials or unauthorized access.';
+      
+      if (err.code === 'auth/api-key-not-valid') {
+        message = 'The Firebase API Key provided is invalid. Please verify your environment configuration.';
+      } else if (err.code === 'auth/invalid-api-key') {
+        message = 'Firebase configuration is incorrect (Invalid API Key).';
+      } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        message = 'Invalid email or password.';
+      } else {
+        message = err.message || message;
+      }
+      
+      setError(message);
       setLoading(false);
     }
   }
@@ -84,12 +107,12 @@ export default function AdminLoginPage() {
         <Card className="border-none shadow-2xl rounded-3xl">
           <CardHeader className="text-center space-y-4 pt-10">
             <div className="mx-auto w-fit">
-                <Image src="/logo.png" alt="GetFixam Logo" width={180} height={80} />
+                <Image src="/logo.png" alt="FixAm Logo" width={180} height={80} />
             </div>
             <div className="space-y-2">
               <CardTitle className="text-3xl font-bold font-headline">Admin Access</CardTitle>
               <CardDescription className="text-base">
-                Manage the GetFixam platform.
+                System management portal
               </CardDescription>
             </div>
           </CardHeader>
@@ -99,13 +122,13 @@ export default function AdminLoginPage() {
               {error && (
                 <Alert variant="destructive" className="rounded-xl">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Login Failed</AlertTitle>
+                  <AlertTitle>Authentication Error</AlertTitle>
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email Address</Label>
                 <Input
                   id="email"
                   type="email"
@@ -113,7 +136,7 @@ export default function AdminLoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="rounded-xl h-12"
-                  placeholder="admin@getfixam.com"
+                  placeholder="admin@fixamghana.com"
                 />
               </div>
               <div className="space-y-2">
@@ -134,13 +157,13 @@ export default function AdminLoginPage() {
                 disabled={loading}
                 className="w-full h-12 rounded-xl font-bold text-base shadow-lg shadow-primary/20"
               >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : 'Sign In'}
+                {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : 'Secure Sign In'}
               </Button>
             </form>
           </CardContent>
           <CardFooter className="bg-muted/30 py-6 text-center justify-center rounded-b-3xl">
             <p className="text-xs text-muted-foreground font-medium">
-              Internal system access only. Activity is monitored.
+              Restricted Area. Authorized personnel only.
             </p>
           </CardFooter>
         </Card>
