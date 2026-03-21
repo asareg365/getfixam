@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Wrench, Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
@@ -25,14 +26,22 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Clear session on mount to prevent "stuck" states
+  useEffect(() => {
+    const clearSession = async () => {
+      await fetch('/api/session', { method: 'DELETE' });
+    };
+    clearSession();
+  }, []);
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    // Defensive check for initialized auth and valid API key
-    if (!auth || !auth.app.options.apiKey) {
-      setError("Firebase configuration is missing. Please ensure NEXT_PUBLIC_FIREBASE_API_KEY is set in your environment.");
+    // Explicit check for API Key before attempting SDK call
+    if (!auth?.app?.options?.apiKey || auth.app.options.apiKey === 'your_api_key_here') {
+      setError("Firebase API Key is missing or invalid. Please configure your .env file correctly.");
       setLoading(false);
       return;
     }
@@ -47,9 +56,7 @@ export default function AdminLoginPage() {
       const adminDoc = await getDoc(adminDocRef);
 
       if (!adminDoc.exists()) {
-          // Check if this is the first login to bootstrap the system
-          // In a production app, you'd use a cloud function or manual entry
-          throw new Error('This account does not have administrator privileges.');
+        throw new Error('This account does not have administrator privileges.');
       }
 
       const adminData = adminDoc.data();
@@ -62,7 +69,7 @@ export default function AdminLoginPage() {
       const sessionResult = await setAdminSessionAction(idToken);
 
       if (!sessionResult.success) {
-          throw new Error(sessionResult.error || 'Failed to establish secure session.');
+        throw new Error(sessionResult.error || 'Failed to establish secure session.');
       }
 
       toast({ title: 'Success', description: 'Redirecting to your dashboard...' });
@@ -74,10 +81,8 @@ export default function AdminLoginPage() {
       console.error('Login error:', err);
       let message = 'Invalid credentials or unauthorized access.';
       
-      if (err.code === 'auth/api-key-not-valid') {
-        message = 'The Firebase API Key provided is invalid. Please verify your environment configuration.';
-      } else if (err.code === 'auth/invalid-api-key') {
-        message = 'Firebase configuration is incorrect (Invalid API Key).';
+      if (err.code === 'auth/api-key-not-valid' || err.code === 'auth/invalid-api-key') {
+        message = 'Firebase API Key is rejected. Please verify the keys in your Firebase Console and .env file.';
       } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         message = 'Invalid email or password.';
       } else {

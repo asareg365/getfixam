@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { getAdminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const reviewSchema = z.object({
@@ -20,8 +20,6 @@ export async function addReviewAction(prevState: any, formData: FormData) {
       errors: validatedFields.error.flatten().fieldErrors,
     };
   }
-
-  const adminDb = getAdminDb();
 
   // TODO: Replace with actual user image logic
   const randomUserImageId = `user${Math.floor(Math.random() * 6) + 1}`;

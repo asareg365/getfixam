@@ -3,7 +3,7 @@ import { EscrowMonitorTable } from '@/components/admin/EscrowMonitorTable';
 import { PayoutApprovalPanel } from '@/components/admin/PayoutApprovalPanel';
 import { RevenueGraph } from '@/components/admin/RevenueGraph';
 import { SummaryCards } from '@/components/admin/SummaryCards';
-import ProviderMap from "@/components/admin/provider-map";
+import DynamicProviderMap from "@/components/admin/DynamicProviderMap";
 
 export default function AdminDashboard() {
   return (
@@ -11,7 +11,7 @@ export default function AdminDashboard() {
       <h1 className="text-3xl font-bold mb-6">Admin Financial Dashboard</h1>
       
       <h2 className="text-xl font-bold mb-4">Live Provider Map</h2>
-      <ProviderMap />
+      <DynamicProviderMap />
       
       <SummaryCards />
 
