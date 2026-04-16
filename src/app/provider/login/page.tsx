@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -31,7 +32,7 @@ export default function ProviderLoginPage() {
     setLoading(true);
 
     try {
-      // 1. Verify PIN on the server and get a custom Firebase token
+      // 1. Verify PIN and get a custom token
       const response = await fetch('/api/provider/pin-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -42,28 +43,22 @@ export default function ProviderLoginPage() {
 
       if (!response.ok) {
         toast({
-          title: 'Login failed',
-          description: res.message,
+          title: 'Login Failed',
+          description: res.error || 'Invalid phone or PIN.',
           variant: 'destructive',
         });
         setLoading(false);
         return;
       }
 
-      // 2. Sign in to Firebase Auth on the client using the custom token
+      // 2. Sign in on the client
       const userCredential = await signInWithCustomToken(auth, res.token);
 
-      // REQUIRED so claims are included
+      // Force token refresh to ensure custom claims (role) are included
       await userCredential.user.getIdToken(true);
-
-      // 3. Get the ID token from the signed-in user
       const idToken = await userCredential.user.getIdToken();
 
-      if (!idToken) {
-        throw new Error('Could not get ID token.');
-      }
-
-      // 4. Send the ID token to our session API to create a secure server-side cookie
+      // 3. Establish secure session
       const sessionRes = await fetch('/api/provider/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -71,19 +66,19 @@ export default function ProviderLoginPage() {
       });
 
       if (!sessionRes.ok) {
-        throw new Error('Failed to establish a secure session.');
+        throw new Error('Failed to establish a secure session cookie.');
       }
 
       toast({
-        title: 'Welcome back!',
-        description: 'Redirecting to your dashboard...',
+        title: 'Sign-in Successful',
+        description: 'Welcome back! Loading your dashboard...',
       });
 
-      // 5. Successful login, redirect to the provider dashboard
-      router.push('/provider/dashboard');
-      router.refresh();
+      // 4. Hard redirect to dashboard
+      window.location.href = '/provider/dashboard';
+      
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('Login flow error:', error);
       toast({
         title: 'Authentication Error',
         description: error.message || 'An error occurred during sign-in.',
@@ -109,44 +104,46 @@ export default function ProviderLoginPage() {
         </Button>
       </div>
 
-      <Card className="w-full max-w-sm shadow-2xl border-none rounded-3xl">
-        <CardHeader className="text-center space-y-4">
-          <Link href="/" className="flex justify-center items-center">
+      <Card className="w-full max-w-sm shadow-2xl border-none rounded-3xl overflow-hidden">
+        <div className="h-2 bg-primary w-full" />
+        <CardHeader className="text-center space-y-4 pt-10">
+          <div className="mx-auto w-fit">
             <Image
               src="/logo.png"
               alt="GetFixam Logo"
-              width={250}
-              height={100}
+              width={180}
+              height={80}
             />
-          </Link>
+          </div>
           <div>
-            <CardTitle className="text-2xl font-bold font-headline">
-              Artisan Login
+            <CardTitle className="text-3xl font-bold font-headline text-primary tracking-tight">
+              Artisan Access
             </CardTitle>
-            <CardDescription>
-              Enter your phone number and 6-digit PIN.
+            <CardDescription className="text-base font-medium">
+              Log in to manage your bookings and profile.
             </CardDescription>
           </div>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="px-8 pb-10">
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="phone" className="font-semibold">
+              <Label htmlFor="phone" className="font-bold text-sm uppercase tracking-wider text-muted-foreground">
                 Phone Number
               </Label>
               <Input
                 id="phone"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="0241234567"
+                placeholder="e.g. 024 123 4567"
                 required
-                className="h-12 rounded-xl"
+                disabled={loading}
+                className="h-12 rounded-xl border-muted-foreground/20 text-lg font-medium"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pin" className="font-semibold">
+              <Label htmlFor="pin" className="font-bold text-sm uppercase tracking-wider text-muted-foreground">
                 6-Digit PIN
               </Label>
               <Input
@@ -157,31 +154,33 @@ export default function ProviderLoginPage() {
                 placeholder="••••••"
                 maxLength={6}
                 required
-                className="h-12 rounded-xl"
+                disabled={loading}
+                className="h-12 rounded-xl border-muted-foreground/20 text-2xl tracking-[0.5em] text-center"
               />
             </div>
 
             <Button
               type="submit"
-              className="w-full h-12 rounded-xl font-bold text-lg shadow-lg shadow-primary/20"
+              className="w-full h-14 rounded-2xl font-bold text-lg shadow-lg shadow-primary/20 transition-transform active:scale-95"
               disabled={loading}
             >
               {loading ? (
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
               ) : (
-                'Sign In'
+                'Secure Sign In'
               )}
             </Button>
 
-            <div className="text-center space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Forgot PIN? Contact GetFixam Admin for a reset.
+            <div className="text-center space-y-4 pt-4">
+              <p className="text-sm text-muted-foreground font-medium">
+                Forgot PIN? Contact support for a reset.
               </p>
-              <p className="text-xs">
-                Don't have an account?{' '}
+              <div className="h-px bg-muted w-full" />
+              <p className="text-sm font-medium">
+                New to the platform?{' '}
                 <Link
                   href="/add-provider"
-                  className="text-primary font-bold hover:underline"
+                  className="text-primary font-black hover:underline"
                 >
                   List your business
                 </Link>
