@@ -19,26 +19,6 @@ import { auth } from '@/lib/firebase';
 import { signInWithCustomToken } from 'firebase/auth';
 import Image from 'next/image';
 
-// Function to decode JWT payload
-function decodeJwt(token: string) {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map(function (c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        })
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch (e) {
-    console.error('Failed to decode JWT:', e);
-    return null;
-  }
-}
-
 export default function ProviderLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -71,23 +51,22 @@ export default function ProviderLoginPage() {
       }
 
       // 2. Sign in to Firebase Auth on the client using the custom token
-      await signInWithCustomToken(auth, res.token);
+      const userCredential = await signInWithCustomToken(auth, res.token);
 
       // REQUIRED so claims are included
-      await auth.currentUser?.getIdToken(true);
+      await userCredential.user.getIdToken(true);
 
       // 3. Get the ID token from the signed-in user
-      const idToken = await auth.currentUser?.getIdToken();
+      const idToken = await userCredential.user.getIdToken();
 
       if (!idToken) {
         throw new Error('Could not get ID token.');
       }
 
       // 4. Send the ID token to our session API to create a secure server-side cookie
-      const sessionRes = await fetch('/api/session', {
+      const sessionRes = await fetch('/api/provider/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ idToken }),
       });
 
@@ -95,19 +74,13 @@ export default function ProviderLoginPage() {
         throw new Error('Failed to establish a secure session.');
       }
 
-      const claims = decodeJwt(idToken);
-
       toast({
         title: 'Welcome back!',
         description: 'Redirecting to your dashboard...',
       });
 
-      // 5. Successful login, redirect to the correct dashboard
-      if (claims && claims.admin) {
-        router.push('/admin/dashboard');
-      } else {
-        router.push('/provider/dashboard');
-      }
+      // 5. Successful login, redirect to the provider dashboard
+      router.push('/provider/dashboard');
       router.refresh();
     } catch (error: any) {
       console.error('Login error:', error);

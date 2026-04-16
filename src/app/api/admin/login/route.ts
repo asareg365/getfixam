@@ -7,10 +7,9 @@ export async function POST(req: Request) {
   try {
     const { idToken } = await req.json();
 
-    // Verify the ID token from the client
+    // Verify the ID token
     const decodedToken = await adminAuth.verifyIdToken(idToken);
 
-    // Set session to expire in 5 days
     const expiresIn = 60 * 60 * 24 * 5 * 1000;
 
     // Create the session cookie
@@ -20,8 +19,7 @@ export async function POST(req: Request) {
 
     const response = NextResponse.json({ success: true });
 
-    // SET THE COOKIE
-    // Important: We omit 'domain' so it works on any host (previews, localhost, production)
+    // Set the cookie without a fixed domain to support preview environments
     response.cookies.set("__session", sessionCookie, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -32,8 +30,8 @@ export async function POST(req: Request) {
 
     return response;
 
-  } catch (error: any) {
-    console.error("PROVIDER SESSION ERROR:", error);
-    return NextResponse.json({ error: error.message || "Unauthorized" }, { status: 401 });
+  } catch (error) {
+    console.error("ADMIN SESSION ERROR:", error);
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 }

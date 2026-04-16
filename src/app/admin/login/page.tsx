@@ -14,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { setAdminSessionAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -66,11 +65,12 @@ export default function AdminLoginPage() {
 
       // 3. Establish secure server-side session
       const idToken = await user.getIdToken(true);
-      const sessionResult = await setAdminSessionAction(idToken);
-
-      if (!sessionResult.success) {
-        throw new Error(sessionResult.error || 'Failed to establish secure session.');
-      }
+      
+      await fetch("/api/admin/login", {
+        method: "POST",
+        body: JSON.stringify({ idToken }),
+        headers: { "Content-Type": "application/json" },
+      });
 
       toast({ title: 'Success', description: 'Redirecting to your dashboard...' });
       

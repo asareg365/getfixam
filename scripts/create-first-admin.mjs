@@ -108,7 +108,7 @@ async function createSuperAdmin() {
     console.log(`Successfully created Firestore admin record for UID: ${userRecord.uid}`);
     
     // 3. Set custom claim for the new admin user
-    await auth.setCustomUserClaims(userRecord.uid, { role: 'admin' });
+    await auth.setCustomUserClaims(userRecord.uid, { role: 'super_admin' });
     console.log(`Successfully set custom claim for UID: ${userRecord.uid}`);
 
     console.log('\n✅ Super admin created successfully! ✅');

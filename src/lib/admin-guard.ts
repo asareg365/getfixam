@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { verifyToken } from './jwt';
+import { adminAuth } from './firebase-admin';
 
 type AdminUser = {
   uid: string;
@@ -22,17 +22,17 @@ export async function requireAdmin(): Promise<AdminUser> {
     redirect('/admin/login');
   }
 
-  const decoded = await verifyToken(token);
+  const decodedToken = await adminAuth.verifySessionCookie(token, true);
   
-  if (!decoded || decoded.portal !== 'admin') {
+  if (!decodedToken) {
     console.log('[AdminGuard] Invalid or non-admin session detected.');
     cookieStore.delete('__session');
     redirect('/admin/login');
   }
 
   return {
-    uid: decoded.uid,
-    email: decoded.email,
-    role: decoded.role,
+    uid: decodedToken.uid,
+    email: decodedToken.email,
+    role: decodedToken.role as 'admin' | 'super_admin',
   };
 }

@@ -7,7 +7,8 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "functions/**" 
     ],
     "rewrites": [
       {
@@ -15,5 +16,8 @@
         "function": "nextServer"
       }
     ]
+  },
+  "functions": {
+    "source": "functions"
   }
 }

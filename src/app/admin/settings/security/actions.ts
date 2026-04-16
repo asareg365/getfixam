@@ -1,9 +1,8 @@
 'use server';
 
-import { adminDb } from '@/lib/firebase-admin';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/jwt';
 
 export async function getSecuritySettings() {
   try {
@@ -48,15 +47,12 @@ export async function updateSecuritySettings(settings: {
         const session = cookieStore.get('__session')?.value;
         if (!session) throw new Error('Unauthorized');
         
-        const payload = await verifyToken(session);
-        if (!payload || payload.portal !== 'admin') {
-            throw new Error('Unauthorized');
-        }
+        const decodedToken = await adminAuth.verifySessionCookie(session, true);
 
         const settingsRef = adminDb.collection('system_settings').doc('admin');
         await settingsRef.set({
             ...settings,
-            updatedBy: payload.email || 'Admin',
+            updatedBy: decodedToken.email || 'Admin',
             updatedAt: new Date(), 
         }, { merge: true });
         
