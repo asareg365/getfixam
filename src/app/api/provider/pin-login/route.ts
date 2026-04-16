@@ -1,21 +1,25 @@
 
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import bcrypt from 'bcryptjs';
 
 /**
  * Validates Artisan PIN and manages Auth account lifecycle.
- * If no Auth account exists for an approved artisan, it creates one.
+ * Handles both plain-text (loginPin) and hashed (pinHash) PINs.
  */
 export async function POST(req: Request) {
   try {
-    const { phone, pin } = await req.json();
+    const { phone: rawPhone, pin: rawPin } = await req.json();
 
-    if (!phone || !pin) {
+    if (!rawPhone || !rawPin) {
       return NextResponse.json(
         { error: 'Phone and PIN are required.' },
         { status: 400 }
       );
     }
+
+    const phone = rawPhone.trim();
+    const pin = rawPin.trim();
 
     // 1. Try multiple phone formats to find the Firestore document
     const formats = [
@@ -46,9 +50,17 @@ export async function POST(req: Request) {
     }
 
     const providerData = providerDoc.data();
+    let isPinValid = false;
 
-    // 2. Validate PIN
-    if (providerData.loginPin !== pin) {
+    // 2. Validate PIN (Check plain text first, then fallback to hash)
+    if (providerData.loginPin && providerData.loginPin === pin) {
+        isPinValid = true;
+    } else if (providerData.pinHash) {
+        // Fallback for legacy accounts approved via the action route
+        isPinValid = await bcrypt.compare(pin, providerData.pinHash);
+    }
+
+    if (!isPinValid) {
       return NextResponse.json(
         { error: 'Invalid PIN. Please check and try again.' },
         { status: 401 }
