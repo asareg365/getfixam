@@ -18,14 +18,15 @@ export async function POST(req: Request) {
       );
     }
 
-    const phone = rawPhone.trim();
+    // Normalize inputs: trim and remove non-digit characters from phone (except +)
+    const normalizedInputPhone = rawPhone.trim().replace(/[^\d+]/g, '');
     const pin = rawPin.trim();
 
     // 1. Try multiple phone formats to find the Firestore document
     const formats = [
-      phone, 
-      phone.startsWith('0') ? '+233' + phone.substring(1) : phone,
-      phone.startsWith('+233') ? '0' + phone.substring(4) : phone,
+      normalizedInputPhone,
+      normalizedInputPhone.startsWith('0') ? '+233' + normalizedInputPhone.substring(1) : normalizedInputPhone,
+      normalizedInputPhone.startsWith('+233') ? '0' + normalizedInputPhone.substring(4) : normalizedInputPhone,
     ];
     const uniqueFormats = [...new Set(formats)];
 
@@ -43,6 +44,21 @@ export async function POST(req: Request) {
     }
 
     if (!providerDoc) {
+      // Fallback check: Search by WhatsApp field if phone matching fails
+      for (const fmt of uniqueFormats) {
+          const snapshot = await adminDb
+            .collection('providers')
+            .where('whatsapp', '==', fmt)
+            .limit(1)
+            .get();
+          if (!snapshot.empty) {
+              providerDoc = snapshot.docs[0];
+              break;
+          }
+      }
+    }
+
+    if (!providerDoc) {
       return NextResponse.json(
         { error: 'No artisan account found for this phone number.' },
         { status: 401 }
@@ -52,12 +68,13 @@ export async function POST(req: Request) {
     const providerData = providerDoc.data();
     let isPinValid = false;
 
-    // 2. Validate PIN (Check plain text first, then fallback to hash)
-    if (providerData.loginPin && providerData.loginPin === pin) {
+    // 2. Validate PIN (Check plain text loginPin first, then fallback to pinHash)
+    if (providerData.loginPin && providerData.loginPin.toString() === pin) {
         isPinValid = true;
     } else if (providerData.pinHash) {
-        // Fallback for legacy accounts approved via the action route
         isPinValid = await bcrypt.compare(pin, providerData.pinHash);
+    } else if (providerData.loginPinHash) {
+        isPinValid = await bcrypt.compare(pin, providerData.loginPinHash);
     }
 
     if (!isPinValid) {

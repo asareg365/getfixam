@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebase-admin";
 
@@ -22,12 +23,12 @@ export async function POST(req: Request) {
     });
 
     // Set secure session cookie
+    // Removed domain pinning to allow cross-environment compatibility (Studio Preview vs Live)
     response.cookies.set("__session", sessionCookie, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
       sameSite: "lax",
       path: "/",
-      domain: ".getfixam.com",
       maxAge: 60 * 60 * 24 * 5, // seconds
     });
 
