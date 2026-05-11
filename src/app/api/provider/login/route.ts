@@ -1,5 +1,3 @@
-
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebase-admin";
 
@@ -7,33 +5,39 @@ export async function POST(req: Request) {
   try {
     const { idToken } = await req.json();
 
-    // Verify the ID token from the client
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    // Verify Firebase ID token
+    await adminAuth.verifyIdToken(idToken);
 
-    // Set session to expire in 5 days
+    // 5 days in milliseconds
     const expiresIn = 60 * 60 * 24 * 5 * 1000;
 
-    // Create the session cookie
-    const sessionCookie = await adminAuth.createSessionCookie(idToken, {
-      expiresIn,
+    // Create session cookie
+    const sessionCookie = await adminAuth.createSessionCookie(
+      idToken,
+      { expiresIn }
+    );
+
+    const response = NextResponse.json({
+      success: true,
     });
 
-    const response = NextResponse.json({ success: true });
-
-    // SET THE COOKIE
-    // Important: We omit 'domain' so it works on any host (previews, localhost, production)
+    // Set secure session cookie
     response.cookies.set("__session", sessionCookie, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      path: "/",
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: expiresIn,
+      path: "/",
+      domain: ".getfixam.com",
+      maxAge: 60 * 60 * 24 * 5, // seconds
     });
 
     return response;
-
   } catch (error: any) {
     console.error("PROVIDER SESSION ERROR:", error);
-    return NextResponse.json({ error: error.message || "Unauthorized" }, { status: 401 });
+
+    return NextResponse.json(
+      { error: error.message || "Unauthorized" },
+      { status: 401 }
+    );
   }
 }
