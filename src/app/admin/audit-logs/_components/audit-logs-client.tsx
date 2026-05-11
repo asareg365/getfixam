@@ -143,14 +143,13 @@ export default function AuditLogsClient({ logs: initialLogs, uniqueActions, uniq
                     </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                            initialFocus
-                            mode="range"
-                            defaultMonth={date?.from}
-                            selected={date}
-                            onSelect={setDate}
-                            numberOfMonths={2}
-                        />
+                    <Calendar
+                          mode="range"
+                          defaultMonth={date?.from}
+                          selected={date}
+                          onSelect={setDate}
+                          numberOfMonths={2}
+                    />
                     </PopoverContent>
                 </Popover>
                 <Select value={searchParams.get('targetType') || 'all'} onValueChange={(value) => handleFilterChange('targetType', value)}>
