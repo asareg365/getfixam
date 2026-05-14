@@ -5,14 +5,12 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, orderBy, getCountFromServer } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
 import type { Provider } from '@/lib/types';
 import { ProvidersTable } from './_components/providers-table';
 import { ProviderTabs } from './_components/provider-tabs';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Inbox } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { CATEGORIES } from '@/lib/constants';
 
 function ProvidersPage() {
@@ -20,120 +18,83 @@ function ProvidersPage() {
   const currentStatus = searchParams.get('status') || 'pending';
   
   const [providers, setProviders] = useState<Provider[]>([]);
-  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [counts, setCounts] = useState<Record<string, number>>({
+      all: 0, pending: 0, approved: 0, rejected: 0, suspended: 0
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      setError(null);
-      try {
-        // Fetch services first to map category names
-        const servicesRef = collection(db, 'services');
-        const servicesSnap = await getDocs(servicesRef).catch(async (err) => {
-            if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
-                const permissionError = new FirestorePermissionError({
-                    path: servicesRef.path,
-                    operation: 'list',
-                } satisfies SecurityRuleContext);
-                errorEmitter.emit('permission-error', permissionError);
-                return null;
-            }
-            throw err;
-        });
+    setLoading(true);
+    setError(null);
 
-        if (!servicesSnap) return;
-
+    // 1. Fetch services first to map category names
+    async function initServices() {
+        const servicesSnap = await getDocs(collection(db, 'services')).catch(() => null);
         const servicesMap = new Map();
-        servicesSnap.forEach(doc => servicesMap.set(doc.id, doc.data().name));
-
-        // Fetch providers based on status
-        const providersRef = collection(db, 'providers');
-        let q;
-        
-        if (currentStatus !== 'all') {
-          q = query(providersRef, where('status', '==', currentStatus), orderBy('createdAt', 'desc'));
-        } else {
-          q = query(providersRef, orderBy('createdAt', 'desc'));
+        if (servicesSnap) {
+            servicesSnap.forEach(doc => servicesMap.set(doc.id, doc.data().name));
         }
-
-        const snap = await getDocs(q).catch(async (err) => {
-            if (err.code === 'permission-denied' || err.message?.includes('permissions')) {
-                const permissionError = new FirestorePermissionError({
-                    path: providersRef.path,
-                    operation: 'list',
-                } satisfies SecurityRuleContext);
-                errorEmitter.emit('permission-error', permissionError);
-                return null;
-            }
-            throw err;
-        });
-
-        if (!snap) return;
-
-        const providersData = snap.docs.map(doc => {
-          const data = doc.data();
-          
-          // Robust Category Mapping: Dynamic -> Static -> Field -> Default
-          let categoryName = servicesMap.get(data.serviceId);
-          if (!categoryName) {
-              const staticCat = CATEGORIES.find(c => c.id === data.serviceId || c.slug === data.serviceId);
-              categoryName = staticCat?.name || data.category || 'Artisan';
-          }
-
-          return {
-            id: doc.id,
-            authUid: data.authUid || '',
-            name: data.name || 'Unnamed',
-            phone: data.phone,
-            whatsapp: data.whatsapp,
-            digitalAddress: data.digitalAddress,
-            location: data.location || { region: 'Bono Region', city: 'Berekum', zone: 'Unknown' },
-            status: data.status || 'pending',
-            verified: !!data.verified,
-            serviceId: data.serviceId,
-            rating: data.rating || 0,
-            reviewCount: data.reviewCount || 0,
-            category: categoryName,
-            createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : (typeof data.createdAt === 'string' ? data.createdAt : undefined),
-            approvedAt: data.approvedAt?.toDate?.() ? data.approvedAt.toDate().toISOString() : (typeof data.approvedAt === 'string' ? data.approvedAt : undefined),
-            updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : (typeof data.updatedAt === 'string' ? data.updatedAt : undefined),
-          } as Provider;
-        });
-
-        setProviders(providersData);
-
-        // Fetch counts for tabs
-        const statuses = ['pending', 'approved', 'rejected', 'suspended'];
-        const newCounts: Record<string, number> = {};
-        
-        await Promise.all(statuses.map(async (s) => {
-          try {
-            const countSnap = await getCountFromServer(query(providersRef, where('status', '==', s)));
-            newCounts[s] = countSnap.data().count;
-          } catch (e) {
-            newCounts[s] = 0;
-          }
-        }));
-        
-        try {
-            const allCountSnap = await getCountFromServer(providersRef);
-            newCounts['all'] = allCountSnap.data().count;
-        } catch (e) {
-            newCounts['all'] = providersData.length;
-        }
-        
-        setCounts(newCounts);
-      } catch (err: any) {
-        if (err instanceof FirestorePermissionError) return;
-        setError(err.message || "Failed to load providers.");
-      } finally {
-        setLoading(false);
-      }
+        return servicesMap;
     }
 
-    fetchData();
+    let unsubscribe: () => void;
+
+    initServices().then((servicesMap) => {
+        const providersRef = collection(db, 'providers');
+        
+        // Listener for the active list
+        const listQuery = currentStatus === 'all' 
+            ? query(providersRef, orderBy('createdAt', 'desc'))
+            : query(providersRef, where('status', '==', currentStatus), orderBy('createdAt', 'desc'));
+
+        const unsubList = onSnapshot(listQuery, (snap) => {
+            const providersData = snap.docs.map(doc => {
+                const data = doc.data();
+                let categoryName = servicesMap.get(data.serviceId);
+                if (!categoryName) {
+                    const staticCat = CATEGORIES.find(c => c.id === data.serviceId || c.slug === data.serviceId);
+                    categoryName = staticCat?.name || data.category || 'Artisan';
+                }
+
+                return {
+                    id: doc.id,
+                    ...data,
+                    category: categoryName,
+                    createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.createdAt,
+                    approvedAt: data.approvedAt?.toDate?.() ? data.approvedAt.toDate().toISOString() : data.approvedAt,
+                } as Provider;
+            });
+            setProviders(providersData);
+            setLoading(false);
+        }, (err) => {
+            setError("Failed to sync directory updates.");
+            setLoading(false);
+        });
+
+        // Listener for counts (simplified for prototype)
+        const unsubCounts = onSnapshot(providersRef, (snap) => {
+            const newCounts: Record<string, number> = {
+                all: snap.size,
+                pending: 0,
+                approved: 0,
+                rejected: 0,
+                suspended: 0
+            };
+            snap.forEach(doc => {
+                const s = doc.data().status;
+                if (s && s in newCounts) newCounts[s]++;
+            });
+            setCounts(newCounts);
+        });
+
+        unsubscribe = () => {
+            unsubList();
+            unsubCounts();
+        };
+    });
+
+    return () => unsubscribe?.();
   }, [currentStatus]);
 
   return (
@@ -146,7 +107,7 @@ function ProvidersPage() {
       {error && (
         <Alert variant="destructive" className="rounded-2xl">
           <AlertCircle className="h-5 w-5" />
-          <AlertTitle>Access Error</AlertTitle>
+          <AlertTitle>Connection Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -157,19 +118,27 @@ function ProvidersPage() {
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading directory...</p>
+            <p className="text-muted-foreground font-medium">Syncing directory...</p>
           </div>
         </div>
-      ) : !error ? (
+      ) : providers.length > 0 ? (
         <ProvidersTable providers={providers} />
-      ) : null}
+      ) : (
+        <div className="py-24 text-center border-2 border-dashed rounded-[40px] bg-muted/5">
+            <div className="bg-muted/20 p-6 rounded-full w-fit mx-auto mb-4">
+                <Inbox className="h-10 w-10 text-muted-foreground/40" />
+            </div>
+            <h2 className="text-xl font-bold">No providers found</h2>
+            <p className="text-muted-foreground mt-1">There are no artisans with the status "{currentStatus}".</p>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function ProvidersPageWithSuspense() {
     return (
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
             <ProvidersPage />
         </Suspense>
     );

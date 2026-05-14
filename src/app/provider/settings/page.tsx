@@ -67,7 +67,7 @@ export default function ProviderSettingsPage() {
                     toast({ title: "Settings Saved", description: "Your preferences have been updated." });
                     router.refresh();
                 } else {
-                    throw new Error(res.error);
+                    throw new Error(res.error || 'Update failed');
                 }
             } catch (e: any) {
                 toast({ title: "Update Failed", description: e.message, variant: "destructive" });
@@ -79,11 +79,11 @@ export default function ProviderSettingsPage() {
         e.preventDefault();
         if (!user) return;
         if (pinForm.newPin !== pinForm.confirmPin) {
-            toast({ title: "PIN Mismatch", description: "Your new PIN and confirmation do not match.", variant: "destructive" });
+            toast({ title: "PIN Mismatch", description: "PINs do not match.", variant: "destructive" });
             return;
         }
         if (pinForm.newPin.length !== 6) {
-            toast({ title: "Invalid PIN", description: "The new PIN must be exactly 6 digits.", variant: "destructive" });
+            toast({ title: "Invalid PIN", description: "PIN must be 6 digits.", variant: "destructive" });
             return;
         }
 
@@ -92,10 +92,10 @@ export default function ProviderSettingsPage() {
                 const idToken = await user.getIdToken();
                 const res = await changeProviderPin(idToken, pinForm.oldPin, pinForm.newPin);
                 if (res.success) {
-                    toast({ title: "PIN Changed Successfully", description: "Use your new PIN for your next login." });
+                    toast({ title: "PIN Changed", description: "Successfully updated." });
                     setPinForm({ oldPin: '', newPin: '', confirmPin: '' });
                 } else {
-                    throw new Error(res.error);
+                    throw new Error(res.error || 'Update failed');
                 }
             } catch (e: any) {
                 toast({ title: "PIN Change Failed", description: e.message, variant: "destructive" });
@@ -131,14 +131,16 @@ export default function ProviderSettingsPage() {
             </div>
 
             <Tabs defaultValue="privacy" className="space-y-8">
-                <TabsList className="bg-muted/50 p-1 rounded-2xl border h-14">
-                    <TabsTrigger value="privacy" className="rounded-xl px-8 font-bold text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                        <Smartphone className="mr-2 h-4 w-4" /> Privacy & Reach
-                    </TabsTrigger>
-                    <TabsTrigger value="security" className="rounded-xl px-8 font-bold text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                        <Lock className="mr-2 h-4 w-4" /> Security
-                    </TabsTrigger>
-                </TabsList>
+                <div className="overflow-x-auto pb-2">
+                    <TabsList className="bg-muted/50 p-1 rounded-2xl border h-14 w-fit min-w-full md:min-w-0">
+                        <TabsTrigger value="privacy" className="rounded-xl px-8 font-bold text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                            <Smartphone className="mr-2 h-4 w-4" /> Privacy & Reach
+                        </TabsTrigger>
+                        <TabsTrigger value="security" className="rounded-xl px-8 font-bold text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                            <Lock className="mr-2 h-4 w-4" /> Security
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
 
                 <TabsContent value="privacy">
                     <div className="grid gap-8 lg:grid-cols-3">
@@ -146,7 +148,7 @@ export default function ProviderSettingsPage() {
                             <Card className="border-none shadow-sm rounded-[32px] overflow-hidden">
                                 <CardHeader className="p-8 border-b bg-muted/5">
                                     <div className="flex items-center gap-4">
-                                        <div className="bg-primary/10 p-3 rounded-2xl">
+                                        <div className="bg-primary/10 p-3 rounded-2xl shrink-0">
                                             <Bell className="h-6 w-6 text-primary" />
                                         </div>
                                         <div>
@@ -159,12 +161,12 @@ export default function ProviderSettingsPage() {
                                     <div className="flex items-center justify-between p-6 bg-muted/30 rounded-2xl border">
                                         <div className="space-y-1">
                                             <Label htmlFor="whatsappOnly" className="text-lg font-bold">WhatsApp Only</Label>
-                                            <p className="text-sm text-muted-foreground">Hide your phone number and only allow WhatsApp chats.</p>
+                                            <p className="text-sm text-muted-foreground">Hide phone and only allow WhatsApp chats.</p>
                                         </div>
                                         <Switch 
                                             id="whatsappOnly" 
                                             checked={settings.whatsappOnly}
-                                            onCheckedChange={(checked) => setSettings(s => ({ ...settings, whatsappOnly: checked }))}
+                                            onCheckedChange={(checked) => setSettings(s => ({ ...s, whatsappOnly: checked }))}
                                         />
                                     </div>
 
@@ -176,7 +178,7 @@ export default function ProviderSettingsPage() {
                                         <Switch 
                                             id="notifyReview" 
                                             checked={settings.notifyOnReview}
-                                            onCheckedChange={(checked) => setSettings(s => ({ ...settings, notifyOnReview: checked }))}
+                                            onCheckedChange={(checked) => setSettings(s => ({ ...s, notifyOnReview: checked }))}
                                         />
                                     </div>
                                 </CardContent>
@@ -188,24 +190,6 @@ export default function ProviderSettingsPage() {
                                 </CardFooter>
                             </Card>
                         </div>
-
-                        <div className="space-y-6">
-                            <Card className="border-none shadow-sm rounded-[32px] bg-secondary/10 overflow-hidden">
-                                <div className="h-1 bg-secondary w-full" />
-                                <CardHeader className="p-8">
-                                    <div className="bg-white p-3 rounded-2xl w-fit mb-4 shadow-sm">
-                                        <ShieldCheck className="h-6 w-6 text-secondary" />
-                                    </div>
-                                    <CardTitle className="text-xl font-bold font-headline">Privacy Info</CardTitle>
-                                    <CardDescription>Your visibility on GetFixam.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="px-8 pb-8">
-                                    <p className="text-sm text-muted-foreground leading-relaxed font-medium">
-                                        Enabling "WhatsApp Only" is recommended if you are busy and prefer to manage requests asynchronously.
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        </div>
                     </div>
                 </TabsContent>
 
@@ -214,12 +198,12 @@ export default function ProviderSettingsPage() {
                         <Card className="border-none shadow-sm rounded-[32px] overflow-hidden">
                             <CardHeader className="p-8 border-b bg-muted/5">
                                 <div className="flex items-center gap-4">
-                                    <div className="bg-primary/10 p-3 rounded-2xl">
+                                    <div className="bg-primary/10 p-3 rounded-2xl shrink-0">
                                         <Key className="h-6 w-6 text-primary" />
                                     </div>
                                     <div>
                                         <CardTitle className="text-2xl font-black font-headline">Security PIN</CardTitle>
-                                        <CardDescription>Update the 6-digit PIN used to log in to your dashboard.</CardDescription>
+                                        <CardDescription>Update the 6-digit PIN used to log in.</CardDescription>
                                     </div>
                                 </div>
                             </CardHeader>
@@ -235,7 +219,7 @@ export default function ProviderSettingsPage() {
                                             value={pinForm.oldPin}
                                             onChange={(e) => setPinForm(p => ({ ...p, oldPin: e.target.value }))}
                                             required
-                                            className="h-14 rounded-2xl text-lg tracking-widest"
+                                            className="h-14 rounded-2xl text-lg tracking-widest text-center"
                                         />
                                     </div>
                                     <div className="grid gap-6 md:grid-cols-2">
@@ -249,11 +233,11 @@ export default function ProviderSettingsPage() {
                                                 value={pinForm.newPin}
                                                 onChange={(e) => setPinForm(p => ({ ...p, newPin: e.target.value }))}
                                                 required
-                                                className="h-14 rounded-2xl text-lg tracking-widest"
+                                                className="h-14 rounded-2xl text-lg tracking-widest text-center"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="confirmPin">Confirm New PIN</Label>
+                                            <Label htmlFor="confirmPin">Confirm PIN</Label>
                                             <Input 
                                                 id="confirmPin" 
                                                 type="password" 
@@ -262,7 +246,7 @@ export default function ProviderSettingsPage() {
                                                 value={pinForm.confirmPin}
                                                 onChange={(e) => setPinForm(p => ({ ...p, confirmPin: e.target.value }))}
                                                 required
-                                                className="h-14 rounded-2xl text-lg tracking-widest"
+                                                className="h-14 rounded-2xl text-lg tracking-widest text-center"
                                             />
                                         </div>
                                     </div>
