@@ -1,13 +1,20 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
+import { useParams } from 'next/navigation';
 import { Facebook, Instagram, MessageCircle } from 'lucide-react';
 
 export default function Footer() {
+  const params = useParams();
+  const city = (params.city as string) || 'berekum';
+  const cityPath = `/${city}`;
+
   return (
     <footer className="py-12 border-t bg-white text-center">
       <div className="container px-4 mx-auto">
         <div className="flex justify-center mb-8">
-            <Link href="/">
+            <Link href={cityPath}>
                 <Image src="/logo.png" alt="GetFixam Logo" width={180} height={80} />
             </Link>
         </div>
@@ -32,9 +39,9 @@ export default function Footer() {
         </div>
 
         <div className="flex justify-center gap-6 mt-4 text-xs text-muted-foreground flex-wrap font-bold">
-          <Link href="/about" className="hover:text-primary transition-colors">About</Link>
-          <Link href="/terms" className="hover:text-primary transition-colors">Terms</Link>
-          <Link href="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
+          <Link href={`${cityPath}/about`} className="hover:text-primary transition-colors">About</Link>
+          <Link href={`${cityPath}/terms`} className="hover:text-primary transition-colors">Terms</Link>
+          <Link href={`${cityPath}/privacy`} className="hover:text-primary transition-colors">Privacy</Link>
           <Link href="/admin/login" className="hover:text-primary transition-colors">Admin Access</Link>
         </div>
       </div>
