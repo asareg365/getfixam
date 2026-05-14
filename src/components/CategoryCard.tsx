@@ -20,11 +20,11 @@ const getIcon = (name: string): LucideIcon => iconMap[name] || Wrench;
 
 type CategoryCardProps = {
   category: Category;
-  city?: string;
+  city: string; // City is now required to ensure correct multi-tenant routing
   className?: string;
 };
 
-export default function CategoryCard({ category, city = 'berekum', className }: CategoryCardProps) {
+export default function CategoryCard({ category, city, className }: CategoryCardProps) {
   const Icon = getIcon(category.icon);
   const cityPath = `/${city.toLowerCase()}`;
 

@@ -44,7 +44,7 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
             <h3 className="text-xl font-bold font-headline mb-8">Popular Categories</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
               {categories.slice(0, 6).map((category) => (
-                <CategoryCard key={category.id} category={category} />
+                <CategoryCard key={category.id} category={category} city={city} />
               ))}
             </div>
             <Button asChild variant="outline" className="mt-8 rounded-xl font-bold">
@@ -102,7 +102,7 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
               {matchedCategories.map((category) => (
-                <CategoryCard key={category.id} category={category} />
+                <CategoryCard key={category.id} category={category} city={city} />
               ))}
             </div>
           </section>
