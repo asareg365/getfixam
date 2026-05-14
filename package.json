@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "sh -c 'if [ -f .env.local ]; then set -a; . ./.env.local; set +a; fi && next build'",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "export": "next export"
@@ -13,6 +13,7 @@
   "dependencies": {
     "@genkit-ai/google-genai": "^1.17.0",
     "@hookform/resolvers": "^5.2.2",
+    "@opentelemetry/exporter-jaeger": "^2.7.1",
     "@radix-ui/react-accordion": "^1.2.1",
     "@radix-ui/react-alert-dialog": "^1.1.2",
     "@radix-ui/react-avatar": "^1.1.1",
