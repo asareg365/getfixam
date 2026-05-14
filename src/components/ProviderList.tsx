@@ -6,6 +6,7 @@ import ProviderCard from '@/components/ProviderCard';
 import FilterBar from '@/components/FilterBar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { Inbox } from 'lucide-react';
 
 type ProviderListProps = {
@@ -19,6 +20,10 @@ type ProviderListProps = {
  * Uses pre-fetched server data for initial render and handles client-side filtering.
  */
 export default function ProviderList({ initialProviders, zones }: ProviderListProps) {
+  const params = useParams();
+  const city = (params.city as string) || 'berekum';
+  const cityPath = `/${city}`;
+
   const [filteredProviders, setFilteredProviders] = useState<Provider[]>(initialProviders);
 
   // Sync state if initialProviders changes (e.g. navigation between categories)
@@ -54,17 +59,17 @@ export default function ProviderList({ initialProviders, zones }: ProviderListPr
           ))}
         </div>
       ) : (
-        <div className="text-center py-24 border-2 border-dashed rounded-[32px] bg-muted/5">
+        <div className="text-center py-24 border-2 border-dashed rounded-[40px] bg-muted/5">
           <div className="bg-muted/20 p-6 rounded-full w-fit mx-auto mb-4">
             <Inbox className="h-12 w-12 text-muted-foreground/40" />
           </div>
           <h3 className="text-2xl font-bold font-headline">No Artisans Found</h3>
-          <p className="text-muted-foreground mt-2 max-w-xs mx-auto">
+          <p className="text-muted-foreground mt-2 max-w-xs mx-auto font-medium">
             We couldn't find any professionals matching your filters in this category.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Button asChild className="rounded-xl px-8 h-12 font-bold shadow-lg shadow-primary/20">
-              <Link href="/add-provider">List Your Business</Link>
+              <Link href={`${cityPath}/add-provider`}>List Your Business</Link>
             </Button>
             <Button variant="outline" onClick={() => handleFilterChange({ zone: undefined, verified: false })} className="rounded-xl px-8 h-12 font-bold border-2">
               Clear Filters

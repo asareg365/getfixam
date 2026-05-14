@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { db } from '@/lib/firebase-client';
+import { useParams } from 'next/navigation';
+import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import { Loader2, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { getCityConfig } from '@/lib/constants';
 
 type AddProviderFormProps = {
     categories: { id: string; name: string }[];
@@ -21,6 +23,11 @@ type AddProviderFormProps = {
 
 export default function AddProviderForm({ categories, zones }: AddProviderFormProps) {
   const { toast } = useToast();
+  const params = useParams();
+  const cityId = (params.city as string) || 'berekum';
+  const cityConfig = getCityConfig(cityId);
+  const cityPath = `/${cityId}`;
+
   const formRef = useRef<HTMLFormElement>(null);
   const [isPending, setIsPending] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -68,8 +75,8 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
         whatsapp: data.whatsapp,
         digitalAddress: data.digitalAddress || '',
         location: {
-          region: 'Bono Region',
-          city: 'Berekum',
+          region: cityConfig.region,
+          city: cityConfig.name,
           zone: data.zone,
         },
         status: 'pending',
@@ -119,9 +126,9 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
                 <CheckCircle2 className="h-10 w-10 text-primary" />
             </div>
             <h3 className="text-2xl font-bold text-primary font-headline">Submission Received!</h3>
-            <p className="mt-4 text-muted-foreground text-lg">Your business has been submitted for review! Our team will contact you shortly.</p>
-            <Button asChild className="mt-10 rounded-2xl px-8" variant="outline">
-                <Link href="/">Back to Home</Link>
+            <p className="mt-4 text-muted-foreground text-lg font-medium">Your business has been submitted for review! Our team will contact you shortly.</p>
+            <Button asChild className="mt-10 rounded-2xl px-10 h-14 font-bold" variant="default">
+                <Link href={cityPath}>Back to Home</Link>
             </Button>
         </div>
       );
@@ -131,14 +138,14 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-8">
         <div className="space-y-3">
             <Label htmlFor="name" className="text-base font-bold">Business Name</Label>
-            <Input id="name" name="name" placeholder="e.g., Kwame Electric Works" required className="h-12 rounded-xl border-muted-foreground/20" />
+            <Input id="name" name="name" placeholder="e.g., Kwame Electric Works" required className="h-14 rounded-xl border-muted-foreground/20 text-lg" />
             {errors.name && <p className="text-sm text-destructive font-medium">{errors.name}</p>}
         </div>
 
         <div className="space-y-3">
             <Label htmlFor="category" className="text-base font-bold">Category</Label>
             <Select name="serviceId" required>
-            <SelectTrigger id="category" className="h-12 rounded-xl border-muted-foreground/20">
+            <SelectTrigger id="category" className="h-14 rounded-xl border-muted-foreground/20 text-lg">
                 <SelectValue placeholder="Select a service category" />
             </SelectTrigger>
             <SelectContent>
@@ -152,12 +159,12 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-3">
             <Label htmlFor="phone" className="text-base font-bold">Phone Number</Label>
-            <Input id="phone" name="phone" type="tel" placeholder="0241234567" required className="h-12 rounded-xl border-muted-foreground/20" />
+            <Input id="phone" name="phone" type="tel" placeholder="0241234567" required className="h-14 rounded-xl border-muted-foreground/20 text-lg" />
                 {errors.phone && <p className="text-sm text-destructive font-medium">{errors.phone}</p>}
             </div>
             <div className="space-y-3">
             <Label htmlFor="whatsapp" className="text-base font-bold">WhatsApp Number</Label>
-            <Input id="whatsapp" name="whatsapp" type="tel" placeholder="0551234567" required className="h-12 rounded-xl border-muted-foreground/20" />
+            <Input id="whatsapp" name="whatsapp" type="tel" placeholder="0551234567" required className="h-14 rounded-xl border-muted-foreground/20 text-lg" />
             {errors.whatsapp && <p className="text-sm text-destructive font-medium">{errors.whatsapp}</p>}
             </div>
         </div>
@@ -165,7 +172,7 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
         <div className="space-y-3">
             <Label htmlFor="zone" className="text-base font-bold">Area / Neighborhood</Label>
             <Select name="zone" required>
-            <SelectTrigger id="zone" className="h-12 rounded-xl border-muted-foreground/20">
+            <SelectTrigger id="zone" className="h-14 rounded-xl border-muted-foreground/20 text-lg">
                 <SelectValue placeholder="Select your primary work area" />
             </SelectTrigger>
             <SelectContent>
@@ -178,11 +185,11 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
 
         <div className="space-y-3">
             <Label htmlFor="digitalAddress" className="text-base font-bold">Digital Address (Optional)</Label>
-            <Input id="digitalAddress" name="digitalAddress" placeholder="e.g., GA-123-4567" className="h-12 rounded-xl border-muted-foreground/20" />
+            <Input id="digitalAddress" name="digitalAddress" placeholder="e.g., GA-123-4567" className="h-14 rounded-xl border-muted-foreground/20 text-lg" />
         </div>
 
-        <Button type="submit" className="w-full h-14 rounded-2xl text-lg font-bold shadow-lg shadow-primary/20" disabled={isPending}>
-            {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+        <Button type="submit" className="w-full h-16 rounded-2xl text-xl font-bold shadow-xl shadow-primary/20" disabled={isPending}>
+            {isPending ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : null}
             Submit for Review
         </Button>
     </form>

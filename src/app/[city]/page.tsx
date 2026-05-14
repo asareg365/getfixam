@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { ShieldCheck, Smartphone, ArrowRight, CheckCircle2, Facebook, Instagram, MessageCircle, Star } from 'lucide-react';
+import { ShieldCheck, Smartphone, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CATEGORIES, getCityConfig } from '@/lib/constants';
 import CategoryCard from '@/components/CategoryCard';
@@ -67,7 +67,7 @@ export default async function CityLandingPage({ params }: PageProps) {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
               {CATEGORIES.slice(0, 12).map((category) => (
-                <CategoryCard key={category.id} category={category} />
+                <CategoryCard key={category.id} category={category} city={config.id} />
               ))}
             </div>
             <div className="text-center mt-12">
