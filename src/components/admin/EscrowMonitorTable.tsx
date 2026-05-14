@@ -76,7 +76,6 @@ export function EscrowMonitorTable() {
             const token = getAuthToken();
             if (!token) throw new Error('Authentication token not found.');
 
-            // This re-uses the existing payout release endpoint
             const response = await fetch('/api/payouts/release', {
                 method: 'POST',
                 headers: {
@@ -92,7 +91,7 @@ export function EscrowMonitorTable() {
             }
 
             alert('Funds released successfully!');
-            fetchEngagements(); // Refresh the data
+            fetchEngagements();
         } catch (err: any) {
             alert(`Error: ${err.message}`);
         } finally {
@@ -108,78 +107,84 @@ export function EscrowMonitorTable() {
             return <p className="text-red-500 text-center py-4">Error: {error}</p>;
         }
         if (engagements.length === 0) {
-            return <p className="text-center text-muted-foreground py-4">No engagements found with status: {status}</p>;
+            return <p className="text-center text-muted-foreground py-12 italic">No engagements found for "{status}"</p>;
         }
 
         return (
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Job ID</TableHead>
-                        <TableHead>Provider</TableHead>
-                        <TableHead>Amount</TableHead>
-                        {status === 'awaiting_release' && <TableHead>Days Locked</TableHead>}
-                        <TableHead>Status</TableHead>
-                        <TableHead>Action</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {engagements.map((engagement) => (
-                        <TableRow key={engagement.id}>
-                            <TableCell className="font-mono">{engagement.id.substring(0, 10)}...</TableCell>
-                            <TableCell>{engagement.providerName || 'N/A'}</TableCell>
-                            <TableCell>{`GHS ${engagement.jobAmount.toFixed(2)}`}</TableCell>
-                            {status === 'awaiting_release' && <TableCell>{engagement.daysLocked ?? 'N/A'} days</TableCell>}
-                            <TableCell>
-                                <Badge className={`${statusColors[engagement.escrowStatus]}`}>{engagement.escrowStatus}</Badge>
-                            </TableCell>
-                            <TableCell>
-                                {status === 'awaiting_release' ? (
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="destructive" size="sm" disabled={releasing === engagement.id}>
-                                                {releasing === engagement.id ? 'Releasing...' : 'Release Funds'}
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    This will release the funds from escrow to the provider. This action cannot be undone.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleRelease(engagement.id)}>Continue</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                ) : (
-                                    <Button variant="outline" size="sm">View</Button>
-                                )}
-                            </TableCell>
+            <div className="overflow-x-auto rounded-xl border mt-4">
+                <Table>
+                    <TableHeader className="bg-muted/50">
+                        <TableRow>
+                            <TableHead className="w-[100px]">Job ID</TableHead>
+                            <TableHead>Provider</TableHead>
+                            <TableHead>Amount</TableHead>
+                            {status === 'awaiting_release' && <TableHead>Days Locked</TableHead>}
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Action</TableHead>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                    </TableHeader>
+                    <TableBody>
+                        {engagements.map((engagement) => (
+                            <TableRow key={engagement.id} className="hover:bg-muted/30">
+                                <TableCell className="font-mono text-xs">{engagement.id.substring(0, 8)}</TableCell>
+                                <TableCell className="font-medium">{engagement.providerName || 'N/A'}</TableCell>
+                                <TableCell className="font-bold">{`GHS ${engagement.jobAmount.toFixed(2)}`}</TableCell>
+                                {status === 'awaiting_release' && <TableCell className="text-orange-600 font-bold">{engagement.daysLocked ?? 'N/A'} d</TableCell>}
+                                <TableCell>
+                                    <Badge className={`${statusColors[engagement.escrowStatus]} text-white text-[10px] uppercase font-black`}>
+                                        {engagement.escrowStatus}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    {status === 'awaiting_release' ? (
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="destructive" size="sm" className="h-8 rounded-lg" disabled={releasing === engagement.id}>
+                                                    {releasing === engagement.id ? '...' : 'Release'}
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent className="rounded-[24px]">
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Release Funds Immediately?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This will bypass any remaining lock period and pay <b>{engagement.providerName}</b> now.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleRelease(engagement.id)} className="rounded-xl bg-destructive hover:bg-destructive/90">Confirm Release</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    ) : (
+                                        <Button variant="ghost" size="sm" className="h-8 rounded-lg">View</Button>
+                                    )}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
         );
     }
 
     return (
-        <Card className="col-span-3">
-            <CardHeader>
-                <CardTitle>Escrow Monitor</CardTitle>
+        <Card className="border-none shadow-sm rounded-[32px] overflow-hidden">
+            <CardHeader className="p-8 pb-4">
+                <CardTitle className="font-headline text-2xl">Escrow Monitor</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-8 pb-8">
                 <Tabs defaultValue="funded" onValueChange={(value) => setStatus(value as EscrowStatus)}>
-                    <TabsList className="grid w-full grid-cols-5">
-                        <TabsTrigger value="funded">Funded</TabsTrigger>
-                        <TabsTrigger value="locked">Locked</TabsTrigger>
-                        <TabsTrigger value="awaiting_release">Awaiting Release</TabsTrigger>
-                        <TabsTrigger value="released">Released</TabsTrigger>
-                        <TabsTrigger value="disputed">Disputed</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value={status} className="mt-4">
+                    <div className="overflow-x-auto">
+                        <TabsList className="flex w-fit md:grid md:w-full grid-cols-5 h-12 p-1 rounded-xl bg-muted/50 border">
+                            <TabsTrigger value="funded" className="rounded-lg px-4 text-xs font-bold">Funded</TabsTrigger>
+                            <TabsTrigger value="locked" className="rounded-lg px-4 text-xs font-bold">Locked</TabsTrigger>
+                            <TabsTrigger value="awaiting_release" className="rounded-lg px-4 text-xs font-bold">Awaiting</TabsTrigger>
+                            <TabsTrigger value="released" className="rounded-lg px-4 text-xs font-bold">Released</TabsTrigger>
+                            <TabsTrigger value="disputed" className="rounded-lg px-4 text-xs font-bold">Disputed</TabsTrigger>
+                        </TabsList>
+                    </div>
+                    <TabsContent value={status}>
                         {renderTableContent()}
                     </TabsContent>
                 </Tabs>

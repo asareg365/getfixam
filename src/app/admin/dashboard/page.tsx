@@ -7,20 +7,30 @@ import DynamicProviderMap from "@/components/admin/DynamicProviderMap";
 
 export default function AdminDashboard() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Admin Financial Dashboard</h1>
+    <div className="space-y-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-black font-headline tracking-tight text-foreground">Financial Dashboard</h1>
+          <p className="text-muted-foreground text-lg mt-1 font-medium">Monitoring platform liquidity, escrow security, and revenue streams.</p>
+        </div>
+      </div>
       
-      <h2 className="text-xl font-bold mb-4">Live Provider Map</h2>
-      <DynamicProviderMap />
+      <div className="space-y-6">
+        <h2 className="text-xl font-bold font-headline flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+            Live Network Traffic
+        </h2>
+        <DynamicProviderMap />
+      </div>
       
       <SummaryCards />
 
-      <div className="grid grid-cols-1 lg:grid-cols-7 gap-4 mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <RevenueGraph />
         <EscrowMonitorTable />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <PayoutApprovalPanel />
         <DisputeReviewPanel />
       </div>

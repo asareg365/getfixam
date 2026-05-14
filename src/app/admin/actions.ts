@@ -14,16 +14,13 @@ import { headers } from 'next/headers';
 /** ----- AUTH ACTIONS ----- */
 export async function logoutAction() {
   const cookieStore = await cookies();
-  const cookieDomain = process.env.NODE_ENV === 'production' ? '.getfixam.com' : undefined;
 
-  // Overwrite the cookie with an empty value and past expiration date
+  // Clear session cookie without restricted domain for environment compatibility
   cookieStore.delete({ 
     name: '__session',
-    domain: cookieDomain,
     path: '/',
   });
   
-  // Next.js redirects by throwing an error, which must happen OUTSIDE try/catch blocks
   redirect('/admin/login');
 }
 

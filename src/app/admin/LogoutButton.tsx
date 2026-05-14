@@ -1,12 +1,16 @@
 'use client';
 
 import { LogOut } from 'lucide-react';
-import { SidebarMenuButton } from '@/components/ui/sidebar';
 import { logoutAction } from './actions';
 import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
-export function LogoutButton() {
+interface LogoutButtonProps {
+    className?: string;
+}
+
+export function LogoutButton({ className }: LogoutButtonProps) {
   const { toast } = useToast();
 
   const handleLogout = async () => {
@@ -15,29 +19,28 @@ export function LogoutButton() {
       await auth.signOut();
       
       // 2. Clear server session via action
-      // Note: logoutAction() will handle the redirect by throwing a redirect error
       await logoutAction();
       
     } catch (error: any) {
-      // If the error is a Next.js redirect, let it bubble up
       if (error.message?.includes('NEXT_REDIRECT')) {
           throw error;
       }
       
-      // Fallback redirect if something else fails
       toast({ title: 'Signing out...', description: 'Redirecting to login.' });
       window.location.href = '/admin/login';
     }
   };
 
   return (
-    <SidebarMenuButton 
+    <button 
         onClick={handleLogout}
-        tooltip="Log Out" 
-        className="w-full h-12 rounded-xl text-destructive hover:bg-destructive/5 hover:text-destructive font-bold"
+        className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-destructive hover:bg-destructive/5 font-medium w-full",
+            className
+        )}
     >
-        <LogOut className="mr-3 h-5 w-5" />
+        <LogOut className="h-4 w-4" />
         <span>Log Out</span>
-    </SidebarMenuButton>
+    </button>
   );
 }
