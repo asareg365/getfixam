@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,7 +11,7 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -20,12 +19,17 @@ import { auth } from '@/lib/firebase';
 import { signInWithCustomToken } from 'firebase/auth';
 import Image from 'next/image';
 
-export default function ProviderLoginPage() {
+function ProviderLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
+  
   const [phone, setPhone] = useState('');
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const city = searchParams.get('city') || 'berekum';
+  const backPath = `/${city}`;
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -89,22 +93,22 @@ export default function ProviderLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-secondary/30 p-4">
-      <div className="w-full max-w-sm mb-6">
+    <div className="flex flex-col items-center justify-center w-full max-w-sm">
+      <div className="w-full mb-6">
         <Button
           variant="ghost"
           asChild
           size="sm"
           className="rounded-full text-muted-foreground hover:text-primary"
         >
-          <Link href="/">
+          <Link href={backPath}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Website
           </Link>
         </Button>
       </div>
 
-      <Card className="w-full max-w-sm shadow-2xl border-none rounded-3xl overflow-hidden">
+      <Card className="w-full shadow-2xl border-none rounded-3xl overflow-hidden">
         <div className="h-2 bg-primary w-full" />
         <CardHeader className="text-center space-y-4 pt-10">
           <div className="mx-auto w-fit">
@@ -179,7 +183,7 @@ export default function ProviderLoginPage() {
               <p className="text-sm font-medium">
                 New to the platform?{' '}
                 <Link
-                  href="/add-provider"
+                  href={`${backPath}/add-provider`}
                   className="text-primary font-black hover:underline"
                 >
                   List your business
@@ -189,6 +193,16 @@ export default function ProviderLoginPage() {
           </form>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+export default function ProviderLoginPage() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-secondary/30 p-4">
+      <Suspense fallback={<Loader2 className="h-10 w-10 animate-spin text-primary" />}>
+        <ProviderLoginForm />
+      </Suspense>
     </div>
   );
 }

@@ -42,7 +42,7 @@ export default function Footer() {
           <Link href={`${cityPath}/about`} className="hover:text-primary transition-colors">About</Link>
           <Link href={`${cityPath}/terms`} className="hover:text-primary transition-colors">Terms</Link>
           <Link href={`${cityPath}/privacy`} className="hover:text-primary transition-colors">Privacy</Link>
-          <Link href="/admin/login" className="hover:text-primary transition-colors">Admin Access</Link>
+          <Link href={`/admin/login?city=${city}`} className="hover:text-primary transition-colors">Admin Access</Link>
         </div>
       </div>
     </footer>

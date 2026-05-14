@@ -29,7 +29,7 @@ export default async function CityLandingPage({ params }: PageProps) {
             Contact Us
           </Link>
           <Button asChild className="rounded-full px-6 font-bold shadow-lg shadow-primary/20">
-            <Link href="/provider/login">
+            <Link href={`/provider/login?city=${city}`}>
               Provider Login
             </Link>
           </Button>
@@ -132,7 +132,7 @@ export default async function CityLandingPage({ params }: PageProps) {
             <Link href={`${cityPath}/about`} className="hover:text-primary transition-colors">About</Link>
             <Link href={`${cityPath}/terms`} className="hover:text-primary transition-colors">Terms</Link>
             <Link href={`${cityPath}/privacy`} className="hover:text-primary transition-colors">Privacy</Link>
-            <Link href="/admin/login" className="hover:text-primary transition-colors flex items-center">
+            <Link href={`/admin/login?city=${city}`} className="hover:text-primary transition-colors flex items-center">
               <ShieldCheck className="mr-1 h-4 w-4" />
               Admin Access
             </Link>

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Wrench, Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { auth, db } from '@/lib/firebase';
@@ -16,13 +16,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-export default function AdminLoginPage() {
+function AdminLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const city = searchParams.get('city') || 'berekum';
+  const backPath = `/${city}`;
 
   // Clear session on mount to prevent "stuck" states
   useEffect(() => {
@@ -85,7 +90,6 @@ export default function AdminLoginPage() {
       window.location.href = '/admin/dashboard';
       
     } catch (err: any) {
-      // We don't console.error common auth failures to avoid triggering dev overlays
       let message = 'Invalid email or password.';
       
       if (err.code === 'auth/api-key-not-valid' || err.code === 'auth/invalid-api-key') {
@@ -104,86 +108,93 @@ export default function AdminLoginPage() {
   }
 
   return (
+    <div className="w-full max-w-md relative z-10">
+      <div className="mb-6">
+        <Button variant="ghost" asChild size="sm" className="rounded-full">
+          <Link href={backPath}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Website
+          </Link>
+        </Button>
+      </div>
+
+      <Card className="border-none shadow-2xl rounded-3xl">
+        <CardHeader className="text-center space-y-4 pt-10">
+          <div className="mx-auto w-fit">
+              <Image src="/logo.png" alt="FixAm Logo" width={180} height={80} />
+          </div>
+          <div className="space-y-2">
+            <CardTitle className="text-3xl font-bold font-headline">Admin Access</CardTitle>
+            <CardDescription className="text-base">
+              System management portal
+            </CardDescription>
+          </div>
+        </CardHeader>
+
+        <CardContent className="px-8 pb-8">
+          <form onSubmit={handleLogin} className="space-y-6">
+            {error && (
+              <Alert variant="destructive" className="rounded-xl">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Login Failed</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading}
+                className="rounded-xl h-12"
+                placeholder="admin@fixamghana.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+              </div>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading}
+                className="rounded-xl h-12"
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-12 rounded-xl font-bold text-base shadow-lg shadow-primary/20"
+            >
+              {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : 'Secure Sign In'}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="bg-muted/30 py-6 text-center justify-center rounded-b-3xl">
+          <p className="text-xs text-muted-foreground font-medium">
+            Restricted Area. Authorized personnel only.
+          </p>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4 relative overflow-hidden font-body">
       <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-
-      <div className="w-full max-w-md relative z-10">
-        <div className="mb-6">
-          <Button variant="ghost" asChild size="sm" className="rounded-full">
-            <Link href="/">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Website
-            </Link>
-          </Button>
-        </div>
-
-        <Card className="border-none shadow-2xl rounded-3xl">
-          <CardHeader className="text-center space-y-4 pt-10">
-            <div className="mx-auto w-fit">
-                <Image src="/logo.png" alt="FixAm Logo" width={180} height={80} />
-            </div>
-            <div className="space-y-2">
-              <CardTitle className="text-3xl font-bold font-headline">Admin Access</CardTitle>
-              <CardDescription className="text-base">
-                System management portal
-              </CardDescription>
-            </div>
-          </CardHeader>
-
-          <CardContent className="px-8 pb-8">
-            <form onSubmit={handleLogin} className="space-y-6">
-              {error && (
-                <Alert variant="destructive" className="rounded-xl">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Login Failed</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={loading}
-                  className="rounded-xl h-12"
-                  placeholder="admin@fixamghana.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={loading}
-                  className="rounded-xl h-12"
-                />
-              </div>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full h-12 rounded-xl font-bold text-base shadow-lg shadow-primary/20"
-              >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : 'Secure Sign In'}
-              </Button>
-            </form>
-          </CardContent>
-          <CardFooter className="bg-muted/30 py-6 text-center justify-center rounded-b-3xl">
-            <p className="text-xs text-muted-foreground font-medium">
-              Restricted Area. Authorized personnel only.
-            </p>
-          </CardFooter>
-        </Card>
-      </div>
+      <Suspense fallback={<Loader2 className="h-10 w-10 animate-spin text-primary" />}>
+        <AdminLoginForm />
+      </Suspense>
     </div>
   );
 }
