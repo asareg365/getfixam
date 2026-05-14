@@ -61,7 +61,8 @@ service cloud.firestore {
 
       allow read: if true;
 
-      allow create: if isAdmin();
+      // Allow public creation to support lead tracking from the Contact Button
+      allow create: if true;
 
       allow update: if isAdmin();
 
