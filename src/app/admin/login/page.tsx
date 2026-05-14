@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -28,7 +27,11 @@ export default function AdminLoginPage() {
   // Clear session on mount to prevent "stuck" states
   useEffect(() => {
     const clearSession = async () => {
-      await fetch('/api/session', { method: 'DELETE' });
+      try {
+        await fetch('/api/session', { method: 'DELETE' });
+      } catch (e) {
+        // Ignore silent cleanup errors
+      }
     };
     clearSession();
   }, []);
@@ -40,7 +43,7 @@ export default function AdminLoginPage() {
 
     // Explicit check for API Key before attempting SDK call
     if (!auth?.app?.options?.apiKey || auth.app.options.apiKey === 'your_api_key_here') {
-      setError("Firebase API Key is missing or invalid. Please configure your .env file correctly.");
+      setError("Firebase API Key is missing. Please check your system configuration.");
       setLoading(false);
       return;
     }
@@ -66,25 +69,31 @@ export default function AdminLoginPage() {
       // 3. Establish secure server-side session
       const idToken = await user.getIdToken(true);
       
-      await fetch("/api/admin/login", {
+      const res = await fetch("/api/admin/login", {
         method: "POST",
         body: JSON.stringify({ idToken }),
         headers: { "Content-Type": "application/json" },
       });
 
-      toast({ title: 'Success', description: 'Redirecting to your dashboard...' });
+      if (!res.ok) {
+        throw new Error('Failed to establish a secure session.');
+      }
+
+      toast({ title: 'Sign-in Successful', description: 'Redirecting to your dashboard...' });
       
       // 4. Force a hard redirect to ensure middleware sees the new cookie
       window.location.href = '/admin/dashboard';
       
     } catch (err: any) {
-      console.error('Login error:', err);
-      let message = 'Invalid credentials or unauthorized access.';
+      // We don't console.error common auth failures to avoid triggering dev overlays
+      let message = 'Invalid email or password.';
       
       if (err.code === 'auth/api-key-not-valid' || err.code === 'auth/invalid-api-key') {
-        message = 'Firebase API Key is rejected. Please verify the keys in your Firebase Console and .env file.';
+        message = 'Firebase configuration error. Contact technical support.';
       } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        message = 'Invalid email or password.';
+        message = 'The email or password you entered is incorrect.';
+      } else if (err.code === 'auth/too-many-requests') {
+        message = 'Too many failed attempts. Please try again later.';
       } else {
         message = err.message || message;
       }
@@ -127,7 +136,7 @@ export default function AdminLoginPage() {
               {error && (
                 <Alert variant="destructive" className="rounded-xl">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Authentication Error</AlertTitle>
+                  <AlertTitle>Login Failed</AlertTitle>
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
@@ -140,6 +149,7 @@ export default function AdminLoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={loading}
                   className="rounded-xl h-12"
                   placeholder="admin@fixamghana.com"
                 />
@@ -154,6 +164,7 @@ export default function AdminLoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={loading}
                   className="rounded-xl h-12"
                 />
               </div>
