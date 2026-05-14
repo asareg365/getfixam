@@ -1,7 +1,7 @@
 import { adminDb } from './firebase-admin';
 import type { Category, Provider } from './types';
 import { getCategories } from './data';
-import { CATEGORIES } from './constants';
+import { CATEGORIES, getCityConfig } from './constants';
 
 /**
  * Helper to pick a relevant image based on the category name.
@@ -43,19 +43,19 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
 
 /**
  * Fetches providers from Firestore using the Admin SDK.
- * Handles category filtering and name mapping robustly.
+ * Handles city and category filtering robustly.
  */
-export async function getProviders(categorySlug?: string): Promise<Provider[]> {
+export async function getProviders(cityId?: string, categorySlug?: string): Promise<Provider[]> {
     if (!adminDb) {
         return [];
     }
 
     try {
+        const cityConfig = getCityConfig(cityId);
         const categories = await getCategories();
         let targetServiceId: string | null = null;
         const servicesMap = new Map<string, string>();
 
-        // Build a map of all known category IDs/names for lookup
         categories.forEach(cat => {
             servicesMap.set(cat.id, cat.name);
             if (categorySlug && cat.slug === categorySlug) {
@@ -63,9 +63,15 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
             }
         });
 
+        // Base filter: only show approved/pending
         let providersQuery = adminDb.collection('providers').where('status', 'in', ['approved', 'pending']);
         
-        // If specific category requested, filter by its canonical ID
+        // Filter by city name (e.g. 'Accra' or 'Berekum')
+        if (cityConfig) {
+            providersQuery = providersQuery.where('location.city', '==', cityConfig.name);
+        }
+
+        // Filter by specific category
         if (categorySlug && categorySlug !== 'all' && targetServiceId) {
             providersQuery = providersQuery.where('serviceId', '==', targetServiceId);
         }
@@ -74,8 +80,6 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
         
         const providers = snap.docs.map((doc: any) => {
             const data = doc.data();
-            
-            // Map the serviceId to a readable name using our merged map
             let categoryName = servicesMap.get(data.serviceId) || data.category || 'Artisan';
 
             return {
@@ -87,7 +91,7 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
                 phone: data.phone || '',
                 whatsapp: data.whatsapp || '',
                 digitalAddress: data.digitalAddress || '',
-                location: data.location || { region: 'Bono Region', city: 'Berekum', zone: 'Unknown' },
+                location: data.location || { region: cityConfig.region, city: cityConfig.name, zone: 'Unknown' },
                 status: data.status || 'pending',
                 verified: !!data.verified,
                 isFeatured: !!data.isFeatured,
@@ -101,7 +105,6 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
             } as Provider;
         });
 
-        // Sort by featured first, then by rating
         return providers.sort((a: Provider, b: Provider) => {
             if (a.isFeatured !== b.isFeatured) return a.isFeatured ? -1 : 1;
             return b.rating - a.rating;
@@ -114,7 +117,7 @@ export async function getProviders(categorySlug?: string): Promise<Provider[]> {
 }
 
 /**
- * Fetches a single provider by ID using the Admin SDK.
+ * Fetches a single provider by ID.
  */
 export async function getProviderById(id: string): Promise<Provider | undefined> {
     if (!adminDb) return undefined;
@@ -145,7 +148,7 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
             phone: data.phone || '',
             whatsapp: data.whatsapp || '',
             digitalAddress: data.digitalAddress || '',
-            location: data.location || { region: 'Bono Region', city: 'Berekum', zone: 'Unknown' },
+            location: data.location || { region: 'Ghana', city: 'Unknown', zone: 'Unknown' },
             status: data.status || 'pending',
             verified: !!data.verified,
             isFeatured: !!data.isFeatured,

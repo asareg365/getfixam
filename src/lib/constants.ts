@@ -2,7 +2,6 @@ import type { Category } from './types';
 
 /**
  * Static Artisan Categories
- * Expanded and sorted alphabetically as requested.
  */
 export const CATEGORIES: Category[] = [
   { id: 'architectures', name: "Architectures'", slug: 'architectures', icon: 'Hammer' },
@@ -26,49 +25,50 @@ export const CATEGORIES: Category[] = [
   { id: 'tv-repair', name: 'TV Repairers', slug: 'tv-repair', icon: 'Tv2' },
 ];
 
+export type CityConfig = {
+    id: string;
+    name: string;
+    region: string;
+    neighborhoods: string[];
+};
+
 /**
- * Neighborhoods/Zones in Berekum.
- * Sorted alphabetically as requested.
+ * City Specific Data
  */
-export const NEIGHBORHOODS = [
-  "Adom",
-  "Adom Newtown",
-  "Ahenbronoso",
-  "Amomaso",
-  "Anyimon",
-  "Ayakorase",
-  "Benkasa",
-  "Berekum Central",
-  "Biadan",
-  "Brenyekwa",
-  "Fetentaa",
-  "Jamdede",
-  "Jinijini",
-  "Kato",
-  "Koraso",
-  "Kyeritwedie",
-  "Magazine",
-  "Mpatapo",
-  "Mpatasie",
-  "Nanasuano",
-  "New Biadan",
-  "Nsapor",
-  "Nyamebekyere",
-  "Nyametease",
-  "Senase",
-  "Sofokyere",
-  "World of Friends",
-  "Zongo"
-];
+export const CITIES: Record<string, CityConfig> = {
+    berekum: {
+        id: "berekum",
+        name: "Berekum",
+        region: "Bono Region",
+        neighborhoods: [
+            "Adom", "Adom Newtown", "Ahenbronoso", "Amomaso", "Anyimon", "Ayakorase", "Benkasa", "Berekum Central", "Biadan", "Brenyekwa", "Fetentaa", "Jamdede", "Jinijini", "Kato", "Koraso", "Kyeritwedie", "Magazine", "Mpatapo", "Mpatasie", "Nanasuano", "New Biadan", "Nsapor", "Nyamebekyere", "Nyametease", "Senase", "Sofokyere", "World of Friends", "Zongo"
+        ]
+    },
+    accra: {
+        id: "accra",
+        name: "Accra",
+        region: "Greater Accra",
+        neighborhoods: [
+            "Abeka", "Abelemkpe", "Ablekuma", "Abossey Okai", "Accra Central", "Accra New Town", "Achimota", "Adabraka", "Adenta", "Airport Residential", "Akweteyman", "Alajo", "Amanfro", "Ashaley Botwe", "Ashiaman", "Asylum Down", "Atico", "Awoshie", "Baatsona", "Bubuashie", "Cantonments", "Chorkor", "Circle", "Dansoman", "Darkuman", "Dzorwulu", "East Legon", "East Legon Hills", "Gbawe", "Haatso", "James Town", "Kaneshie", "Kanda", "Kokomlemle", "Korle Bu", "Korle Gonno", "Kwame Nkrumah Interchange", "Kwabenya", "Labadi", "Labone", "Lapaz", "Lartebiokorshie", "Legon", "Madina", "Makola", "Mallam", "Mamobi", "Mamprobi", "Mataheko", "Nii Boi Town", "Nima", "North Ridge", "Nungua", "Odorkor", "Osu", "Oyarifa", "Pokuase", "Ridge", "Sakumono", "Santa Maria", "Sowutuom", "Spintex", "Taifa", "Tantra Hill", "Tesano", "Teshie", "Upper Weija", "West Legon"
+        ]
+    }
+};
+
+export const NEIGHBORHOODS = CITIES.berekum.neighborhoods; // Backward compatibility
 
 export async function getRegions(): Promise<string[]> {
-  return ["Bono Region"];
+  return ["Bono Region", "Greater Accra"];
 }
 
-export async function getNeighborhoods(): Promise<string[]> {
-  return NEIGHBORHOODS;
+export function getCityConfig(cityId: string = 'berekum'): CityConfig {
+    const id = cityId.toLowerCase();
+    return CITIES[id] || CITIES.berekum;
 }
 
-export async function getZones(): Promise<string[]> {
-  return NEIGHBORHOODS;
+export async function getNeighborhoods(cityId?: string): Promise<string[]> {
+    return getCityConfig(cityId).neighborhoods;
+}
+
+export async function getZones(cityId?: string): Promise<string[]> {
+    return getCityConfig(cityId).neighborhoods;
 }

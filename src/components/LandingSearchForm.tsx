@@ -1,18 +1,20 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Search, MapPin, X, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CATEGORIES, NEIGHBORHOODS } from '@/lib/constants';
-import { cn } from '@/lib/utils';
+import { CATEGORIES, CITIES } from '@/lib/constants';
 
 /**
- * Intelligent Hero Search Form with Autocomplete.
- * Provides real-time suggestions for service categories and neighborhoods.
+ * Intelligent Hero Search Form with City-Aware Autocomplete.
  */
 export default function LandingSearchForm() {
   const router = useRouter();
+  const params = useParams();
+  const cityId = (params.city as string) || 'berekum';
+  const cityPath = `/${cityId}`;
+  
   const [query, setQuery] = useState('');
   const [location, setLocation] = useState('');
   const [showQuerySuggestions, setShowQuerySuggestions] = useState(false);
@@ -21,7 +23,9 @@ export default function LandingSearchForm() {
   const queryRef = useRef<HTMLDivElement>(null);
   const locationRef = useRef<HTMLDivElement>(null);
 
-  // Close suggestions when clicking outside the component
+  const cityConfig = CITIES[cityId] || CITIES.berekum;
+  const cityNeighborhoods = cityConfig.neighborhoods;
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (queryRef.current && !queryRef.current.contains(event.target as Node)) {
@@ -35,41 +39,27 @@ export default function LandingSearchForm() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filter and sort categories based on input
   const filteredCategories = CATEGORIES.filter(cat => 
     query && cat.name.toLowerCase().includes(query.toLowerCase())
-  ).sort((a, b) => {
-    const aStarts = a.name.toLowerCase().startsWith(query.toLowerCase());
-    const bStarts = b.name.toLowerCase().startsWith(query.toLowerCase());
-    if (aStarts && !bStarts) return -1;
-    if (!aStarts && bStarts) return 1;
-    return a.name.localeCompare(b.name);
-  }).slice(0, 6);
+  ).slice(0, 6);
 
-  // Filter and sort areas based on input
-  const filteredAreas = NEIGHBORHOODS.filter(area => 
+  const filteredAreas = cityNeighborhoods.filter(area => 
     location && area.toLowerCase().includes(location.toLowerCase())
-  ).sort((a, b) => {
-    const aStarts = a.toLowerCase().startsWith(location.toLowerCase());
-    const bStarts = b.toLowerCase().startsWith(location.toLowerCase());
-    if (aStarts && !bStarts) return -1;
-    if (!aStarts && bStarts) return 1;
-    return a.localeCompare(b);
-  }).slice(0, 6);
+  ).slice(0, 6);
 
   const handleSearch = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     
     if (!query && !location) {
-      router.push('/category/all');
+      router.push(`${cityPath}/category/all`);
       return;
     }
 
-    const params = new URLSearchParams();
-    if (query) params.set('q', query);
-    if (location) params.set('location', location);
+    const searchParams = new URLSearchParams();
+    if (query) searchParams.set('q', query);
+    if (location) searchParams.set('location', location);
 
-    router.push(`/search?${params.toString()}`);
+    router.push(`${cityPath}/search?${searchParams.toString()}`);
   };
 
   return (
@@ -77,7 +67,6 @@ export default function LandingSearchForm() {
       <div className="p-3 bg-white rounded-[32px] md:rounded-full shadow-2xl border border-primary/10 flex flex-col md:flex-row gap-2 relative">
         <form onSubmit={handleSearch} className="flex-1 flex flex-col md:flex-row gap-2">
           
-          {/* Service Search Input */}
           <div ref={queryRef} className="flex-1 relative">
             <div className="flex items-center px-5 h-14 border-b md:border-b-0 md:border-r border-muted group transition-all">
               <Search className="h-5 w-5 text-muted-foreground mr-3 shrink-0 group-focus-within:text-primary transition-colors" />
@@ -98,7 +87,6 @@ export default function LandingSearchForm() {
               )}
             </div>
             
-            {/* Service Suggestions Pop-up */}
             {showQuerySuggestions && filteredCategories.length > 0 && (
               <div className="absolute top-[calc(100%+12px)] left-0 right-0 md:left-2 z-50 bg-white rounded-3xl shadow-2xl border border-primary/10 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="p-2">
@@ -127,7 +115,6 @@ export default function LandingSearchForm() {
             )}
           </div>
 
-          {/* Area Search Input */}
           <div ref={locationRef} className="flex-1 relative">
             <div className="flex items-center px-5 h-14 group transition-all">
               <MapPin className="h-5 w-5 text-muted-foreground mr-3 shrink-0 group-focus-within:text-secondary transition-colors" />
@@ -139,7 +126,7 @@ export default function LandingSearchForm() {
                 }}
                 onFocus={() => setShowLocationSuggestions(true)}
                 className="flex-1 bg-transparent focus:outline-none text-lg font-medium placeholder:text-muted-foreground/50 w-full" 
-                placeholder="Where in Berekum?" 
+                placeholder={`Where in ${cityConfig.name}?`} 
               />
               {location && (
                 <button type="button" onClick={() => { setLocation(''); setShowLocationSuggestions(false); }} className="p-1.5 hover:bg-muted rounded-full transition-colors">
@@ -148,11 +135,10 @@ export default function LandingSearchForm() {
               )}
             </div>
 
-            {/* Area Suggestions Pop-up */}
             {showLocationSuggestions && filteredAreas.length > 0 && (
               <div className="absolute top-[calc(100%+12px)] left-0 right-0 md:right-2 z-50 bg-white rounded-3xl shadow-2xl border border-secondary/10 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="p-2">
-                  <p className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Berekum Neighborhoods</p>
+                  <p className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{cityConfig.name} Neighborhoods</p>
                   {filteredAreas.map((area) => (
                     <button
                       key={area}
@@ -182,9 +168,6 @@ export default function LandingSearchForm() {
           </Button>
         </form>
       </div>
-      <p className="mt-6 text-center text-muted-foreground/60 text-sm font-medium">
-        Example: Try searching for <span className="text-primary font-bold">"Electrician"</span> in <span className="text-secondary font-bold">"Biadan"</span>
-      </p>
     </div>
   );
 }
