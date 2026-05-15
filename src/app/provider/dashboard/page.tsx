@@ -10,6 +10,7 @@ import { auth } from '@/lib/firebase';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import StarRating from '@/components/StarRating';
 import { CheckCircle, Clock, Hand, MapPin, Star as StarIcon, UserCheck, User as UserIcon, AlertTriangle, MessageCircle } from 'lucide-react';
