@@ -33,6 +33,8 @@ function AdminLoginForm() {
   useEffect(() => {
     const clearSession = async () => {
       try {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('adminCity');
         await fetch('/api/session', { method: 'DELETE' });
       } catch (e) {
         // Ignore silent cleanup errors
@@ -46,7 +48,6 @@ function AdminLoginForm() {
     setLoading(true);
     setError(null);
 
-    // Explicit check for API Key before attempting SDK call
     if (!auth?.app?.options?.apiKey || auth.app.options.apiKey === 'your_api_key_here') {
       setError("Firebase API Key is missing. Please check your system configuration.");
       setLoading(false);
@@ -54,11 +55,9 @@ function AdminLoginForm() {
     }
 
     try {
-      // 1. Sign in with Firebase Auth Client SDK
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Verify admin document exists and is active
       const adminDocRef = doc(db, 'admins', user.uid);
       const adminDoc = await getDoc(adminDocRef);
 
@@ -71,8 +70,11 @@ function AdminLoginForm() {
         throw new Error('Your administrator account is currently inactive.');
       }
 
-      // 3. Establish secure server-side session
       const idToken = await user.getIdToken(true);
+      
+      // Save token for custom API components
+      localStorage.setItem('authToken', idToken);
+      localStorage.setItem('adminCity', city);
       
       const res = await fetch("/api/admin/login", {
         method: "POST",
@@ -86,22 +88,17 @@ function AdminLoginForm() {
 
       toast({ title: 'Sign-in Successful', description: 'Redirecting to your dashboard...' });
       
-      // 4. Force a hard redirect to ensure middleware sees the new cookie
-      window.location.href = '/admin/dashboard';
+      window.location.href = `/admin/dashboard?city=${city}`;
       
     } catch (err: any) {
       let message = 'Invalid email or password.';
-      
       if (err.code === 'auth/api-key-not-valid' || err.code === 'auth/invalid-api-key') {
         message = 'Firebase configuration error. Contact technical support.';
       } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         message = 'The email or password you entered is incorrect.';
-      } else if (err.code === 'auth/too-many-requests') {
-        message = 'Too many failed attempts. Please try again later.';
       } else {
         message = err.message || message;
       }
-      
       setError(message);
       setLoading(false);
     }
@@ -126,7 +123,7 @@ function AdminLoginForm() {
           <div className="space-y-2">
             <CardTitle className="text-3xl font-bold font-headline">Admin Access</CardTitle>
             <CardDescription className="text-base">
-              System management portal
+              System management portal ({city.charAt(0).toUpperCase() + city.slice(1)})
             </CardDescription>
           </div>
         </CardHeader>
@@ -155,9 +152,7 @@ function AdminLoginForm() {
               />
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-              </div>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"

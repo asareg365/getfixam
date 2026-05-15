@@ -3,6 +3,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 interface SummaryData {
   totalEscrowHeld: number;
@@ -12,35 +15,24 @@ interface SummaryData {
   completedJobsThisMonth: number;
 }
 
-// In a real app, this would come from your auth context/provider
-const getAuthToken = () => {
-    // This is a placeholder. Replace with your actual auth token retrieval logic.
-    // For development, you might store a test token in localStorage.
-    return localStorage.getItem('authToken');
-};
-
 export function SummaryCards() {
+  const searchParams = useSearchParams();
   const [data, setData] = useState<SummaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchData = async (token: string) => {
       try {
-        setLoading(true);
-        const token = getAuthToken();
-        if (!token) {
-          throw new Error('Authentication token not found.');
-        }
-
-        const response = await fetch('/api/admin/summary', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
+        const city = searchParams.get('city') || '';
+        const url = `/api/admin/summary${city ? `?city=${city}` : ''}`;
+        
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${token}` },
         });
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch data: ${response.statusText}`);
+          throw new Error(`Failed to fetch summary: ${response.statusText}`);
         }
 
         const summaryData: SummaryData = await response.json();
@@ -52,71 +44,77 @@ export function SummaryCards() {
       }
     };
 
-    fetchData();
-  }, []);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const token = await user.getIdToken();
+        fetchData(token);
+      } else {
+        const localToken = localStorage.getItem('authToken');
+        if (localToken) fetchData(localToken);
+        else {
+          setError('Authentication session not found.');
+          setLoading(false);
+        }
+      }
+    });
 
-  if (loading) {
-    return <SummaryCardsSkeleton />;
-  }
+    return () => unsubscribe();
+  }, [searchParams]);
 
-  if (error) {
-    return <div className="text-red-500 text-center col-span-5">Error: {error}</div>;
-  }
-
-  if (!data) {
-    return null;
-  }
+  if (loading) return <SummaryCardsSkeleton />;
+  if (error) return <div className="text-red-500 text-center col-span-5 p-4 bg-red-50 rounded-xl mb-8 border border-red-100">{error}</div>;
+  if (!data) return null;
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mb-8">
-       <Card>
+       <Card className="rounded-2xl border-none shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Escrow Held</CardTitle>
-              <span className="text-2xl">🇬🇭</span>
+              <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Total Escrow</CardTitle>
+              <span className="text-xl">🇬🇭</span>
           </CardHeader>
           <CardContent>
-              <div className="text-2xl font-bold">{`GHS ${data.totalEscrowHeld.toFixed(2)}`}</div>
-              <p className="text-xs text-muted-foreground">Funds currently in the system</p>
+              <div className="text-2xl font-black">{`₵${data.totalEscrowHeld.toLocaleString()}`}</div>
+              <p className="text-[10px] text-muted-foreground mt-1 font-medium">Funds currently held</p>
           </CardContent>
       </Card>
-      <Card>
+      <Card className="rounded-2xl border-none shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Commission Earned</CardTitle>
-              <span className="text-2xl">💰</span>
+              <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Net Revenue</CardTitle>
+              <span className="text-xl">💰</span>
           </CardHeader>
           <CardContent>
-              <div className="text-2xl font-bold">{`GHS ${data.totalCommissionEarned.toFixed(2)}`}</div>
-              <p className="text-xs text-muted-foreground">Platform revenue from completed jobs</p>
+              <div className="text-2xl font-black">{`₵${data.totalCommissionEarned.toLocaleString()}`}</div>
+              <p className="text-[10px] text-muted-foreground mt-1 font-medium">Commissions earned</p>
           </CardContent>
       </Card>
-      <Card>
+      <Card className="rounded-2xl border-none shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Payouts</CardTitle>
-              <span className="text-2xl">⏳</span>
+              <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Payouts Due</CardTitle>
+              <span className="text-xl">⏳</span>
           </CardHeader>
           <CardContent>
-              <div className="text-2xl font-bold">{`GHS ${data.pendingPayouts.toFixed(2)}`}</div>
-              <p className="text-xs text-muted-foreground">Awaiting release to providers</p>
+              <div className="text-2xl font-black">{`₵${data.pendingPayouts.toLocaleString()}`}</div>
+              <p className="text-[10px] text-muted-foreground mt-1 font-medium">Awaiting release</p>
           </CardContent>
       </Card>
-      <Card>
+      <Card className="rounded-2xl border-none shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Disputes</CardTitle>
-              <span className="text-2xl">⚖️</span>
+              <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Disputes</CardTitle>
+              <span className="text-xl">⚖️</span>
           </CardHeader>
           <CardContent>
-              <div className="text-2xl font-bold">{data.activeDisputes}</div>
-              <p className="text-xs text-muted-foreground">Engagements needing review</p>
+              <div className="text-2xl font-black">{data.activeDisputes}</div>
+              <p className="text-[10px] text-muted-foreground mt-1 font-medium">Needing review</p>
           </CardContent>
       </Card>
-      <Card>
+      <Card className="rounded-2xl border-none shadow-sm bg-primary/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed Jobs (Month)</CardTitle>
-              <span className="text-2xl">📈</span>
+              <CardTitle className="text-xs font-bold uppercase tracking-wider text-primary">Monthly Jobs</CardTitle>
+              <span className="text-xl">📈</span>
           </CardHeader>
           <CardContent>
-              <div className="text-2xl font-bold">{data.completedJobsThisMonth}</div>
-              <p className="text-xs text-muted-foreground">Jobs successfully completed this month</p>
+              <div className="text-2xl font-black text-primary">{data.completedJobsThisMonth}</div>
+              <p className="text-[10px] text-primary/60 mt-1 font-medium">Completed in current month</p>
           </CardContent>
       </Card>
     </div>
@@ -127,7 +125,7 @@ function SummaryCardsSkeleton() {
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mb-8">
             {[...Array(5)].map((_, i) => (
-                <Card key={i}>
+                <Card key={i} className="rounded-2xl border-none shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <Skeleton className="h-4 w-3/4" />
                     </CardHeader>

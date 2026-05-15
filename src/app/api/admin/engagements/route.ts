@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
+import { getCityConfig } from '@/lib/constants';
 
 export async function GET(req: Request) {
     try {
@@ -10,51 +11,51 @@ export async function GET(req: Request) {
         }
 
         const decodedToken = await adminAuth.verifyIdToken(authToken);
-        const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
-        if (userDoc.data()?.role !== 'admin') {
+        const userDoc = await adminDb.collection('admins').doc(decodedToken.uid).get();
+        if (!userDoc.exists || !userDoc.data()?.active) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         const { searchParams } = new URL(req.url);
         const status = searchParams.get('status');
+        const cityId = searchParams.get('city');
+        const cityConfig = cityId ? getCityConfig(cityId) : null;
 
         if (!status) {
             return NextResponse.json({ error: 'Status parameter is required' }, { status: 400 });
         }
 
-        const db = adminDb;
-        let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
+        let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = adminDb.collection('engagements');
 
         if (status === 'awaiting_release') {
-            // Calculate the timestamp for 72 hours ago
             const seventyTwoHoursAgo = Timestamp.fromMillis(Date.now() - 72 * 60 * 60 * 1000);
-            // Query for jobs that were marked for completion before this time and are still awaiting confirmation
-            query = db.collection('engagements')
-                      .where('jobStatus', '==', 'awaiting_confirmation')
-                      .where('completionMarkedAt', '<', seventyTwoHoursAgo);
+            query = query.where('jobStatus', '==', 'awaiting_confirmation')
+                         .where('completionMarkedAt', '<', seventyTwoHoursAgo);
         } else {
-            // Existing logic for other statuses
-            query = db.collection('engagements').where('escrowStatus', '==', status);
+            query = query.where('escrowStatus', '==', status);
+        }
+
+        if (cityConfig) {
+            query = query.where('city', '==', cityConfig.name);
         }
 
         const snapshot = await query.get();
 
         const engagements = await Promise.all(snapshot.docs.map(async (doc) => {
             const engagement = doc.data();
-            let providerName = 'N/A';
+            let providerName = 'Artisan';
 
-            if (engagement.provider) {
+            if (engagement.providerId) {
                 try {
-                    const providerDoc = await db.collection('users').doc(engagement.provider).get();
+                    const providerDoc = await adminDb.collection('providers').doc(engagement.providerId).get();
                     if (providerDoc.exists) {
-                        providerName = providerDoc.data()?.displayName || 'N/A';
+                        providerName = providerDoc.data()?.name || 'Artisan';
                     }
                 } catch (userError) {
-                    console.error(`Failed to fetch provider ${engagement.provider}:`, userError);
+                    console.error(`Failed to fetch provider ${engagement.providerId}:`, userError);
                 }
             }
             
-            // Calculate days locked if completionMarkedAt exists
             let daysLocked = 0;
             if (engagement.completionMarkedAt) {
                 const markedAt = engagement.completionMarkedAt.toDate();
@@ -66,14 +67,14 @@ export async function GET(req: Request) {
                 id: doc.id,
                 ...engagement,
                 providerName,
-                daysLocked, // Add this to the response
+                daysLocked,
             };
         }));
 
         return NextResponse.json(engagements);
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error fetching engagements:", error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
     }
 }
