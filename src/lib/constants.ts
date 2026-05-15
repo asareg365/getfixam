@@ -1,3 +1,4 @@
+
 import type { Category } from './types';
 
 /**
@@ -23,6 +24,7 @@ export const CATEGORIES: Category[] = [
   { id: 'shoemakers', name: 'Shoemakers', slug: 'shoemakers', icon: 'Hammer' },
   { id: 'tilers', name: 'Tilers', slug: 'tilers', icon: 'Hammer' },
   { id: 'tv-repair', name: 'TV Repairers', slug: 'tv-repair', icon: 'Tv2' },
+  { id: 'other', name: 'Other (Please specify)', slug: 'other', icon: 'Plus' },
 ];
 
 export type CityConfig = {

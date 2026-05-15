@@ -94,16 +94,18 @@ service cloud.firestore {
     }
 
     /* -----------------------------
-       SERVICES
+       SERVICES (CATEGORIES)
     ------------------------------*/
 
     match /services/{serviceId} {
       allow read: if true;
-      allow write: if isAdmin();
+      // Allow public to suggest a new category (defaults to inactive)
+      allow create: if request.resource.data.active == false;
+      allow update, delete: if isAdmin();
     }
 
     /* -----------------------------
-       CATEGORIES
+       CATEGORIES (Legacy/Alternative)
     ------------------------------*/
 
     match /categories/{categoryId} {

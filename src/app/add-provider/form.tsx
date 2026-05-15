@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, setDoc, doc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, CheckCircle2 } from 'lucide-react';
+import { Loader2, CheckCircle2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
@@ -24,10 +24,19 @@ import { getCityConfig } from '@/lib/constants';
 const formSchema = z.object({
   name: z.string().min(3, { message: 'Business name must be at least 3 characters.' }),
   serviceId: z.string({ required_error: 'Please select a service category.' }),
+  otherCategory: z.string().optional(),
   phone: z.string().regex(/^0[0-9]{9}$/, { message: 'A valid 10-digit phone number is required (e.g. 0241234567).' }),
   whatsapp: z.string().regex(/^0[0-9]{9}$/, { message: 'A valid 10-digit WhatsApp number is required.' }),
   zone: z.string({ required_error: 'Please select your primary work area.' }),
   digitalAddress: z.string().optional(),
+}).refine((data) => {
+    if (data.serviceId === 'other' && (!data.otherCategory || data.otherCategory.length < 3)) {
+        return false;
+    }
+    return true;
+}, {
+    message: "Please specify your trade category.",
+    path: ["otherCategory"],
 });
 
 type AddProviderFormProps = {
@@ -51,8 +60,11 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
       phone: '',
       whatsapp: '',
       digitalAddress: '',
+      otherCategory: '',
     },
   });
+
+  const selectedServiceId = form.watch('serviceId');
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
@@ -71,11 +83,32 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
           return;
       }
 
-      const categoryName = categories.find(c => c.id === values.serviceId)?.name || 'Artisan';
+      let categoryName = categories.find(c => c.id === values.serviceId)?.name || 'Artisan';
+      let finalServiceId = values.serviceId;
+
+      // Handle "Other" category logic
+      if (values.serviceId === 'other' && values.otherCategory) {
+          categoryName = values.otherCategory;
+          // Generate a slug-like ID for the new category
+          finalServiceId = values.otherCategory.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+          
+          // Suggest the new category to the system (defaults to inactive/moderation)
+          const servicesRef = collection(db, 'services');
+          addDoc(servicesRef, {
+              name: values.otherCategory,
+              slug: finalServiceId,
+              active: false, // Administrative approval required
+              icon: 'Wrench',
+              createdAt: serverTimestamp(),
+              suggestedBy: values.name,
+          }).catch(() => {
+              // Ignore failures to suggest category; provider creation is primary
+          });
+      }
 
       const newProviderData = {
         name: values.name,
-        serviceId: values.serviceId,
+        serviceId: finalServiceId,
         category: categoryName,
         phone: values.phone,
         whatsapp: values.whatsapp,
@@ -87,14 +120,13 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
         },
         status: 'pending',
         verified: false,
-        subscriptionActive: false, // Subscription inactive by default for new listings
+        subscriptionActive: false,
         isFeatured: false,
         rating: 0,
         reviewCount: 0,
         createdAt: serverTimestamp(),
       };
 
-      // CRITICAL: Non-blocking mutation with contextual error emission
       addDoc(providersRef, newProviderData)
         .then(() => {
             setIsSuccess(true);
@@ -153,28 +185,55 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
                 )}
             />
 
-            <FormField
-                control={form.control}
-                name="serviceId"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel className="text-base font-bold">Primary Service</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                                <SelectTrigger className="h-14 rounded-xl border-muted-foreground/20 text-lg">
-                                    <SelectValue placeholder="Select a service category" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                {categories.map((cat) => (
-                                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                    </FormItem>
+            <div className="space-y-6">
+                <FormField
+                    control={form.control}
+                    name="serviceId"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-base font-bold">Primary Trade / Service</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger className="h-14 rounded-xl border-muted-foreground/20 text-lg">
+                                        <SelectValue placeholder="Select your trade" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {categories.map((cat) => (
+                                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                {selectedServiceId === 'other' && (
+                    <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+                        <FormField
+                            control={form.control}
+                            name="otherCategory"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                                        <Sparkles className="h-4 w-4" />
+                                        Specify Your Trade
+                                    </FormLabel>
+                                    <FormControl>
+                                        <Input 
+                                            placeholder="e.g. Laptop Repair, Tailor, Event Decorator" 
+                                            {...field} 
+                                            className="h-14 rounded-xl border-primary/30 bg-primary/5 text-lg font-bold placeholder:text-primary/30" 
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
                 )}
-            />
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <FormField
