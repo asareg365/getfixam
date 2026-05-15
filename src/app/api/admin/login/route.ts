@@ -1,17 +1,29 @@
 import { NextResponse } from "next/server";
-import { adminAuth } from "@/lib/firebase-admin";
+import { adminAuth, adminDb } from "@/lib/firebase-admin";
 
 export async function POST(req: Request) {
   try {
     const { idToken } = await req.json();
 
-    // Verify Firebase ID token
-    await adminAuth.verifyIdToken(idToken);
+    // 1. Verify Firebase ID token
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const uid = decodedToken.uid;
 
-    // 5 days in milliseconds for Firebase session
+    // 2. Universal Admin Check: Ensure role claim is present if user is an admin
+    // This solves the issue of new admins being redirected because they lack the claim
+    const adminDoc = await adminDb.collection('admins').doc(uid).get();
+    
+    if (adminDoc.exists && adminDoc.data()?.active) {
+        const claims = decodedToken.role;
+        if (claims !== 'admin' && claims !== 'super_admin') {
+            await adminAuth.setCustomUserClaims(uid, { role: 'admin' });
+        }
+    } else {
+        return NextResponse.json({ error: "Forbidden: Not an active administrator." }, { status: 403 });
+    }
+
+    // 3. Create session cookie (5 days)
     const expiresIn = 60 * 60 * 24 * 5 * 1000;
-
-    // Create session cookie
     const sessionCookie = await adminAuth.createSessionCookie(
       idToken,
       { expiresIn }
@@ -21,8 +33,7 @@ export async function POST(req: Request) {
       success: true,
     });
 
-    // Set secure session cookie
-    // Removed hardcoded domain to ensure compatibility across different environments (Studio, Staging, Production)
+    // 4. Set secure session cookie
     response.cookies.set("__session", sessionCookie, {
       httpOnly: true,
       secure: true,
@@ -34,7 +45,6 @@ export async function POST(req: Request) {
     return response;
   } catch (error) {
     console.error("ADMIN SESSION ERROR:", error);
-
     return NextResponse.json(
       { error: "Unauthorized" },
       { status: 401 }

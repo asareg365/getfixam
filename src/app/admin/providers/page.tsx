@@ -11,11 +11,13 @@ import { ProvidersTable } from './_components/providers-table';
 import { ProviderTabs } from './_components/provider-tabs';
 import { Loader2, AlertCircle, Inbox } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CATEGORIES } from '@/lib/constants';
+import { CATEGORIES, getCityConfig } from '@/lib/constants';
 
 function ProvidersPage() {
   const searchParams = useSearchParams();
   const currentStatus = searchParams.get('status') || 'pending';
+  const cityId = searchParams.get('city');
+  const cityConfig = cityId ? getCityConfig(cityId) : null;
   
   const [providers, setProviders] = useState<Provider[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({
@@ -28,7 +30,6 @@ function ProvidersPage() {
     setLoading(true);
     setError(null);
 
-    // 1. Fetch services first to map category names
     async function initServices() {
         const servicesSnap = await getDocs(collection(db, 'services')).catch(() => null);
         const servicesMap = new Map();
@@ -43,10 +44,17 @@ function ProvidersPage() {
     initServices().then((servicesMap) => {
         const providersRef = collection(db, 'providers');
         
-        // Listener for the active list
-        const listQuery = currentStatus === 'all' 
-            ? query(providersRef, orderBy('createdAt', 'desc'))
-            : query(providersRef, where('status', '==', currentStatus), orderBy('createdAt', 'desc'));
+        // Listener for the active list with city-aware filtering
+        let listQuery;
+        if (currentStatus === 'all') {
+            listQuery = cityConfig 
+                ? query(providersRef, where('location.city', '==', cityConfig.name), orderBy('createdAt', 'desc'))
+                : query(providersRef, orderBy('createdAt', 'desc'));
+        } else {
+            listQuery = cityConfig
+                ? query(providersRef, where('status', '==', currentStatus), where('location.city', '==', cityConfig.name), orderBy('createdAt', 'desc'))
+                : query(providersRef, where('status', '==', currentStatus), orderBy('createdAt', 'desc'));
+        }
 
         const unsubList = onSnapshot(listQuery, (snap) => {
             const providersData = snap.docs.map(doc => {
@@ -68,21 +76,21 @@ function ProvidersPage() {
             setProviders(providersData);
             setLoading(false);
         }, (err) => {
+            console.error("Directory sync error:", err);
             setError("Failed to sync directory updates.");
             setLoading(false);
         });
 
-        // Listener for counts (simplified for prototype)
+        // Simplified counts listener
         const unsubCounts = onSnapshot(providersRef, (snap) => {
-            const newCounts: Record<string, number> = {
-                all: snap.size,
-                pending: 0,
-                approved: 0,
-                rejected: 0,
-                suspended: 0
-            };
+            const newCounts: Record<string, number> = { all: 0, pending: 0, approved: 0, rejected: 0, suspended: 0 };
             snap.forEach(doc => {
-                const s = doc.data().status;
+                const data = doc.data();
+                // If city filtered, only count those in the city
+                if (cityConfig && data.location?.city !== cityConfig.name) return;
+                
+                const s = data.status;
+                newCounts.all++;
                 if (s && s in newCounts) newCounts[s]++;
             });
             setCounts(newCounts);
@@ -95,13 +103,15 @@ function ProvidersPage() {
     });
 
     return () => unsubscribe?.();
-  }, [currentStatus]);
+  }, [currentStatus, cityConfig?.name]);
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-4xl font-black font-headline text-foreground">Artisan Directory</h1>
-        <p className="text-muted-foreground text-lg mt-1 font-medium">Review and manage verified professionals across the country.</p>
+        <h1 className="text-4xl font-black font-headline text-foreground tracking-tight">
+            Artisan Directory {cityConfig && <span className="text-primary">({cityConfig.name})</span>}
+        </h1>
+        <p className="text-muted-foreground text-lg mt-1 font-medium">Review and manage verified professionals across the region.</p>
       </div>
 
       {error && (
@@ -129,7 +139,7 @@ function ProvidersPage() {
                 <Inbox className="h-10 w-10 text-muted-foreground/40" />
             </div>
             <h2 className="text-xl font-bold">No providers found</h2>
-            <p className="text-muted-foreground mt-1">There are no artisans with the status "{currentStatus}".</p>
+            <p className="text-muted-foreground mt-1">There are no artisans in {cityConfig?.name || 'this region'} with the status "{currentStatus}".</p>
         </div>
       )}
     </div>

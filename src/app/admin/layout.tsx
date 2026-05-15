@@ -1,10 +1,11 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { LogoutButton } from './LogoutButton';
+import { Suspense } from 'react';
 import {
   Users,
   Settings,
@@ -15,17 +16,24 @@ import {
   Wrench
 } from 'lucide-react';
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const city = searchParams.get('city');
   const isLoginPage = pathname === '/admin/login';
 
+  // Build city-aware links
+  const getHref = (path: string) => {
+    return city ? `${path}?city=${city}` : path;
+  };
+
   const navItems = [
-    { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-    { label: 'Providers', href: '/admin/providers', icon: Users },
-    { label: 'Reviews', href: '/admin/reviews', icon: Star },
-    { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
-    { label: 'WhatsApp Bot', href: '/admin/bot', icon: MessageSquare },
-    { label: 'Settings', href: '/admin/settings', icon: Settings },
+    { label: 'Dashboard', href: getHref('/admin/dashboard'), icon: LayoutDashboard },
+    { label: 'Providers', href: getHref('/admin/providers'), icon: Users },
+    { label: 'Reviews', href: getHref('/admin/reviews'), icon: Star },
+    { label: 'Analytics', href: getHref('/admin/analytics'), icon: BarChart3 },
+    { label: 'WhatsApp Bot', href: getHref('/admin/bot'), icon: MessageSquare },
+    { label: 'Settings', href: getHref('/admin/settings'), icon: Settings },
   ];
 
   const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
@@ -33,7 +41,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       href={href}
       className={cn(
         'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-        pathname === href && 'bg-muted text-primary font-bold shadow-sm'
+        pathname === href.split('?')[0] && 'bg-muted text-primary font-bold shadow-sm'
       )}
     >
       {children}
@@ -50,7 +58,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex flex-col gap-2 p-4 h-full">
           <div className="flex h-16 items-center px-4 mb-4 gap-2">
             <Wrench className="h-6 w-6 text-primary" />
-            <span className="font-headline font-bold text-xl tracking-tight uppercase">Admin Panel</span>
+            <span className="font-headline font-bold text-xl tracking-tight uppercase">
+                {city ? `FixAm ${city}` : 'Admin Panel'}
+            </span>
           </div>
           <nav className="flex-1 flex flex-col gap-1 px-2">
             {navItems.map(item => (
@@ -73,4 +83,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
     </div>
   );
+}
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <Suspense fallback={null}>
+            <AdminLayoutContent>{children}</AdminLayoutContent>
+        </Suspense>
+    );
 }
