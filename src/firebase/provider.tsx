@@ -156,11 +156,21 @@ export const useFirebaseApp = (): FirebaseApp => {
 
 type MemoFirebase <T> = T & {__memo?: boolean};
 
+/**
+ * Safely marks a Firebase reference as memoized.
+ * Firestore objects are often non-extensible, so we handle failures gracefully.
+ */
 export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | (MemoFirebase<T>) {
   const memoized = useMemo(factory, deps);
   
   if(typeof memoized !== 'object' || memoized === null) return memoized;
-  (memoized as MemoFirebase<T>).__memo = true;
+  
+  try {
+    (memoized as MemoFirebase<T>).__memo = true;
+  } catch (e) {
+    // If the object is frozen/non-extensible, we skip the tag.
+    // The hooks should handle this gracefully.
+  }
   
   return memoized;
 }

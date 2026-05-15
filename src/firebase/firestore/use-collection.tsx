@@ -69,6 +69,11 @@ export function useCollection<T = any>(
       return;
     }
 
+    // Dev warning for memoization if possible
+    if (process.env.NODE_ENV === 'development' && !memoizedTargetRefOrQuery.__memo) {
+        console.warn('useCollection: Reference might not be memoized correctly. Use useMemoFirebase for stability.');
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -107,8 +112,6 @@ export function useCollection<T = any>(
 
     return () => unsubscribe();
   }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
-  if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
-    throw new Error(memoizedTargetRefOrQuery + ' was not properly memoized using useMemoFirebase');
-  }
+
   return { data, isLoading, error };
 }

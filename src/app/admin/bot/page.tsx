@@ -19,7 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function WhatsAppBotPage() {
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
+  const [isSimulating, setIsSimulating] = useState(false);
   const [testMessage, setMessage] = useState('');
   const [testPhone, setPhone] = useState('0241234567');
   const [lastResult, setLastResult] = useState<{ reply: string; category: string; area: string } | null>(null);
@@ -50,9 +50,10 @@ export default function WhatsAppBotPage() {
   }, [configData]);
 
   async function handleSimulate() {
-    if (!testMessage) return;
+    if (!testMessage || isSimulating) return;
     
-    startTransition(async () => {
+    setIsSimulating(true);
+    try {
       const res = await simulateIncomingMessage(testMessage);
       
       if (res.success && res.aiResult) {
@@ -101,9 +102,13 @@ export default function WhatsAppBotPage() {
         toast({ title: 'Simulation Successful', description: 'AI processed the request.' });
         setMessage('');
       } else {
-        toast({ title: 'Simulation Failed', description: res.error, variant: 'destructive' });
+        toast({ title: 'Simulation Failed', description: res.error || 'AI failed to process message.', variant: 'destructive' });
       }
-    });
+    } catch (e: any) {
+        toast({ title: 'Error', description: e.message || 'An unexpected error occurred.', variant: 'destructive' });
+    } finally {
+        setIsSimulating(false);
+    }
   }
 
   async function handleSaveConfig(e: React.FormEvent) {
@@ -193,10 +198,10 @@ export default function WhatsAppBotPage() {
                   </div>
                   <Button 
                     onClick={handleSimulate} 
-                    disabled={isPending || !testMessage}
+                    disabled={isSimulating || !testMessage}
                     className="w-full h-16 rounded-2xl text-xl font-bold shadow-lg shadow-primary/20"
                   >
-                    {isPending ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <Send className="mr-2 h-6 w-6" />}
+                    {isSimulating ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <Send className="mr-2 h-6 w-6" />}
                     Test AI Matching
                   </Button>
                 </div>
@@ -250,22 +255,25 @@ export default function WhatsAppBotPage() {
                 </div>
               ) : events && events.length > 0 ? (
                 <div className="divide-y">
-                  {events.map((event) => (
-                    <div key={event.id} className="p-6 flex items-start gap-4 hover:bg-muted/5 transition-colors">
-                      <div className={`p-3 rounded-2xl shrink-0 ${event.role === 'bot' ? 'bg-primary/10 text-primary' : 'bg-secondary/10 text-secondary'}`}>
-                        {event.role === 'bot' ? <Bot className="h-5 w-5" /> : <User className="h-5 w-5" />}
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-bold">{event.role === 'bot' ? 'FixAm Bot (Simulated)' : event.phone}</span>
-                          <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
-                            {event.createdAt ? formatDistanceToNow(new Date(event.createdAt.toDate()), { addSuffix: true }) : 'just now'}
-                          </span>
+                  {events.map((event) => {
+                    const eventDate = event.createdAt?.toDate?.() || null;
+                    return (
+                      <div key={event.id} className="p-6 flex items-start gap-4 hover:bg-muted/5 transition-colors">
+                        <div className={`p-3 rounded-2xl shrink-0 ${event.role === 'bot' ? 'bg-primary/10 text-primary' : 'bg-secondary/10 text-secondary'}`}>
+                          {event.role === 'bot' ? <Bot className="h-5 w-5" /> : <User className="h-5 w-5" />}
                         </div>
-                        <p className="text-foreground leading-relaxed font-medium">{event.message}</p>
+                        <div className="flex-1 space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-bold">{event.role === 'bot' ? 'FixAm Bot (Simulated)' : event.phone}</span>
+                            <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
+                              {eventDate ? formatDistanceToNow(new Date(eventDate), { addSuffix: true }) : 'just now'}
+                            </span>
+                          </div>
+                          <p className="text-foreground leading-relaxed font-medium">{event.message}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="p-20 text-center text-muted-foreground">
