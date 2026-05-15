@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -36,12 +37,17 @@ service cloud.firestore {
 
     match /providers/{providerId} {
 
-      allow read: if true;
+      // Public can read if subscription is active and artisan is approved
+      allow read: if isAdmin() || (
+        resource.data.status == 'approved' && 
+        resource.data.subscriptionActive == true
+      ) || isProvider(providerId);
 
       // Allow public creation for 'pending' applications
       allow create: if isAdmin() || (
         request.resource.data.status == 'pending' && 
-        request.resource.data.verified == false
+        request.resource.data.verified == false &&
+        request.resource.data.subscriptionActive == false
       );
 
       allow update: if isAdmin() || isProvider(providerId);
@@ -59,8 +65,8 @@ service cloud.firestore {
     ------------------------------*/
 
     match /jobs/{jobId} {
-      allow read: if true;
-      allow create: if true;
+      allow read: if isAdmin();
+      allow create: if true; // Allow visitors to track leads (calls/whatsapp)
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
@@ -71,7 +77,7 @@ service cloud.firestore {
 
     match /engagements/{engagementId} {
       allow read: if isSignedIn();
-      allow create: if isAdmin();
+      allow create: if isAdmin() || isSignedIn();
       allow update: if isSignedIn();
       allow delete: if isAdmin();
     }
@@ -81,7 +87,7 @@ service cloud.firestore {
     ------------------------------*/
 
     match /reviews/{reviewId} {
-      allow read: if true;
+      allow read: if isAdmin() || resource.data.status == 'approved';
       allow create: if true; // Allow public review submission (pending moderation)
       allow update: if isAdmin();
       allow delete: if isAdmin();

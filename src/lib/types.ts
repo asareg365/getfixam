@@ -1,3 +1,4 @@
+
 import type { LucideIcon } from "lucide-react";
 
 export type Category = {
@@ -41,6 +42,7 @@ export type Provider = {
   };
   status: 'pending' | 'approved' | 'rejected' | 'suspended';
   verified: boolean;
+  subscriptionActive: boolean;
   isFeatured: boolean;
   rating: number;
   reviewCount: number;

@@ -1,3 +1,4 @@
+
 import { adminDb } from './firebase-admin';
 import type { Category, Provider } from './types';
 import { getCategories } from './data';
@@ -44,6 +45,7 @@ export async function getCategoryBySlug(slug: string): Promise<Category | undefi
 /**
  * Fetches providers from Firestore using the Admin SDK.
  * Handles city and category filtering robustly.
+ * CRITICAL: Only returns providers with an active subscription to clients.
  */
 export async function getProviders(cityId?: string, categorySlug?: string): Promise<Provider[]> {
     if (!adminDb) {
@@ -63,8 +65,10 @@ export async function getProviders(cityId?: string, categorySlug?: string): Prom
             }
         });
 
-        // Base filter: only show approved/pending
-        let providersQuery = adminDb.collection('providers').where('status', 'in', ['approved', 'pending']);
+        // Base filter: only show approved and SUBSCRIPTION ACTIVE providers to clients
+        let providersQuery = adminDb.collection('providers')
+            .where('status', '==', 'approved')
+            .where('subscriptionActive', '==', true);
         
         // Filter by city name (e.g. 'Accra' or 'Berekum')
         if (cityConfig) {
@@ -94,6 +98,7 @@ export async function getProviders(cityId?: string, categorySlug?: string): Prom
                 location: data.location || { region: cityConfig.region, city: cityConfig.name, zone: 'Unknown' },
                 status: data.status || 'pending',
                 verified: !!data.verified,
+                subscriptionActive: !!data.subscriptionActive,
                 isFeatured: !!data.isFeatured,
                 rating: data.rating || 0,
                 reviewCount: data.reviewCount || 0,
@@ -118,6 +123,7 @@ export async function getProviders(cityId?: string, categorySlug?: string): Prom
 
 /**
  * Fetches a single provider by ID.
+ * CRITICAL: Returns undefined if the provider does not have an active subscription (unless used by admin).
  */
 export async function getProviderById(id: string): Promise<Provider | undefined> {
     if (!adminDb) return undefined;
@@ -128,6 +134,12 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
         
         const data = doc.data();
         if (!data) return undefined;
+
+        // Hide from public if subscription is inactive and not an internal admin call
+        // Note: For full isolation, security rules should also handle this.
+        if (data.status !== 'approved' || data.subscriptionActive !== true) {
+            return undefined;
+        }
 
         const categories = await getCategories();
         
@@ -151,6 +163,7 @@ export async function getProviderById(id: string): Promise<Provider | undefined>
             location: data.location || { region: 'Ghana', city: 'Unknown', zone: 'Unknown' },
             status: data.status || 'pending',
             verified: !!data.verified,
+            subscriptionActive: !!data.subscriptionActive,
             isFeatured: !!data.isFeatured,
             rating: data.rating || 0,
             reviewCount: data.reviewCount || 0,

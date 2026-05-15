@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -11,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import StarRating from '@/components/StarRating';
-import { CheckCircle, Clock, Hand, MapPin, Star as StarIcon, UserCheck, User as UserIcon } from 'lucide-react';
+import { CheckCircle, Clock, Hand, MapPin, Star as StarIcon, UserCheck, User as UserIcon, AlertTriangle, MessageCircle } from 'lucide-react';
 import Loading from './loading';
 
 export default function ProviderDashboardPage() {
@@ -59,11 +60,11 @@ export default function ProviderDashboardPage() {
 
   if (accountError) {
     return (
-      <Alert variant="destructive" className="max-w-2xl mx-auto">
-        <AlertTitle>Account Error</AlertTitle>
-        <AlertDescription className='space-y-4'>
+      <Alert variant="destructive" className="max-w-2xl mx-auto rounded-3xl">
+        <AlertTitle className="font-bold">Account Error</AlertTitle>
+        <AlertDescription className='space-y-4 font-medium'>
           <p>{accountError}</p>
-          {!impersonateId && <Button onClick={() => router.push('/add-provider')}>Create a Business Listing</Button>}
+          {!impersonateId && <Button onClick={() => router.push('/add-provider')} className="rounded-xl font-bold">List Your Business</Button>}
         </AlertDescription>
       </Alert>
     );
@@ -75,21 +76,22 @@ export default function ProviderDashboardPage() {
 
   if (provider.status !== 'approved' && !impersonateId) {
     return (
-        <Card className="max-w-2xl mx-auto">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    {provider.status === 'pending' ? <Clock className="h-6 w-6 text-yellow-500" /> : <Hand className="h-6 w-6 text-destructive" />}
+        <Card className="max-w-2xl mx-auto border-none shadow-xl rounded-[40px] overflow-hidden">
+            <div className="h-2 bg-yellow-500 w-full" />
+            <CardHeader className="p-10">
+                <CardTitle className="flex items-center gap-3 text-3xl font-black font-headline">
+                    {provider.status === 'pending' ? <Clock className="h-8 w-8 text-yellow-500" /> : <Hand className="h-8 w-8 text-destructive" />}
                      Application {provider.status.charAt(0).toUpperCase() + provider.status.slice(1)}
                 </CardTitle>
-                <CardDescription>Welcome, {provider.name}!</CardDescription>
+                <CardDescription className="text-lg font-medium">Welcome to the family, {provider.name}!</CardDescription>
             </CardHeader>
-            <CardContent>
-                <Alert variant={provider.status === 'pending' ? 'default' : 'destructive'}>
-                    <AlertTitle>There is an issue with your account.</AlertTitle>
-                    <AlertDescription>
+            <CardContent className="px-10 pb-10">
+                <Alert variant={provider.status === 'pending' ? 'default' : 'destructive'} className="rounded-[24px] border-2 bg-muted/30">
+                    <AlertTitle className="font-bold text-lg">Your account status needs attention.</AlertTitle>
+                    <AlertDescription className="text-base font-medium mt-2 leading-relaxed">
                         {provider.status === 'pending' 
-                        ? 'Our admin team is currently reviewing your business listing. You will be notified once it is approved. Thank you for your patience.'
-                        : `Your provider account has been ${provider.status}. Please contact an administrator for more information and next steps.`}
+                        ? 'Our admin team is currently reviewing your business listing. You will be notified via WhatsApp once your account is fully verified and approved.'
+                        : `Your provider account has been ${provider.status}. Please contact the GetFixam support team for more information.`}
                     </AlertDescription>
                 </Alert>
             </CardContent>
@@ -98,65 +100,114 @@ export default function ProviderDashboardPage() {
   }
 
   const StatCard = ({ title, value, icon: Icon, description, children }: { title: string, value?: string | number, icon: React.ElementType, description?: string, children?: React.ReactNode }) => (
-    <Card>
+    <Card className="border-none shadow-sm rounded-3xl">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground">{title}</CardTitle>
+        <div className="bg-muted p-2 rounded-xl">
+            <Icon className="h-4 w-4 text-primary" />
+        </div>
       </CardHeader>
       <CardContent>
-        {value !== undefined && <div className="text-2xl font-bold">{value}</div>}
+        {value !== undefined && <div className="text-3xl font-black tracking-tight">{value}</div>}
         {children}
-        {description && <p className="text-xs text-muted-foreground">{description}</p>}
+        {description && <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1">{description}</p>}
       </CardContent>
     </Card>
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {impersonateId && (
-        <Alert variant='default' className='bg-yellow-50 border-yellow-200 text-yellow-800'>
-          <UserIcon className="h-4 w-4 !text-yellow-800" />
-          <AlertTitle>Admin Impersonation Mode</AlertTitle>
-          <AlertDescription>
-            You are currently viewing the dashboard for <strong>{provider.name}</strong>. To exit, navigate back to the admin panel.
+        <Alert variant='default' className='bg-yellow-50 border-yellow-200 text-yellow-800 rounded-3xl p-6'>
+          <UserIcon className="h-5 w-5 !text-yellow-800" />
+          <AlertTitle className="font-bold text-lg">Admin Impersonation Mode</AlertTitle>
+          <AlertDescription className="text-base font-medium">
+            You are currently viewing the dashboard for <strong>{provider.name}</strong>.
           </AlertDescription>
         </Alert>
       )}
 
-      <div>
-        <h1 className="text-3xl font-bold font-headline">Welcome back, {provider.name}!</h1>
-        <p className="text-muted-foreground">Here's an overview of your provider profile.</p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+            <div className="inline-flex items-center rounded-full bg-primary/10 px-4 py-1.5 text-sm font-bold text-primary mb-3">
+                <div className={`h-2 w-2 rounded-full mr-2 ${provider.subscriptionActive ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                {provider.subscriptionActive ? 'Visible to Clients' : 'Hidden from Clients'}
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black font-headline tracking-tight">Akwaaba, {provider.name.split(' ')[0]}!</h1>
+            <p className="text-muted-foreground text-lg font-medium mt-1">Here is a snapshot of your business performance today.</p>
+        </div>
+        <div className="flex gap-3">
+            <Button variant="outline" className="rounded-xl font-bold h-12" onClick={() => router.push('/provider/profile')}>
+                Edit Profile
+            </Button>
+        </div>
       </div>
+
+      {!provider.subscriptionActive && (
+          <Card className="border-none shadow-xl rounded-[40px] bg-red-50 border-2 border-red-100 overflow-hidden">
+              <div className="h-2 bg-red-600 w-full" />
+              <CardContent className="p-10">
+                  <div className="flex flex-col md:flex-row gap-8 items-center text-center md:text-left">
+                      <div className="bg-red-100 p-6 rounded-[32px] shrink-0 shadow-inner">
+                          <AlertTriangle className="h-12 w-12 text-red-600" />
+                      </div>
+                      <div className="space-y-4 flex-1">
+                          <h2 className="text-3xl font-black text-red-900 font-headline leading-tight">Subscription Payment Required</h2>
+                          <p className="text-red-800/80 text-lg font-medium leading-relaxed max-w-2xl">
+                              Your account is approved, but your business is currently <b>hidden from clients</b>. Please settle your monthly subscription fees to start receiving job requests.
+                          </p>
+                          <div className="flex flex-wrap justify-center md:justify-start gap-4">
+                              <Button className="bg-red-600 hover:bg-red-700 text-white font-bold h-14 px-8 rounded-2xl shadow-lg shadow-red-200">
+                                  <MessageCircle className="mr-2 h-5 w-5" />
+                                  Contact Admin for Payment
+                              </Button>
+                          </div>
+                      </div>
+                  </div>
+              </CardContent>
+          </Card>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Average Rating" icon={StarIcon}>
-          <div className="flex items-end gap-2">
-            <div className="text-2xl font-bold">{provider.rating.toFixed(1)}</div>
+          <div className="flex items-center gap-2 mt-1">
+            <div className="text-3xl font-black tracking-tight">{provider.rating.toFixed(1)}</div>
             <StarRating rating={provider.rating} size={16} showText={false} />
           </div>
-          <p className="text-xs text-muted-foreground">Based on {provider.reviewCount} reviews</p>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">From {provider.reviewCount} neighbor reviews</p>
         </StatCard>
-        <StatCard title="Total Reviews" value={provider.reviewCount} icon={UserCheck} description="Number of customer reviews" />
-        <StatCard title="Location" value={provider.location.zone} icon={MapPin} description={`${provider.location.city}, ${provider.location.region}`} />
-        <StatCard title="Verification" value={provider.verified ? 'Verified' : 'Not Verified'} icon={CheckCircle} description="Admin has confirmed your details" />
+        <StatCard title="Total Engagement" value={provider.reviewCount} icon={UserCheck} description="Completed feedbacks" />
+        <StatCard title="Service Area" value={provider.location.zone} icon={MapPin} description={`${provider.location.city} Regional Tenant`} />
+        <StatCard title="Verification" icon={CheckCircle}>
+            <div className="mt-1">
+                {provider.verified ? (
+                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none font-black text-[10px] rounded-lg h-7 px-3">VERIFIED PRO</Badge>
+                ) : (
+                    <Badge variant="secondary" className="font-black text-[10px] rounded-lg h-7 px-3">PENDING VETTING</Badge>
+                )}
+            </div>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-2">Identity & Skill Check</p>
+        </StatCard>
       </div>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Next Steps</CardTitle>
-          <CardDescription>Complete your profile to attract more customers.</CardDescription>
+      <Card className="border-none shadow-sm rounded-[40px] overflow-hidden">
+        <CardHeader className="p-10 border-b bg-muted/5">
+          <CardTitle className="text-2xl font-black font-headline">Business Growth</CardTitle>
+          <CardDescription className="text-base font-medium">Follow these steps to increase your visibility on FixAm.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Alert>
-            <AlertTitle>Complete Your Profile</AlertTitle>
-            <AlertDescription>
-              Customers are more likely to contact providers with a complete profile. Take a few minutes to add your services and set your availability.
-              <div className="flex gap-4 mt-4">
-                <Button size="sm" onClick={() => router.push('/provider/services')}>Add Services</Button>
-                <Button size="sm" variant="outline" onClick={() => router.push('/provider/availability')}>Set Availability</Button>
+        <CardContent className="p-10 space-y-6">
+          <div className="grid md:grid-cols-2 gap-8">
+              <div className="p-8 rounded-[32px] bg-primary/5 border border-primary/10 group hover:bg-primary/10 transition-colors cursor-pointer" onClick={() => router.push('/provider/services')}>
+                  <h3 className="text-xl font-bold font-headline mb-2">Specialized Services</h3>
+                  <p className="text-muted-foreground font-medium mb-6">List exactly what you can fix so customers can find you via search.</p>
+                  <Button variant="default" className="rounded-xl font-bold w-full h-12 shadow-lg shadow-primary/10">Manage Services</Button>
               </div>
-            </AlertDescription>
-          </Alert>
+              <div className="p-8 rounded-[32px] bg-secondary/5 border border-secondary/10 group hover:bg-secondary/10 transition-colors cursor-pointer" onClick={() => router.push('/provider/availability')}>
+                  <h3 className="text-xl font-bold font-headline mb-2">Active Hours</h3>
+                  <p className="text-muted-foreground font-medium mb-6">Keep your schedule updated to show as 'Available' on the map.</p>
+                  <Button variant="secondary" className="rounded-xl font-bold w-full h-12 shadow-lg shadow-secondary/10">Set Availability</Button>
+              </div>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -24,6 +24,7 @@
         },
         "status": { "type": "string", "enum": ["pending", "approved", "rejected", "suspended"] },
         "verified": { "type": "boolean" },
+        "subscriptionActive": { "type": "boolean", "description": "Whether the provider has paid their fees and is visible to clients." },
         "rating": { "type": "number" },
         "reviewCount": { "type": "number" },
         "loginPin": { "type": "string" },

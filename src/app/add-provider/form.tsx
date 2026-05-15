@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -86,6 +87,7 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
         },
         status: 'pending',
         verified: false,
+        subscriptionActive: false, // Subscription inactive by default for new listings
         isFeatured: false,
         rating: 0,
         reviewCount: 0,
@@ -126,7 +128,7 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
                 <CheckCircle2 className="h-10 w-10 text-primary" />
             </div>
             <h3 className="text-2xl font-bold text-primary font-headline">Submission Received!</h3>
-            <p className="mt-4 text-muted-foreground text-lg font-medium">Your business has been submitted for review! Our team will contact you shortly.</p>
+            <p className="mt-4 text-muted-foreground text-lg font-medium">Your business has been submitted for review! Our team will contact you shortly regarding verification and subscription.</p>
             <Button asChild className="mt-10 rounded-2xl px-10 h-14 font-bold" variant="default">
                 <Link href={cityPath}>Back to Home</Link>
             </Button>
