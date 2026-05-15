@@ -26,11 +26,8 @@ service cloud.firestore {
     ------------------------------*/
 
     match /admins/{adminId} {
-
       allow read: if isAdmin();
-
       allow write: if false; 
-      // Only server/admin SDK should modify admins
     }
 
     /* -----------------------------
@@ -41,7 +38,11 @@ service cloud.firestore {
 
       allow read: if true;
 
-      allow create: if isAdmin();
+      // Allow public creation for 'pending' applications
+      allow create: if isAdmin() || (
+        request.resource.data.status == 'pending' && 
+        request.resource.data.verified == false
+      );
 
       allow update: if isAdmin() || isProvider(providerId);
 
@@ -58,14 +59,9 @@ service cloud.firestore {
     ------------------------------*/
 
     match /jobs/{jobId} {
-
       allow read: if true;
-
-      // Allow public creation to support lead tracking from the Contact Button
       allow create: if true;
-
       allow update: if isAdmin();
-
       allow delete: if isAdmin();
     }
 
@@ -74,13 +70,9 @@ service cloud.firestore {
     ------------------------------*/
 
     match /engagements/{engagementId} {
-
       allow read: if isSignedIn();
-
       allow create: if isAdmin();
-
       allow update: if isSignedIn();
-
       allow delete: if isAdmin();
     }
 
@@ -89,13 +81,9 @@ service cloud.firestore {
     ------------------------------*/
 
     match /reviews/{reviewId} {
-
       allow read: if true;
-
-      allow create: if isSignedIn();
-
+      allow create: if true; // Allow public review submission (pending moderation)
       allow update: if isAdmin();
-
       allow delete: if isAdmin();
     }
 
@@ -104,9 +92,7 @@ service cloud.firestore {
     ------------------------------*/
 
     match /services/{serviceId} {
-
       allow read: if true;
-
       allow write: if isAdmin();
     }
 
@@ -115,9 +101,7 @@ service cloud.firestore {
     ------------------------------*/
 
     match /categories/{categoryId} {
-
       allow read: if true;
-
       allow write: if isAdmin();
     }
 
@@ -126,10 +110,16 @@ service cloud.firestore {
     ------------------------------*/
 
     match /system_settings/{settingId} {
-
-      allow read: if isAdmin();
-
+      allow read: if true;
       allow write: if isAdmin();
+    }
+
+    match /auditLogs/{logId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /whatsapp_events/{eventId} {
+      allow read, write: if isAdmin();
     }
 
   }

@@ -1,7 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 
@@ -9,12 +12,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { getCityConfig } from '@/lib/constants';
+
+const formSchema = z.object({
+  name: z.string().min(3, { message: 'Business name must be at least 3 characters.' }),
+  serviceId: z.string({ required_error: 'Please select a service category.' }),
+  phone: z.string().regex(/^0[0-9]{9}$/, { message: 'A valid 10-digit phone number is required (e.g. 0241234567).' }),
+  whatsapp: z.string().regex(/^0[0-9]{9}$/, { message: 'A valid 10-digit WhatsApp number is required.' }),
+  zone: z.string({ required_error: 'Please select your primary work area.' }),
+  digitalAddress: z.string().optional(),
+});
 
 type AddProviderFormProps = {
     categories: { id: string; name: string }[];
@@ -28,34 +41,24 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
   const cityConfig = getCityConfig(cityId);
   const cityPath = `/${cityId}`;
 
-  const formRef = useRef<HTMLFormElement>(null);
-  const [isPending, setIsPending] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setIsPending(true);
-    setErrors({});
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      phone: '',
+      whatsapp: '',
+      digitalAddress: '',
+    },
+  });
 
-    const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData.entries());
-
-    // Basic Validation
-    const newErrors: Record<string, string> = {};
-    if (!data.name || String(data.name).length < 3) newErrors.name = 'Business name must be at least 3 characters.';
-    if (!data.phone || !/^0[0-9]{9}$/.test(String(data.phone))) newErrors.phone = 'A valid 10-digit phone number is required.';
-    if (!data.whatsapp || !/^0[0-9]{9}$/.test(String(data.whatsapp))) newErrors.whatsapp = 'A valid 10-digit WhatsApp number is required.';
-    
-    if (Object.keys(newErrors).length > 0) {
-        setErrors(newErrors);
-        setIsPending(false);
-        return;
-    }
-
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       const providersRef = collection(db, 'providers');
-      const q = query(providersRef, where('phone', '==', data.phone));
+      
+      // Duplicate check
+      const q = query(providersRef, where('phone', '==', values.phone));
       const querySnapshot = await getDocs(q);
       
       if (!querySnapshot.empty) {
@@ -64,20 +67,22 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
               description: 'A business with this phone number is already registered.',
               variant: 'destructive',
           });
-          setIsPending(false);
           return;
       }
 
+      const categoryName = categories.find(c => c.id === values.serviceId)?.name || 'Artisan';
+
       const newProviderData = {
-        name: data.name,
-        serviceId: data.serviceId,
-        phone: data.phone,
-        whatsapp: data.whatsapp,
-        digitalAddress: data.digitalAddress || '',
+        name: values.name,
+        serviceId: values.serviceId,
+        category: categoryName,
+        phone: values.phone,
+        whatsapp: values.whatsapp,
+        digitalAddress: values.digitalAddress || '',
         location: {
           region: cityConfig.region,
           city: cityConfig.name,
-          zone: data.zone,
+          zone: values.zone,
         },
         status: 'pending',
         verified: false,
@@ -103,19 +108,14 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
                 requestResourceData: newProviderData,
             } satisfies SecurityRuleContext);
             errorEmitter.emit('permission-error', permissionError);
-        })
-        .finally(() => {
-            setIsPending(false);
         });
 
     } catch (error: any) {
-      // Catch query or other non-permission errors
       toast({
         title: 'Error',
         description: 'Failed to submit business. Please check your connection and try again.',
         variant: 'destructive',
       });
-      setIsPending(false);
     }
   }
 
@@ -135,63 +135,116 @@ export default function AddProviderForm({ categories, zones }: AddProviderFormPr
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="space-y-8">
-        <div className="space-y-3">
-            <Label htmlFor="name" className="text-base font-bold">Business Name</Label>
-            <Input id="name" name="name" placeholder="e.g., Kwame Electric Works" required className="h-14 rounded-xl border-muted-foreground/20 text-lg" />
-            {errors.name && <p className="text-sm text-destructive font-medium">{errors.name}</p>}
-        </div>
+    <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="text-base font-bold">Business Name</FormLabel>
+                        <FormControl>
+                            <Input placeholder="e.g., Kwame Electric Works" {...field} className="h-14 rounded-xl border-muted-foreground/20 text-lg" />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
 
-        <div className="space-y-3">
-            <Label htmlFor="category" className="text-base font-bold">Category</Label>
-            <Select name="serviceId" required>
-            <SelectTrigger id="category" className="h-14 rounded-xl border-muted-foreground/20 text-lg">
-                <SelectValue placeholder="Select a service category" />
-            </SelectTrigger>
-            <SelectContent>
-                {categories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                ))}
-            </SelectContent>
-            </Select>
-        </div>
+            <FormField
+                control={form.control}
+                name="serviceId"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="text-base font-bold">Primary Service</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger className="h-14 rounded-xl border-muted-foreground/20 text-lg">
+                                    <SelectValue placeholder="Select a service category" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {categories.map((cat) => (
+                                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-3">
-            <Label htmlFor="phone" className="text-base font-bold">Phone Number</Label>
-            <Input id="phone" name="phone" type="tel" placeholder="0241234567" required className="h-14 rounded-xl border-muted-foreground/20 text-lg" />
-                {errors.phone && <p className="text-sm text-destructive font-medium">{errors.phone}</p>}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-base font-bold">Phone Number</FormLabel>
+                            <FormControl>
+                                <Input type="tel" placeholder="0241234567" {...field} className="h-14 rounded-xl border-muted-foreground/20 text-lg" />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="whatsapp"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-base font-bold">WhatsApp Number</FormLabel>
+                            <FormControl>
+                                <Input type="tel" placeholder="0551234567" {...field} className="h-14 rounded-xl border-muted-foreground/20 text-lg" />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
             </div>
-            <div className="space-y-3">
-            <Label htmlFor="whatsapp" className="text-base font-bold">WhatsApp Number</Label>
-            <Input id="whatsapp" name="whatsapp" type="tel" placeholder="0551234567" required className="h-14 rounded-xl border-muted-foreground/20 text-lg" />
-            {errors.whatsapp && <p className="text-sm text-destructive font-medium">{errors.whatsapp}</p>}
-            </div>
-        </div>
-        
-        <div className="space-y-3">
-            <Label htmlFor="zone" className="text-base font-bold">Area / Neighborhood</Label>
-            <Select name="zone" required>
-            <SelectTrigger id="zone" className="h-14 rounded-xl border-muted-foreground/20 text-lg">
-                <SelectValue placeholder="Select your primary work area" />
-            </SelectTrigger>
-            <SelectContent>
-                {zones.map((zone) => (
-                <SelectItem key={zone} value={zone}>{zone}</SelectItem>
-                ))}
-            </SelectContent>
-            </Select>
-        </div>
+            
+            <FormField
+                control={form.control}
+                name="zone"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="text-base font-bold">Area / Neighborhood</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger className="h-14 rounded-xl border-muted-foreground/20 text-lg">
+                                    <SelectValue placeholder="Select your primary work area" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {zones.map((zone) => (
+                                    <SelectItem key={zone} value={zone}>{zone}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
 
-        <div className="space-y-3">
-            <Label htmlFor="digitalAddress" className="text-base font-bold">Digital Address (Optional)</Label>
-            <Input id="digitalAddress" name="digitalAddress" placeholder="e.g., GA-123-4567" className="h-14 rounded-xl border-muted-foreground/20 text-lg" />
-        </div>
+            <FormField
+                control={form.control}
+                name="digitalAddress"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="text-base font-bold">Digital Address (Optional)</FormLabel>
+                        <FormControl>
+                            <Input placeholder="e.g., GA-123-4567" {...field} className="h-14 rounded-xl border-muted-foreground/20 text-lg" />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
 
-        <Button type="submit" className="w-full h-16 rounded-2xl text-xl font-bold shadow-xl shadow-primary/20" disabled={isPending}>
-            {isPending ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : null}
-            Submit for Review
-        </Button>
-    </form>
+            <Button type="submit" className="w-full h-16 rounded-2xl text-xl font-bold shadow-xl shadow-primary/20" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting && <Loader2 className="mr-2 h-6 w-6 animate-spin" />}
+                Submit for Review
+            </Button>
+        </form>
+    </Form>
   );
 }
